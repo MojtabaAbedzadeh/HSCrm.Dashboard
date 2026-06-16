@@ -1,0 +1,38 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+    <div class="row w-100 justify-content-center">
+        <div class="col-md-7 col-lg-5">
+            <div class="card shadow border-0">
+                <div class="card-body text-center p-5">
+
+                    <div class="mb-4">
+                        <div class="rounded-circle bg-danger-subtle d-inline-flex align-items-center justify-content-center"
+                             style="width: 96px; height: 96px;">
+                            <i class="mdi mdi-shield-lock-outline text-danger" style="font-size: 48px;"></i>
+                        </div>
+                    </div>
+
+                    <h3 class="fw-bold mb-2">Access Denied</h3>
+
+                    <p class="text-muted mb-4">
+                        متأسفانه شما مجوز مشاهده این صفحه را ندارید.
+                    </p>
+
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <a href="/AdminArea/Home/Index" class="btn btn-primary">
+                            رفتن به داشبورد
+                        </a>
+                        <a href="/Account/Login" class="btn btn-light border">
+                            ورود مجدد
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

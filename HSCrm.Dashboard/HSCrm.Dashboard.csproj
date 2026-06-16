@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HSCrm.BussinessLogic\HSCrm.BussinessLogic.csproj" />
+    <ProjectReference Include="..\HSCrm.Models\HSCrm.Models.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Areas\AdminArea\Data\" />
+    <Folder Include="Areas\AdminArea\Models\" />
+    <Folder Include="Areas\UserArea\Controllers\" />
+    <Folder Include="Areas\UserArea\Data\" />
+    <Folder Include="Areas\UserArea\Models\" />
+    <Folder Include="Areas\UserArea\Views\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.22" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
+</Project>

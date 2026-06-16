@@ -1,0 +1,101 @@
+﻿@model IEnumerable<PurchaseInvoiceModel>
+@{
+    ViewData["Title"] = "فاکتورهای خرید";
+    ViewData["selected"] = "invoice_purchase_list";
+}
+
+@section styles {
+    <link href="~/assets/plugins/data-tables/datatables.bootstrap5.min.css" rel="stylesheet">
+    <link href="~/assets/plugins/data-tables/responsive.datatables.min.css" rel="stylesheet">
+    <link href="~/assets/css/ekka.css" id="ekka-css" rel="stylesheet">
+    <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
+}
+
+<div class="breadcrumb-wrapper breadcrumb-contacts">
+    <div>
+        <h1>لیست فاکتورهای خرید</h1>
+        <p class="breadcrumbs">
+            <span>
+                <a href="index.html">خانه</a>
+            </span>
+            <span>
+                <i class="mdi mdi-chevron-left"></i>
+            </span>فاکتور خرید
+        </p>
+    </div>
+    @if (ViewBag.FiscalYearStatus == "0")
+    {
+        <div>
+            <a type="button" class="btn btn-primary" href="/adminarea/invoice/AddPurchaseInvoice">افزودن فاکتور خرید </a>
+        </div>
+    }
+</div>
+@if (ViewBag.FiscalYearStatus != "0")
+{
+    <div class="alert alert-primary col-lg-8" role="alert" style="margin-top:40px; color:#084298;">
+        توجه!
+        <br>
+        سال مالی انتخاب شده بسته می باشد! شما فقط قادر به مشاهده گزارشات سیستم هستید.
+    </div>
+}
+<div class="row">
+    <div class="col-12">
+        <div class="ec-vendor-list card card-default">
+            <div class="card-body">
+                <div class="table-responsive-md">
+                    <div id="responsive-data-table_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
+                        <table id="responsive-data-table" class="table dataTable no-footer" aria-describedby="responsive-data-table_info">
+                            <thead>
+                                <tr>
+                                    <th>شماره</th>
+                                    <th>تاریخ</th>
+                                    <th>تامین کننده</th>
+                                    <th>جمع فاکتور</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td>@item.Number</td>
+                                        <td>@item.IssueDate.ToString("yyyy/MM/dd")</td>
+                                        <td>@item.Supplier.SupplierFullName</td>
+                                        <td>@item.Total</td>
+                                        <td>
+                                            <div class="btn-group mb-1">
+                                                <button type="button" class="btn btn-outline-success">اطلاعات</button>
+                                                <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static">
+                                                    <span class="sr-only">اطلاعات</span>
+                                                </button>
+                                                @if (ViewBag.FiscalYearStatus == "0")
+                                                {
+                                                    <div class="dropdown-menu">
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">
+                                                            ویرایش
+                                                        </a>
+                                                        <a class="dropdown-item" href="#" onclick="deleteExpense(@item.Id)">
+                                                            حذف
+                                                        </a>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="dropdown-menu">
+                                                    </div>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section AdminScripts {
+
+}

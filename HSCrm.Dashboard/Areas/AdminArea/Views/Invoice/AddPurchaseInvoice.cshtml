@@ -1,0 +1,203 @@
+﻿@{
+    ViewData["AdminTitle"] = "ثبت فاکتور خرید";
+    ViewData["selected"] = "warehouse_purchase_invoice";
+    string ApiAddress = ViewBag.ApiAddress;
+    string UId = ViewBag.UserId;
+    string TId = ViewBag.TenantId;
+
+    List<SuppliersDropDown> lstSupplier = ViewBag.Suppliers;
+    lstSupplier.Insert(0, new SuppliersDropDown { DrId = "0", DrName = "انتخاب تامین کننده" });
+
+    List<WarehousesDropDown> lstWarehouse = ViewBag.Warehouses;
+    lstWarehouse.Insert(0, new WarehousesDropDown { DrId = "0", DrName = "انتخاب انبار" });
+}
+
+@section styles {
+
+    <link href="~/assets/plugins/data-tables/datatables.bootstrap5.min.css" rel="stylesheet">
+    <link href="~/assets/plugins/data-tables/responsive.datatables.min.css" rel="stylesheet">
+    <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
+    <link href="~/css/Views/invoice/invoice.css" rel="stylesheet" />
+}
+@if (ViewBag.FiscalYearStatus == "0")
+{
+    <div class="row">
+        <div class="col-12" style="margin-top:20px;">
+            <div class="card card-default">
+                <div class="card-body" style="justify-content: end;">
+                    <div class="table-responsive row">
+                        <div class="col-lg-2 col-md-4 form-floating">
+                            <select id="InvoiceStatus" class="form-control text-end">
+                                <option value="1">فاکتور خرید</option>
+                            </select>
+                            <label for="InvoiceTypeId" style="right:0!important; left:unset!important;">نوع سند</label>
+                        </div>
+                        <div class="col-lg-2 col-md-4 form-floating">
+                            <select id="SupplierId" name="SupplierId" class="form-control text-end" asp-items="@(new SelectList(lstSupplier, "DrId", "DrName"))">
+                            </select>
+                            <label for="SupplierId" style="right:0!important; left:unset!important;">تامین کننده</label>
+                        </div>
+                        <div class="col-lg-2 col-md-4 form-floating">
+                            <select id="WarehouseId" name="WarehouseId" class="form-control text-end" asp-items="@(new SelectList(lstWarehouse, "DrId", "DrName"))">
+                            </select>
+                            <label for="WarehouseId" style="right:0!important; left:unset!important;">انبار</label>
+                        </div>
+                        <div class="col-lg-2 col-md-4 form-floating">
+                            <input id="invoiceNumber" name="invoiceNumber" class="form-control text-end" placeholder="شماره فاکتور" />
+                            <label for="invoiceNumber" style="right:0!important; left:unset!important;">شماره فاکتور</label>
+                        </div>
+                        <div class="col-lg-2 col-md-4 form-floating">
+                            <input autocomplete="off" id="invoiceDate" name="invoiceDate" class="form-control persian-date text-end" placeholder="تاریخ فاکتور" />
+                            <label for="invoiceDate" style="right:0!important; left:unset!important;">تاریخ فاکتور</label>
+                        </div>
+                    </div>
+                    <div class="table-responsive row">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-4" style="margin-top:20px;">
+            <div class="card card-default">
+                <div class="card-body">
+                    <form>
+                        <div class="table-responsive row">
+                            <div class="col-lg-12" style="margin-bottom:8px;">
+                                <div class="form-group form-floating" style="margin:auto;">
+                                    <input style="font-size:13px;" autocomplete="off" type="text" class="form-control text-end brand-name" id="ProductTitle" name="ProductTitle" placeholder="عنوان محصول">
+                                    <input type="hidden" id="ProductId" name="ProductId" />
+                                    <div class="position-relative">
+                                        <ul id="productAutoComplete"
+                                            class="list-group position-absolute w-100"
+                                            style="z-index:1000; display:none; max-height:200px; overflow:auto;">
+                                        </ul>
+                                    </div>
+                                    <label for="ProductTitle" style="right:0!important; left:unset!important;">عنوان محصول</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-6" style="margin-bottom:8px;">
+                                <div class="form-group form-floating" style="margin:auto;">
+                                    <input type="number" value="0" style="font-size:13px;" class="form-control text-end" id="productCount" name="productCount" placeholder="تعداد">
+                                    <label for="productCount" style="right:0!important; left:unset!important;">تعداد</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-6" style="margin-bottom:8px;">
+                                <div class="form-group form-floating" style="margin:auto;">
+                                    <input type="text" style="font-size:13px;" class="form-control text-end" id="buyPrice" name="buyPrice" placeholder="قیمت فروش">
+                                    <label for="buyPrice" style="right:0!important; left:unset!important;">قیمت فروش</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-6" style="margin-bottom:8px;">
+                                <div class="form-group form-floating" style="margin:auto;">
+                                    <input type="text" value="0" style="font-size:13px;" class="form-control text-end" id="discount" name="discount" placeholder="تخفیف">
+                                    <label for="discount" style="right:0!important; left:unset!important;">تخفیف</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-6" style="margin-bottom:8px;">
+                                <div class="form-group form-floating" style="margin:auto;">
+                                    <input type="text" value="0" style="font-size:13px;" class="form-control text-end" id="tax" name="tax" placeholder="مالیات">
+                                    <label for="tax" style="right:0!important; left:unset!important;">مالیات</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-6" style="margin-bottom:8px;">
+                                <div class="form-group form-floating" style="margin:auto;">
+                                    <input type="text" value="0" style="font-size:13px;" class="form-control text-end" id="rowSum" name="rowSum" placeholder="جمع">
+                                    <label for="rowSum" style="right:0!important; left:unset!important;">جمع</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-12" style="margin-bottom:8px;">
+                                <button type="button" value="Submit" id="btnAddProduct" class="btn-block mt-3 btn-pill btn btn-success" style="width:100%">+ افزودن</button>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-8" style=" margin-top:20px;">
+            <div class="card card-default">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-12" id="productItemView">
+                            <table id="tblInvoiceItem" class="table table-hover my-table">
+                                <thead>
+                                    <tr>
+                                        <th hidden>ردیف</th>
+                                        <th hidden>productId</th>
+                                        <th style="text-align:right">نام کالا</th>
+                                        <th style="text-align:center">تعداد</th>
+                                        <th style="text-align:center">قیمت</th>
+                                        <th style="text-align:center">تخفیف</th>
+                                        <th style="text-align:center">مالیات</th>
+                                        <th style="text-align:center">جمع</th>
+                                        <th style="text-align:center">عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tblBody">
+                                </tbody>
+                            </table>
+                            <div class="row justify-content-end inc-total">
+                                <div class="col-lg-12 col-xl-12 col-xl-12 ml-sm-auto">
+                                    <ul class="list-unstyled mt-3 row">
+                                        <li class="mid text-dark col-lg-4">
+                                            <div class="form-group form-floating">
+                                                <input type="number" min="0" value="0" class="form-control text-end" id="invoiceDiscount" name="invoiceDiscount" placeholder="تخفیف ریالی">
+                                                <label for="invoiceDiscount" style="right:0!important; left:unset!important;">تخفیف ریالی</label>
+                                            </div>
+                                        </li>
+                                        <li class="mid text-dark col-lg-4">
+                                            <div class="form-group form-floating">
+                                                <input type="number" min="0" value="0" class="form-control text-end" id="invoiceTax" name="invoiceTax" placeholder="مالیات و عوارض">
+                                                <label for="invoiceTax" style="right:0!important; left:unset!important;">مالیات و عوارض</label>
+                                            </div>
+                                        </li>
+                                        <li class="mid text-dark col-lg-4">
+                                            <div class="form-group form-floating">
+                                                <input type="text" disabled class="form-control text-end" id="invoiceSumPrice" name="invoiceSumPrice" placeholder="مبلغ قابل پرداخت">
+                                                <label for="invoiceSumPrice" style="right:0!important; left:unset!important;">مبلغ قابل پرداخت</label>
+                                            </div>
+                                        </li>
+                                        <input hidden id="sellerUserId" name="sellerUserId" value="@UId">
+                                        <input hidden id="tenantId" name="tenantId" value="@TId">
+                                    </ul>
+                                    <button id="btnRegInvoice" href="javascript:void(0)" class="btn btn-inline-block float-start mt-3 btn-primary btn-pill">ثبت</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-primary col-lg-8" role="alert" style="margin-top:40px; color:#084298;">
+        توجه!
+        <br>
+        سال مالی انتخاب شده بسته می باشد! شما فقط قادر به مشاهده گزارشات سیستم هستید.
+    </div>
+}
+@section AdminScripts {
+    <script src="~/lib/sweetalert/sweetalert2.min.js"></script>
+    <script src="~/lib/sweetalert/sweetalert2.js"></script>
+    <script src="~/lib/persiandate/persian-date.js"></script>
+    <script src="~/lib/persiandate/persian-datepicker.js"></script>
+    <script>
+        $(document).ready(function () {
+            $(".persian-date").persianDatepicker({
+                format: 'YYYY/MM/DD',
+                autoClose: true,
+                initialValue: true,
+                initialValueType: 'persian'
+            });
+        });
+    </script>
+    <script>
+        window.AppContext = {
+            apiAddress: '@ViewBag.ApiAddress',
+            tenantId: '@ViewBag.TenantId',
+            userId: '@ViewBag.UserId'
+        };
+    </script>
+    <script src="~/js/views/invoice/purchase-invoice.js"></script>
+}

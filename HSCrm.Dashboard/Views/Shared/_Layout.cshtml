@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="Ekka - Admin Dashboard HTML Template.">
+    <title>ورود به سیستم</title>
+
+    <link href="~/assets/css/materialdesignicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/assets/css/ekka.css" id="ekka-css">
+    <link href="~/assets/img/favicon.png" rel="shortcut icon">
+</head>
+
+<body class="sign-inup" id="body">
+    <div class="container d-flex align-items-center justify-content-center form-height-login pt-24px pb-24px">
+        @RenderBody()
+    </div>
+    <script src="~/assets/plugins/jquery/jquery-3.5.1.min.js"></script>
+    <script src="~/assets/plugins/jquery/jquery.notify.min.js"></script>
+    <script src="~/assets/plugins/jquery/jquery.bundle.notify.min.js"></script>
+    <script src="~/assets/js/bootstrap.bundle.min.js"></script>
+    <script src="~/assets/plugins/jquery-zoom/jquery.zoom.min.js"></script>
+    <script src="~/assets/plugins/daterangepicker/moment.min.js"></script>
+    @* <script src="~/assets/js/date-range.js"></script> *@
+    <script src="~/assets/plugins/slick/slick.min.js"></script>
+    <script src="~/assets/js/ekka.js"></script>
+</body>
+
+</html>

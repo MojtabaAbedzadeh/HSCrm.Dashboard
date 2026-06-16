@@ -1,0 +1,23 @@
+﻿<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <partial name="_HeaderLinks" />
+    @await RenderSectionAsync("styles", false)
+</head>
+<body class="ec-header-fixed ec-sidebar-fixed ec-sidebar-light ec-header-light" id="body">
+    <div class="wrapper">
+        <partial name="_Sidebar" />
+        <div class="ec-page-wrapper">
+            <partial name="_Header" />
+            <div class="ec-content-wrapper">
+                <div class="content">
+                    @RenderBody()
+                </div>
+            </div>
+            <partial name="_Footer" />
+        </div>
+    </div>
+    <partial name="_FooterLinks" />
+    @await RenderSectionAsync("AdminScripts", required: false)
+</body>
+</html>

@@ -1,0 +1,603 @@
+﻿@model IEnumerable<ProductModel>
+
+@{
+    ViewData["Title"] = "محصولات";
+    ViewData["selected"] = "product_list";
+
+    string ApiAddress = ViewBag.ApiAddress;
+    string valTenantId = ViewBag.TenantId;
+    string valUserId = ViewBag.UserId;
+}
+
+@section styles {
+    <link href="~/assets/plugins/data-tables/datatables.bootstrap5.min.css" rel="stylesheet">
+    <link href="~/assets/plugins/data-tables/responsive.datatables.min.css" rel="stylesheet">
+    <link href="~/assets/css/ekka.css" id="ekka-css" rel="stylesheet">
+    <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
+}
+
+<style>
+    .stautus-row {
+        display: inline-block;
+        width: 85px;
+        font-weight: normal;
+        padding: 4px;
+        font-size: 12px;
+        border-radius: 8px;
+    }
+
+    .confirmed-row {
+        color: #009688;
+        background-color: #d8f7f4;
+    }
+
+    .rejected-row {
+        color: #F44336;
+        background-color: #f1d3d1;
+    }
+</style>
+
+<div class="breadcrumb-wrapper breadcrumb-contacts">
+    <div>
+        <h1>لیست مشتریان</h1>
+        <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>محصول</p>
+    </div>
+    @if (ViewBag.FiscalYearStatus == "0")
+    {
+        <div><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProduct"> اضافه کردن محصول </button></div>
+    }
+</div>
+@if (ViewBag.FiscalYearStatus != "0")
+{
+    <div class="alert alert-primary col-lg-8" role="alert" style="margin-top:40px; color:#084298;">
+        توجه!
+        <br>
+        سال مالی انتخاب شده بسته می باشد! شما فقط قادر به مشاهده گزارشات سیستم هستید.
+    </div>
+}
+<div class="row">
+    <div class="col-12">
+        <div class="ec-vendor-list card card-default">
+            <div class="card-body">
+                <div class="table-responsive-md">
+                    <div id="responsive-data-table_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
+                        <table id="responsive-data-table" class="table dataTable no-footer" aria-describedby="responsive-data-table_info">
+                            <thead>
+                                <tr>
+                                    <th>عنوان محصول</th>
+                                    <th>واحد</th>
+                                    <th>وضعیت</th>
+                                    <th>قیمت خرید</th>
+                                    <th>قیمت فروش</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td>@item.ProductTitle</td>
+                                        <td>@item.ProductUnit</td>
+                                        <td>
+                                            <span class="badge @(item.IsActive ? "bg-success" : "bg-danger")">
+                                                @(item.IsActive ? "فعال" : "غیرفعال")
+                                            </span>
+                                        </td>
+                                        <td>@item.BuyPrice</td>
+                                        <td>@item.SellPrice</td>
+                                        <td>
+                                            <div class="btn-group mb-1">
+                                                <button type="button" class="btn btn-outline-success">اطلاعات</button>
+                                                <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static">
+                                                    <span class="sr-only">اطلاعات</span>
+                                                </button>
+                                                @if (ViewBag.FiscalYearStatus == "0")
+                                                {
+                                                    <div class="dropdown-menu">
+                                                        <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.ProductId, '@item.ProductTitle')">قیمت جدید</a>
+                                                        <a class="dropdown-item" href="#" onclick="productPriceHistory(@item.ProductId, '@item.ProductTitle')">تاریخچه قیمت</a>
+                                                        <hr />
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.ProductId)">ویرایش</a>
+                                                        <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="dropdown-menu"></div>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@if (ViewBag.FiscalYearStatus == "0")
+{
+    <div class="modal fade modal-add-contact" id="addProduct" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <form id="frmProduct">
+                    <div class="modal-header px-4">
+                        <h5 class="modal-title" id="exampleModalCenterTitle">تعریف محصول جدید</h5>
+                    </div>
+                    <div class="modal-body px-4">
+                        <div class="row mb-2">
+                            <div class="col-lg-4">
+                                <div class="form-group form-floating">
+                                    <input class="form-control text-end" id="ProductTitle" name="ProductTitle" placeholder="عنوان محصول">
+                                    <label for="ProductTitle" style="right:0!important; left:unset!important;">عنوان محصول</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="form-group form-floating">
+                                    <input class="form-control text-end" id="ProductUnit" name="ProductUnit" placeholder="واحد">
+                                    <label for="ProductUnit" style="right:0!important; left:unset!important;">واحد</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-4" style="margin-bottom:8px;">
+                                <div class="form-check" style="margin:auto;">
+                                    <input style="font-size:13px;" type="checkbox" class="form-check-input chk-date-type" id="IsActive">
+                                    <label for="IsActive" class="lbl-date-change">فعال</label>
+                                </div>
+                            </div>
+                            <input id="TenantId" name="TenantId" value="@valTenantId" hidden>
+                            <input id="UserId" name="UserId" value="@valUserId" hidden>
+                            <div class="col-lg-12 alert" style="color:red">
+                                <span class="text-danger" id="spnValidate"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer px-4">
+                        <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal">
+                            لغو
+                        </button>
+                        <button id="btnProductSubmit" type="button" class="btn btn-primary btn-pill">ذخیره </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade modal-add-contact" id="editProduct" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <form id="frmEditProduct">
+                    <div class="modal-header px-4">
+                        <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش محصول</h5>
+                    </div>
+                    <div class="modal-body px-4">
+                        <div class="row mb-2">
+                            <input id="ProductId" name="ProductId" hidden>
+                            <div class="col-lg-4">
+                                <div class="form-group form-floating">
+                                    <input class="form-control text-end" id="ProductTitleU" name="ProductTitleU" placeholder="عنوان محصول">
+                                    <label for="ProductTitleU" style="right:0!important; left:unset!important;">عنوان محصول</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="form-group form-floating">
+                                    <input class="form-control text-end" id="ProductUnitU" name="ProductUnitU" placeholder="واحد">
+                                    <label for="ProductUnitU" style="right:0!important; left:unset!important;">واحد</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-4" style="margin-bottom:8px;">
+                                <div class="form-check" style="margin:auto;">
+                                    <input style="font-size:13px;" type="checkbox" class="form-check-input chk-date-type" id="IsActiveU" name="IsActiveU">
+                                    <label for="IsActiveU" class="lbl-date-change">فعال</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-12 alert" style="color:red">
+                                <span class="text-danger" id="spnValidateU"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer px-4">
+                        <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal">
+                            لغو
+                        </button>
+                        <button id="btnProductUpdate" type="button" class="btn btn-primary btn-pill">ذخیره </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade modal-add-contact" id="addNewPriceModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <form id="frmPrice">
+                    <div class="modal-header px-4">
+                        <h5 class="modal-title" id="ProductTitle"></h5>
+                    </div>
+                    <div class="modal-body px-4">
+                        <div class="row mb-2">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="BuyPrice">قیمت خرید</label>
+                                    <input type="number" min="0" class="form-control" id="BuyPrice" name="BuyPrice">
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="SellPrice">قیمت فروش</label>
+                                    <input type="number" min="0" class="form-control" id="SellPrice" name="SellPrice">
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="ActionDate">تاریخ اعمال</label>
+                                    <input autocomplete="off" class="form-control persian-date" id="EffectiveFrom" name="EffectiveFrom">
+                                </div>
+                            </div>
+                            <input id="UserId" name="UserId" value="@ViewBag.UserId" hidden />
+                            <input id="FiscalYearId" name="FiscalYearId" value="@ViewBag.FiscalYearId" hidden />
+                            <input id="TenantId" name="TenantId" value="@ViewBag.TenantId" hidden />
+                            <input id="ProId" name="ProId" hidden />
+                            <div class="col-lg-12 alert" style="color:red">
+                                <span class="text-danger" id="spnValidate"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer px-4">
+                        <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal">لغو</button>
+                        <button id="btnPriceSubmit" type="button" class="btn btn-primary btn-pill">ذخیره </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade modal-add-contact" id="productPriceHistoryModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header px-4">
+                    <h5 class="modal-title" id="productPriceHistory"></h5>
+                </div>
+                <div class="modal-body px-4">
+                    <div class="row mb-2">
+                        <div class="table-responsive">
+                            <table id="tblProductPriceHistory" class="table table-hover" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>ردیف</th>
+                                        <th>قیمت خرید</th>
+                                        <th>قیمت فروش</th>
+                                        <th>تاریخ اعمال</th>
+                                        <th>عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer px-4">
+                    <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal"> لغو</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@section AdminScripts {
+    <script src="~/lib/persiandate/persian-date.js"></script>
+    <script src="~/lib/persiandate/persian-datepicker.js"></script>
+    <script src="~/lib/sweetalert/sweetalert2.min.js"></script>
+
+    <!--PersianDate-->
+    <script>
+        $(document).ready(function () {
+            $(".persian-date").persianDatepicker({
+                format: 'YYYY/MM/DD'
+            });
+            $(".persian-date").val('');
+        });
+    </script>
+    <!--Show add price modal-->
+    <script>
+        function showInsertPriceModel(productId, productTitle) {
+            $("#ProId").val(productId);
+            $("#ProductTitle").text('درج قیمت برای ' + productTitle);
+
+            $("#addNewPriceModal").modal('show');
+        }
+    </script>
+    <!--Add new Product-->
+    <script>
+        $("#btnProductSubmit").on('click', function (e) {
+            e.preventDefault();
+
+            var productTitle = $("#ProductTitle").val();
+            var productUnit = $("#ProductUnit").val();
+
+            if (!productTitle || productTitle.trim() === "") {
+                swal({
+                    title: "خطا",
+                    text: "عنوان محصول را وارد نمایید!",
+                    type: 'error',
+                    showCancelButton: false,
+                    allowOutsideClick: false,
+                    confirmButtonColor: "green",
+                    confirmButtonText: "باشه",
+                    timer: 1500,
+                });
+
+                return false;
+            }
+
+            if (!productUnit || productUnit.trim() === "") {
+                swal({
+                    title: "خطا",
+                    text: "واحد محصول را وارد نمایید!",
+                    type: 'error',
+                    showCancelButton: false,
+                    allowOutsideClick: false,
+                    confirmButtonColor: "green",
+                    confirmButtonText: "باشه",
+                    timer: 1500,
+                });
+
+                return false;
+            }
+
+            var formData = new FormData($("#frmProduct")[0]);
+
+            formData.set("IsActive", $("#IsActive").is(":checked"));
+
+            $.ajax({
+                type: 'POST',
+                url: '@ApiAddress' + 'Product/CreateProduct',
+                processData: false,
+                contentType: false,
+                dataType: "json",
+                data: formData,
+                success: function (xhr) {
+                    if (xhr.statusCode == 200) {
+                        swal({
+                            title: "ثبت اطلاعات",
+                            text: "ثبت محصول با موفقیت انجام شد!",
+                            type: 'success',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                        $('#addProduct').modal('hide');
+                        $('#ProductTitle').val("");
+                        $('#chkActive').val("");
+                        $('#ProductUnit').val("");
+                        window.location.reload();
+                    }
+                    if (xhr.statusCode == 500) {
+                    swal({
+                        title: "خطا",
+                        text: "خطایی در انجام عملیات رخ داده است!",
+                        type: 'error',
+                        showCancelButton: false,
+                        allowOutsideClick: false,
+                        confirmButtonColor: "green",
+                        confirmButtonText: "باشه",
+                        timer: 1500,
+                    });
+                    return false;
+
+                    } else if (xhr.statusCode == 400) {
+                    swal({
+                        title: "خطا",
+                        text: "لطفا اطلاعات محصول را کامل وارد نمایید!",
+                        type: 'error',
+                        showCancelButton: false,
+                        allowOutsideClick: false,
+                        confirmButtonColor: "green",
+                        confirmButtonText: "باشه",
+                        timer: 1500,
+                    });
+                        return false;
+                    }
+                }
+            });
+        });
+
+    </script>
+    <!--Show product update modal-->
+    <script>
+        function showUpdateModal(productId) {
+            $.ajax({
+                type: 'GET',
+                url: '@ApiAddress' + 'Product/GetById?productId=' + productId,
+                dataType: 'json',
+                success: function (xhr) {
+                    $("#ProductId").val(xhr.data.id);
+                    $("#ProductTitleU").val(xhr.data.productTitle);
+                    $("#ProductUnitU").val(xhr.data.productUnit);
+                    $("#IsActiveU").prop("checked", xhr.data.isActive);
+
+                    $("#editProduct").modal('show');
+                }
+            });
+        }
+    </script>
+    <!--Update Product-->
+    <script>
+        $("#btnProductUpdate").on('click', function (e) {
+            e.preventDefault();
+
+            var model = {
+                productId: $("#ProductId").val(),
+                productTitle: $("#ProductTitleU").val(),
+                productUnit: $("#ProductUnitU").val(),
+                isActive: $("#IsActiveU").is(":checked"),
+                modifiedById: '@valUserId'
+            }
+
+            $.ajax({
+                type: 'PUT',
+                url: '@ApiAddress' + 'Product/UpdateProduct',
+                dataType: 'Json',
+                contentType: 'application/json',
+                processData: false,
+                data: JSON.stringify(model),
+                success: function (xhr) {
+                    if (xhr.statusCode == '200') {
+                    swal({
+                        title: "ویرایش",
+                        text: "ویرایش محصول با موفقیت انجام شد!",
+                        type: 'success',
+                        showCancelButton: false,
+                        allowOutsideClick: false,
+                        confirmButtonColor: "green",
+                        confirmButtonText: "باشه",
+                        timer: 1500,
+                    });
+                        window.location.reload();
+                    }
+                    if (xhr.statusCode == '400') {
+                    swal({
+                        title: "خطا",
+                        text: "پارامترهای ارسالی معتبر نیست!",
+                        type: 'error',
+                        showCancelButton: false,
+                        allowOutsideClick: false,
+                        confirmButtonColor: "green",
+                        confirmButtonText: "باشه",
+                        timer: 1500,
+                    });
+                        return false;
+                    } else if (xhr.statusCode == '409') {
+                        swal({
+                            title: "خطا",
+                            text: "اطلاعات تکراری می‌باشد!",
+                            type: 'error',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                        return false;
+                    }else if (xhr.statusCode == '500') {
+                         swal({
+                             title: "خطا",
+                             text: "خطایی در انجام عملیات رخ داده است!",
+                             type: 'error',
+                             showCancelButton: false,
+                             allowOutsideClick: false,
+                             confirmButtonColor: "green",
+                             confirmButtonText: "باشه",
+                             timer: 1500,
+                         });
+
+                        return false;
+                    }
+                }
+            });
+        })
+    </script>
+    <!--Add new price-->
+    <script>
+        $("#btnPriceSubmit").on('click', function (e) {
+            e.preventDefault();
+
+            var formData = new FormData($("#frmPrice")[0]);
+            console.log(formData);
+            $.ajax({
+                type: 'Post',
+                url: '@ApiAddress' + 'ProductPrice/CreatePrice',
+                processData: false,
+                contentType: false,
+                dataType: "json",
+                data: formData,
+                success: function (xhr) {
+                    if (xhr.statusCode == '200') {
+                        $('#addNewPriceModal').modal('hide');
+                        swal({
+                            title: "ثبت اطلاعات",
+                            text: "قیمت جدید محصول با موفقیت ثبت شد!",
+                            type: 'success',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                        window.location.reload();
+                    }
+                    if (xhr.statusCode == '550') {
+                        swal({
+                            title: "خطا",
+                            text: "تاریخ اعمال قیمت معتبر نیست!",
+                            type: 'error',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                        return false;
+                    } else if (xhr.statusCode == '500') {
+                        swal({
+                            title: "خطا",
+                            text: "خطایی در انجام عملیات رخ داده است!",
+                            type: 'error',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                        return false;
+                    } else if (xhr.statusCode == '400') {
+                        swal({
+                            title: "خطا",
+                            text: "لطفا اطلاعات قیمت را کامل وارد نمایید!",
+                            type: 'error',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                        return false;
+                    }
+                }
+            })
+        });
+    </script>
+    <!--Show product price history-->
+    <script>
+        function productPriceHistory(productId, productTitle) {
+            $("#productPriceHistory").text('لیست قیمت ' + productTitle);
+
+            $.ajax({
+                type: 'GET',
+                url: '@ApiAddress' + 'ProductPrice/GetProductPriceHistory?productId=' + productId,
+                dataType: 'json',
+                success: function (xhr) {
+                    $("#tblProductPriceHistory tbody").empty();
+                    $.each(xhr.data, function (i, v) {
+                        // تعیین کلاس CSS بر اساس مقدار isActive
+                        var rowClass = v.isActive ? 'confirmed-row' : 'rejected-row';
+
+                        // افزودن ردیف به جدول با کلاس CSS مناسب
+                        $("#tblProductPriceHistory tbody").append(
+                            "<tr class='" + rowClass + "'>" +
+                            "<td>" + (i + 1) + "</td>" +
+                            "<td>" + v.buyPrice + "</td>" +
+                            "<td>" + v.sellPrice + "</td>" +
+                            "<td>" + new persianDate(new Date(v.effectiveFrom)).format("YYYY/MM/DD") + "</td>" +
+                            "<td><a style='cursor:pointer; font-size:10px;' onclick='deletePrice(" + v.id + ")'>حذف</a></td>" +
+                            "</tr>"
+                        );
+                    });
+                }
+            });
+
+
+            $("#productPriceHistoryModal").modal('show');
+        }
+    </script>
+}

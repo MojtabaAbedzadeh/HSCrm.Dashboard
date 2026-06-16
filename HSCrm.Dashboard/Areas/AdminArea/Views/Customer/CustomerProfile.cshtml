@@ -1,0 +1,270 @@
+﻿@model CustomerDetailViewModel
+
+@{
+    ViewData["AdminTitle"] = "پروفایل مشتری";
+    ViewData["selected"] = "customer_profile";
+
+    // string ApiAddress = ViewBag.ApiAddress;
+}
+
+<div class="breadcrumb-wrapper breadcrumb-contacts">
+    <div>
+        <h1>پروفایل مشتری</h1>
+        <p class="breadcrumbs">
+            <span><a href="index.html">خانه</a></span> <span>
+                <i class="mdi mdi-chevron-left"></i>
+            </span>پروفایل مشتری
+        </p>
+    </div>
+    <div><a href="vendor-list.html" class="btn btn-primary">ویرایش</a></div>
+</div>
+<div class="card bg-white profile-content ec-vendor-profile">
+    <div class="row">
+        <div class="col-lg-4 col-xl-3">
+            <div class="profile-content-left profile-left-spacing">
+                <div class="ec-disp">
+                    <div class="text-center widget-profile px-0 border-0">
+                        <div class="card-img mx-auto rounded-circle">
+                            <img id="userImagePreview" src="@Model.UserImageUrl" alt="user image">
+                        </div>
+                        <div class="card-body">
+                            <h4 class="py-2 text-dark">@Model.UserFirstName @Model.UserLastName</h4>
+                            <p>
+                                <a class="__cf_email__">@Model.Email</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <hr class="w-100">
+                <div class="contact-info pt-4">
+                    <h5 class="text-dark">اطلاعات تماس</h5>
+                    <p class="text-dark font-weight-medium pt-24px mb-2"> آدرس ایمیل </p>
+                    <p>
+                        <a class="__cf_email__">@Model.Email</a>
+                    </p>
+                    <p class="text-dark font-weight-medium pt-24px mb-2"> شماره تلفن </p>
+                    <p>@Model.Phone</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8 col-xl-9">
+            <div class="profile-content-right profile-right-spacing py-5">
+                <ul class="nav nav-tabs px-3 px-xl-5 nav-style-border" id="myProfileTab"
+                    role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="true">
+                            پروفایل
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">
+                            تنظیمات
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content px-3 px-xl-5" id="myTabContent">
+                    <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+                        <div class="tab-widget mt-5">
+                            <div class="row">
+                                <div class="col-xl-4">
+                                    <div class="media widget-media p-3 bg-white border">
+                                        <div class="icon rounded-circle mr-3 bg-primary">
+                                            <i class="mdi mdi-account-outline text-white"></i>
+                                        </div>
+                                        <div class="media-body align-self-center">
+                                            <h4 class="text-primary mb-2">3</h4>
+                                            <p>تعداد فاکتورها</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-xl-4">
+                                    <div class="media widget-media p-3 bg-white border">
+                                        <div class="icon rounded-circle bg-warning mr-3">
+                                            <i class="mdi mdi-cart-outline text-white"></i>
+                                        </div>
+                                        <div class="media-body align-self-center">
+                                            <h4 class="text-primary mb-2">1404/12/12</h4>
+                                            <p>تاریخ شروع</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-xl-4">
+                                    <div class="media widget-media p-3 bg-white border">
+                                        <div class="icon rounded-circle mr-3 bg-success">
+                                            <i class="mdi mdi-diamond-stone text-white"></i>
+                                        </div>
+                                        <div class="media-body align-self-center">
+                                            <h4 class="text-primary mb-2">2.000.000 تومان</h4>
+                                            <p>کل فروش</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xl-12">
+                                    <div class="card card-default mb-24px">
+                                        <div class="card-header justify-content-between mb-1">
+                                            <h2>آخرین اعلان ها</h2>
+                                            <div>
+                                                <button class="text-black-50 mr-2 font-size-20">
+                                                    <i class="mdi mdi-cached"></i>
+                                                </button>
+                                                <div class="dropdown show d-inline-block widget-dropdown">
+                                                    <a class="dropdown-toggle icon-burger-mini" href="#" role="button" id="dropdown-notification" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static"></a>
+                                                    <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdown-notification">
+                                                        <li class="dropdown-item">
+                                                            <a href="#">فعالیت</a>
+                                                        </li>
+                                                        <li class="dropdown-item">
+                                                            <a href="#">فعالیت دیگر</a>
+                                                        </li>
+                                                        <li class="dropdown-item">
+                                                            <a href="#">یک فعالیت دیگر</a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body compact-notifications" data-simplebar>
+                                            <div class="media pb-3 align-items-center justify-content-between">
+                                                <div class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-primary text-white">
+                                                    <i class="mdi mdi-cart-outline font-size-20"></i>
+                                                </div>
+                                                <div class="media-body pr-3">
+                                                    <a class="mt-0 mb-1 font-size-15 text-dark" href="#">سفارش جدید</a>
+                                                    <p>سلنا سفارش جدیدی داده است</p>
+                                                </div>
+                                                <span class="font-size-12 d-inline-block">
+                                                    <i class="mdi mdi-clock-outline"></i> 10  صبح
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-3"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="settings" role="tabpanel"
+                         aria-labelledby="settings-tab">
+                        <div class="tab-pane-content mt-5">
+                            <form id="frmUser">
+                                <div class="form-group row mb-6">
+                                    <label for="coverImage" class="col-sm-4 col-lg-2 col-form-label"> کاربر تصویر </label>
+                                    <div class="col-sm-8 col-lg-10">
+                                        <div class="custom-file mb-1">
+                                            <input type="file" class="custom-file-input" id="coverImage" required>
+                                            <label class="custom-file-label" for="coverImage">انتخاب فایل...</label>
+                                            <div class="invalid-feedback">
+                                                فایل نامعتبر
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-lg-4">
+                                        <div class="form-group">
+                                            <label for="firstName">نام</label>
+                                            <input class="form-control" id="firstName" value="@Model.UserFirstName">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-4">
+                                        <div class="form-group">
+                                            <label for="lastName">نام خانوادگی</label>
+                                            <input class="form-control" id="lastName" value="@Model.UserLastName">
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-lg-4">
+                                        <label for="userName">نام کاربری</label>
+                                        <input class="form-control" id="userName" value="@Model.UserName">
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="form-group mb-4 col-lg-4">
+                                        <label for="email">ایمیل:</label>
+                                        <input type="email" class="form-control" id="email" value="@Model.Email">
+                                    </div>
+                                    <div class="form-group mb-4 col-lg-8">
+                                        <label for="address">آدرس:</label>
+                                        <input type="text" class="form-control" id="address" value="@Model.Address">
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="form-group mb-4 col-lg-4">
+                                        <label for="oldPassword">پسورد قدیمی</label>
+                                        <input autocomplete="off" type="password" class="form-control" id="oldPassword">
+                                    </div>
+                                    <div class="form-group mb-4 col-lg-4">
+                                        <label for="newPassword">پسورد جدید</label>
+                                        <input autocomplete="off" type="password" class="form-control" id="newPassword">
+                                    </div>
+                                    <div class="form-group mb-4 col-lg-4">
+                                        <label for="conPassword"> تایید پسورد </label>
+                                        <input autocomplete="off" type="password" class="form-control" id="conPassword">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-5">
+                                    <button id="btnProfileSubmit" type="button" class="btn btn-primary mb-2 btn-pill">به روز رسانی پروفایل</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@section AdminScripts {
+    <script>
+        // $("#btnProfileSubmit").on('click', function (e) {
+        //     e.preventDefault();
+        //      var formData = new FormData($("#frmUser")[0]);
+        //     console.log(formData);
+        // });
+
+
+        // preview image
+        $("#coverImage").on("change", function () {
+
+            const file = this.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    $("#userImagePreview").attr("src", e.target.result);
+                };
+
+                reader.readAsDataURL(file);
+            }
+        });
+
+
+        // submit form
+        $("#btnProfileSubmit").on("click", function (e) {
+            e.preventDefault();
+
+            var formData = new FormData();
+
+            formData.append("FirstName", $("#firstName").val());
+            formData.append("LastName", $("#lastName").val());
+            formData.append("UserName", $("#userName").val());
+            formData.append("Email", $("#email").val());
+            formData.append("Address", $("#address").val());
+            formData.append("OldPassword", $("#oldPassword").val());
+            formData.append("NewPassword", $("#newPassword").val());
+            formData.append("ConfirmPassword", $("#conPassword").val());
+
+            var file = $("#coverImage")[0].files[0];
+            if (file) {
+                formData.append("Image", file);
+            }
+
+            // نمایش در console
+            for (var pair of formData.entries()) {
+                console.log(pair[0] + ": ", pair[1]);
+            }
+        });
+
+    </script>
+}

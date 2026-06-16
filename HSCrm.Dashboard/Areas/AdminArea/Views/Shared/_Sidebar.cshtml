@@ -1,0 +1,167 @@
+﻿@{
+    var selected = ViewData["selected"]?.ToString() ?? "";
+}
+<div class="ec-left-sidebar ec-bg-sidebar">
+    <div id="sidebar" class="sidebar ec-sidebar-footer">
+        <div class="ec-brand">
+            <a href="index.html" title="BilgiSoft">
+                <img class="ec-brand-icon" src="~/assets/img/logo/ec-site-logo.png" alt=""> <span class="ec-brand-name text-truncate">بیلگی سافت </span>
+            </a>
+        </div>
+        <div class="ec-navigation" data-simplebar>
+            <ul class="nav sidebar-inner" id="sidebar-menu">
+                <li class="@(selected == "dashboard" ? "active" : null)">
+                    <a class="sidenav-item-link" href="/adminarea/home/index">
+                        <i class="mdi mdi-view-dashboard-outline"></i>
+                        <span class="nav-text">داشبورد</span>
+                    </a>
+                    <hr>
+                </li>
+                <li class="has-sub @(selected.StartsWith("supplier_") ? "active expand" : null)">
+                    <a class="sidenav-item-link" href="javascript:void(0)">
+                        <i class="mdi mdi-teach"></i>
+                        <span class="nav-text">تامین کنندگان</span>
+                        <b class="caret"></b>
+                    </a>
+                    <div class="collapse" style="display: @(selected.StartsWith("supplier_") ? "block" : "none")">
+                        <ul class="sub-menu" id="vendors" data-parent="#sidebar-menu">
+                            <li class="@(selected == "supplier_list" ? "active" : null)">
+                                <a class="sidenav-item-link" href="/AdminArea/supplier/">
+                                    <span class="nav-text">لیست تامین کنندگان</span>
+                                </a>
+                            </li>
+                            <li class="@(selected == "supplier_profile" ? "active" : null)">
+                                <a class="sidenav-item-link" href="vendor-profile.html">
+                                    <span class="nav-text">پروفایل فروشنده</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <li class="has-sub @(selected.StartsWith("customer_") ? "active expand" : null)">
+                    <a class="sidenav-item-link" href="javascript:void(0)">
+                        <i class="mdi mdi-account-group-outline"></i> <span class="nav-text">مشتری ها</span> <b class="caret"></b>
+                    </a>
+                    <div class="collapse" style="display: @(selected.StartsWith("customer_") ? "block" : "none")">
+                        <ul class="sub-menu" id="vendors" data-parent="#sidebar-menu">
+                            <li class="@(selected == "customer_list" ? "active" : null)">
+                                <a class="sidenav-item-link" href="/AdminArea/customer/">
+                                    <span class="nav-text">لیست مشتری ها</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <li class="has-sub @(selected.StartsWith("user_") ? "active expand" : null)">
+                    <a class="sidenav-item-link" href="javascript:void(0)">
+                        <i class="mdi mdi-fingerprint"></i> <span class="nav-text">کاربران</span> <b class="caret"></b>
+                    </a>
+                    <div class="collapse" style="display: @(selected.StartsWith("user_") ? "block" : "none")">
+                        <ul class="sub-menu" id="users" data-parent="#sidebar-menu">
+                            <li class="@(selected == "user_list" ? "active" : null)">
+                                <a class="sidenav-item-link" href="/AdminArea/user/">
+                                    <span class="nav-text">لیست کاربران</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="sidenav-item-link" asp-area="AdminArea" asp-controller="Role" asp-action="Index">
+                                    <span class="nav-text">مدیریت نقش‌ها</span>
+                                </a>
+                            </li>
+                            <li class="@(selected == "user_profile" ? "active" : null)">
+                                <a class="sidenav-item-link" href="user-profile.html">
+                                    <span class="nav-text">پروفایل کاربر</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <hr>
+                </li>
+                <li class="has-sub @(selected.StartsWith("warehouse_") ? "active expand" : null)">
+                    <a class="sidenav-item-link" href="javascript:void(0)">
+                        <i class="mdi mdi-teach"></i>
+                        <span class="nav-text">انبارها</span>
+                        <b class="caret"></b>
+                    </a>
+                    <div class="collapse" style="display: @(selected.StartsWith("warehouse_") ? "block" : "none")">
+                        <ul class="sub-menu" id="vendors" data-parent="#sidebar-menu">
+                            <li class="@(selected == "warehouse_list" ? "active" : null)">
+                                <a class="sidenav-item-link" href="/AdminArea/warehouse/">
+                                    <span class="nav-text">لیست انبارها</span>
+                                </a>
+                            </li>                           
+                        </ul>
+                    </div>
+                </li>
+                <li class="has-sub @(selected.StartsWith("project_") ? "active expand" : null)">
+                    <a class="sidenav-item-link" href="javascript:void(0)">
+                        <i class="mdi mdi-remote-desktop"></i> <span class="nav-text">پروژه‌ها</span> <b class="caret"></b>
+                    </a>
+                    <div class="collapse" style="display: @(selected.StartsWith("project_") ? "block" : "none")">
+                        <ul class="sub-menu" id="categorys" data-parent="#sidebar-menu">
+                            <li class="@(selected == "project_list" ? "active" : null)">
+                                <a class="sidenav-item-link" href="/adminarea/project/">
+                                    <span class="nav-text">لیست پروژه‌ها</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <li class="has-sub @(selected.StartsWith("product_") ? "active expand" : null)">
+                    <a class="sidenav-item-link" href="javascript:void(0)">
+                        <i class="mdi mdi-server"></i> <span class="nav-text">محصولات</span> <b class="caret"></b>
+                    </a>
+                    <div class="collapse" style="display: @(selected.StartsWith("product_") ? "block" : "none")">
+                        <ul class="sub-menu" id="products" data-parent="#sidebar-menu">
+                            <li class="@(selected == "product_list" ? "active" : null)">
+                                <a class="sidenav-item-link" href="/AdminArea/product/">
+                                    <span class="nav-text">لیست محصولات</span>
+                                </a>
+                            </li>
+                            <li class="@(selected == "project_detail" ? "active" : null)">
+                                <a class="sidenav-item-link" href="/AdminArea/ProductPrice/">
+                                    <span class="nav-text">قیمت محصولات</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+                <li class="has-sub @(selected.StartsWith("invoice_") ? "active expand" : null)">
+                    <a class="sidenav-item-link" href="javascript:void(0)">
+                        <i class="mdi mdi-file-document-box-multiple-outline"></i> <span class="nav-text">فاکتورها</span>
+                        <b class="caret"></b>
+                    </a>
+                    <div class="collapse" style="display: @(selected.StartsWith("invoice_") ? "block" : "none")">
+                        <ul class="sub-menu" id="orders" data-parent="#sidebar-menu">
+                            <li class="@(selected == "invoice_salles_list" ? "active" : null)">
+                                <a class="sidenav-item-link" href="/adminarea/invoice/salesInvoice">
+                                    <span class="nav-text">فاکتور فروش </span>
+                                </a>
+                            </li>
+                            <li class="@(selected == "invoice_purchase_list" ? "active" : null)">
+                                <a class="sidenav-item-link" href="/adminarea/invoice/purchaseInvoice">
+                                    <span class="nav-text">فاکتور خرید </span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>              
+                <li class="has-sub @(selected.StartsWith("expense_") ? "active expand" : null)">
+                    <a class="sidenav-item-link" href="javascript:void(0)">
+                        <i class="mdi mdi-file-document-box-multiple-outline"></i> <span class="nav-text">هزینه ها</span>
+                        <b class="caret"></b>
+                    </a>
+                    <div class="collapse" style="display: @(selected.StartsWith("expense_") ? "block" : "none")">
+                        <ul class="sub-menu" id="orders" data-parent="#sidebar-menu">
+                            <li class="@(selected == "expense_list" ? "active" : null)">
+                                <a class="sidenav-item-link" href="/adminarea/expense">
+                                    <span class="nav-text">لیست هزینه ها </span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

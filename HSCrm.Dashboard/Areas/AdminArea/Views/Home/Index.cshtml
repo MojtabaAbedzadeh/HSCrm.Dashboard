@@ -1,0 +1,23 @@
+﻿@{
+    ViewData["AdminTitle"] = "داشبورد";
+    ViewData["selected"] = "dashboard";
+}
+<p>
+    پنل ادمین
+</p>
+@if (ViewBag.FiscalYearStatus == "1")
+{
+    <div class="alert alert-danger col-lg-8" style="margin-top:40px; color:#842029;">
+        هشدار!
+        <br>
+        تاریخ سال مالی به پایان رسیده است اما سال مالی همچنان باز می باشد! لطفا برای ادامه کار سال مالی جدید ایجاد کنید.
+    </div>
+}
+else if (ViewBag.FiscalYearStatus == "2")
+{
+    <div class="alert alert-primary col-lg-8" role="alert" style="margin-top:40px; color:#084298;">
+        توجه!
+        <br>
+        سال مالی انتخاب شده بسته می باشد! شما فقط قادر به مشاهده گزارشات سیستم هستید.
+    </div>
+}

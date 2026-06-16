@@ -1,0 +1,62 @@
+﻿@model HSCrm.Models.ModelDto.ManageRolePermissionsDto
+
+@{
+    ViewData["Title"] = "مدیریت دسترسی‌ها";
+    var groupedPermissions = Model.Permissions
+        .GroupBy(x => x.Category)
+        .OrderBy(x => x.Key);
+}
+
+<div class="ec-content-wrapper">
+    <div class="content">
+        <div class="breadcrumb-wrapper breadcrumb-wrapper-2">
+            <h1>مدیریت دسترسی‌های نقش @Model.RoleName</h1>
+        </div>
+
+        <div class="card card-default">
+            <div class="card-body">
+                <form asp-area="AdminArea" asp-controller="Role" asp-action="ManagePermissions" method="post">
+                    <input asp-for="RoleId" type="hidden" />
+                    <input asp-for="RoleName" type="hidden" />
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    @foreach (var group in groupedPermissions)
+                    {
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <strong>@group.Key</strong>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="row">
+                                    @foreach (var permission in group)
+                                    {
+                                        <div class="col-md-4 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input"
+                                                       type="checkbox"
+                                                       name="SelectedPermissionIds"
+                                                       value="@permission.PermissionId"
+                                                       id="perm_@permission.PermissionId"
+                                                       @(permission.IsSelected ? "checked" : "") />
+
+                                                <label class="form-check-label" for="perm_@permission.PermissionId">
+                                                    @permission.Title
+                                                    <small class="text-muted d-block">@permission.Name</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <button type="submit" class="btn btn-primary">ذخیره دسترسی‌ها</button>
+                    <a asp-area="AdminArea" asp-controller="Role" asp-action="Index" class="btn btn-secondary">بازگشت</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,356 @@
+﻿@model IEnumerable<ProjectModel>
+
+@{
+    ViewData["Title"] = "پروژه ها";
+    ViewData["selected"] = "project_list";
+
+    string ApiAddress = ViewBag.ApiAddress;
+
+    List<CustomersDropDown> lstCustomer = ViewBag.Customers;
+    lstCustomer.Insert(0, new CustomersDropDown { DrId = "0", DrName = "انتخاب مشتری" });
+}
+
+@section styles {
+    <link href="~/assets/plugins/data-tables/datatables.bootstrap5.min.css" rel="stylesheet">
+    <link href="~/assets/plugins/data-tables/responsive.datatables.min.css" rel="stylesheet">
+    <link href="~/assets/css/ekka.css" id="ekka-css" rel="stylesheet">
+    <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
+}
+
+<div class="breadcrumb-wrapper breadcrumb-contacts">
+    <div>
+        <h1>لیست مشتریان</h1>
+        <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>پروژه</p>
+    </div>
+    @if (ViewBag.FiscalYearStatus == "0")
+    {
+        <div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProject"> اضافه کردن پروژه </button>
+        </div>
+    }
+</div>
+@if (ViewBag.FiscalYearStatus != "0")
+{
+    <div class="alert alert-primary col-lg-8" role="alert" style="margin-top:40px; color:#084298;">
+        توجه!
+        <br>
+        سال مالی انتخاب شده بسته می باشد! شما فقط قادر به مشاهده گزارشات سیستم هستید.
+    </div>
+}
+<div class="row">
+    <div class="col-12">
+        <div class="ec-vendor-list card card-default">
+            <div class="card-body">
+                <div class="table-responsive-md">
+                    <div id="responsive-data-table_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
+                        <table id="responsive-data-table" class="table dataTable no-footer" aria-describedby="responsive-data-table_info">
+                            <thead>
+                                <tr>
+                                    <th>عنوان پروژه</th>
+                                    <th>مشتری</th>
+                                    <th>شماره تماس مشتری</th>
+                                    <th>محل پروژه</th>
+                                    <th>وضعیت</th>
+                                    <th>فعالیت</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td>@item.ProjectTitle</td>
+                                        <td>@item.Customer.Name</td>
+                                        <td>@item.Customer.Phone</td>
+                                        <td>@item.ProjectLocation</td>
+                                        <td>
+                                            <span class="badge @(item.Status == "Active" ? "bg-success" : "bg-danger")">
+                                                @(item.Status == "Active" ? "فعال" : "اتمام پروژه")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group mb-1">
+                                                <button type="button" class="btn btn-outline-success">اطلاعات</button>
+                                                <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static">
+                                                    <span class="sr-only">اطلاعات</span>
+                                                </button>
+                                                @if (ViewBag.FiscalYearStatus == "0")
+                                                {
+                                                    <div class="dropdown-menu">
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
+                                                        <a class="dropdown-item" href="#">حذف</a>
+                                                        <div class="dropdown-divider"></div>
+                                                        <a class="dropdown-item" href="/adminarea/expense/projectexpenses?projectId=@item.Id">مشاهده هزینه ها</a>
+                                                        <a class="dropdown-item" href="/adminarea/Invoice/ProjectInvoices?projectId=@item.Id">مشاهده فاکتورها</a>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="dropdown-menu"></div>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@if (ViewBag.FiscalYearStatus == "0")
+{
+    <div class="modal fade modal-add-contact" id="addProject" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <form id="frmProject">
+                    <div class="modal-header px-4">
+                        <h5 class="modal-title" id="exampleModalCenterTitle">تعریف پروژه جدید</h5>
+                    </div>
+                    <div class="modal-body px-4">
+                        <div class="row mb-2">
+                            <div class="col-lg-6">
+                                <div class="form-group form-floating">
+                                    <input class="form-control text-end" id="ProjectTitle" name="ProjectTitle" placeholder="عنوان پروژه">
+                                    <label for="ProjectTitle" style="right:0!important; left:unset!important;">عنوان پروژه</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="form-floating">
+                                    <select style="border-radius: 15px; border: 1px solid #f3f3f3;" class="form-select text-end" id="CustomerId" name="CustomerId" asp-items="@(new SelectList(lstCustomer, "DrId", "DrName"))">
+                                        <option value="">انتخاب مشتری</option>
+                                    </select>
+                                    <label for="CustomerId" style="right:0!important; left:unset!important;">
+                                        انتخاب مشتری
+                                    </label>
+                                </div>
+
+                            </div>
+                            <div class="col-lg-12">
+                                <div class="form-group form-floating">
+                                    <input class="form-control text-end" id="ProjectLocation" name="ProjectLocation" placeholder="محل پروژه">
+                                    <label for="ProjectLocation" style="right:0!important; left:unset!important;">محل پروژه</label>
+                                </div>
+                            </div>
+                            <input hidden class="form-control text-end" id="CreateById" name="CreateById" value="@ViewBag.UserId">
+                            <input hidden class="form-control text-end" id="TenantId" name="TenantId" value="1">
+                            <div class="col-lg-12 alert" style="color:red">
+                                <span class="text-danger" id="spnValidate"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer px-4">
+                        <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal">
+                            لغو
+                        </button>
+                        <button id="btnProjectSubmit" type="button" class="btn btn-primary btn-pill">ذخیره </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade modal-add-contact" id="editProject" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <form id="frmEditProject">
+                    <div class="modal-header px-4">
+                        <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش پروژه</h5>
+                    </div>
+                    <div class="modal-body px-4">
+                        <div class="row mb-2">
+                            <div class="col-lg-6">
+                                <div class="form-group form-floating">
+                                    <input id="PId" name="PId" hidden />
+                                    <input class="form-control text-end" id="ProjectTitleE" name="ProjectTitleE" placeholder="عنوان پروژه">
+                                    <label for="ProjectTitleE" style="right:0!important; left:unset!important;">عنوان پروژه</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="form-floating">
+                                    <select style="border-radius: 15px; border: 1px solid #f3f3f3;" class="form-select text-end" id="CustomerIdE" name="CustomerIdE" asp-items="@(new SelectList(lstCustomer, "DrId", "DrName"))">
+                                        <option value="">انتخاب مشتری</option>
+                                    </select>
+                                    <label for="CustomerIdE" style="right:0!important; left:unset!important;">
+                                        انتخاب مشتری
+                                    </label>
+                                </div>
+
+                            </div>
+                            <div class="col-lg-12">
+                                <div class="form-group form-floating">
+                                    <input class="form-control text-end" id="ProjectLocationE" name="ProjectLocationE" placeholder="محل پروژه">
+                                    <label for="ProjectLocationE" style="right:0!important; left:unset!important;">محل پروژه</label>
+                                </div>
+                            </div>
+                            <input hidden class="form-control text-end" id="ModifiedById" name="ModifiedById" value="@ViewBag.UserId">
+                            <div class="col-lg-12 alert" style="color:red">
+                                <span class="text-danger" id="spnValidate"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer px-4">
+                        <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal">
+                            لغو
+                        </button>
+                        <button id="btnProjectUpdate" type="button" class="btn btn-primary btn-pill">ذخیره </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+@section AdminScripts {
+
+    <script>
+        $("#btnProjectSubmit").on('click', function (e) {
+            e.preventDefault();
+
+            var formData = new FormData($("#frmProject")[0]);
+
+            $.ajax({
+                type: 'POST',
+                url: '@ApiAddress' + 'Project/CreateProject',
+                processData: false,
+                contentType: false,
+                dataType: "json",
+                data: formData,
+                success: function (xhr) {
+                    if (xhr.statusCode == 200) {
+                        swal({
+                            title: "ثبت اطلاعات",
+                            text: "ثبت اطلاعات با موفقیت انجام شد!",
+                            type: 'success',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                        $('#addProject').modal('hide');
+                        $('#ProjectTitle').val("");
+                        $('#CustomerId').val("");
+                        $('#ProjectLocation').val("");
+
+                        window.location.reload();
+                    }
+                    else if (xhr.statusCode == 500) {
+                        swal({
+                            title: "خطا",
+                            text: "خطا در سرور!",
+                            type: 'warning',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                    }
+                    else if (xhr.statusCode == 400) {
+                        swal({
+                            title: "خطا",
+                            text: "پارامترهای ارسالی معتبر نیست!",
+                            type: 'warning',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });                        
+                    }
+                    else if (xhr.statusCode == 409) {
+                        swal({
+                            title: "خطا",
+                            text: "اطلاعات تکراری می‌باشد!",
+                            type: 'warning',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+
+    <script>
+        function showUpdateModal(projectId) {
+            $.ajax({
+                type: 'GET',
+                url: '@ApiAddress' + 'Project/GetById?projectId=' + projectId,
+                dataType: 'json',
+                success: function (xhr) {
+                    const data = xhr.data;
+
+                    $("#PId").val(data.id);
+                    $("#ProjectTitleE").val(data.projectTitle);
+                    $("#ProjectLocationE").val(data.projectLocation);
+                    $("#CustomerIdE").val(data.customerId);
+                    $("#editProject").modal('show');
+                }
+            });
+        }
+
+        $("#btnProjectUpdate").on('click', function (e) {
+            e.preventDefault();
+
+            var model = {
+                ProjectId: parseInt($("#PId").val()),
+                ProjectTitle: $("#ProjectTitleE").val(),
+                CustomerId: $("#CustomerIdE").val() ? parseInt($("#CustomerIdE").val()) : null,
+                ProjectLocation: $("#ProjectLocationE").val(),
+                ModifiedById: $("#ModifiedById").val()
+            };
+
+            $.ajax({
+                type: 'PUT',
+                url: '@ApiAddress' + 'Project/UpdateProject',
+                dataType: 'json',
+                contentType: 'application/json',
+                data: JSON.stringify(model),
+                success: function (xhr) {
+                    if (xhr.statusCode == 200) {
+                        swal({
+                            title: "ویرایش",
+                            text: "ویرایش پروژه با موفقیت انجام شد!",
+                            type: 'success',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                        $('#EditProject').modal('hide');
+                        window.location.reload();
+                    }
+                    else if (xhr.statusCode == 400) {
+                        swal({
+                            title: "خطا",
+                            text: "پارامترهای ارسالی معتبر نیست!",
+                            type: 'error',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                    }
+                    else if (xhr.statusCode == 409) {
+                        swal({
+                            title: "خطا",
+                            text: "اطلاعات تکراری می‌باشد!",
+                            type: 'error',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+}

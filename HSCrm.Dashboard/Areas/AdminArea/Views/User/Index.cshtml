@@ -1,0 +1,501 @@
+﻿@model IEnumerable<UserModel>
+
+@{
+    ViewData["Title"] = "کاربران";
+    ViewData["selected"] = "user_list";
+
+    string ApiAddress = ViewBag.ApiAddress;
+}
+
+@section styles {
+    <link href="~/assets/plugins/data-tables/datatables.bootstrap5.min.css" rel="stylesheet">
+    <link href="~/assets/plugins/data-tables/responsive.datatables.min.css" rel="stylesheet">
+    <link href="~/assets/css/ekka.css" id="ekka-css" rel="stylesheet">
+    <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
+}
+
+<div class="breadcrumb-wrapper breadcrumb-contacts">
+    <div>
+        <h1>لیست کاربران</h1>
+        <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>کاربر</p>
+    </div>
+    <div><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUser"> اضافه کردن کاربر </button></div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <div class="ec-vendor-list card card-default">
+            <div class="card-body">
+                <div class="table-responsive-md">
+                    <div id="responsive-data-table_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
+                        <table id="responsive-data-table" class="table dataTable no-footer" aria-describedby="responsive-data-table_info">
+                            <thead>
+                                <tr>
+                                    <th>تصویر</th>
+                                    <th>نام</th>
+                                    <th>نام خانوادگی</th>
+                                    <th>جنسیت</th>
+                                    <th>وضعیت</th>
+                                    <th>نوع کاربری</th>
+                                    <th>فعالیت</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td><img class="vendor-thumb" src="@item.UserImageUrl" alt="user profile"></td>
+                                        <td>@item.UserFirstName</td>
+                                        <td>@item.UserLastName</td>
+                                        <td>
+                                            @(item.UserGender ? "مرد" : "زن")
+                                        </td>
+                                        <td>
+                                            <span class="badge @(item.UserStatus ? "bg-success" : "bg-danger")">
+                                                @(item.UserStatus ? "فعال" : "غیر فعال")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @(item.UserType == 1 ? "ادمین" : item.UserType == 0 ? "کاربر" : "تامین کننده")
+                                        </td>
+                                        <td>
+                                            <div class="btn-group mb-1">
+                                                <button type="button" class="btn btn-outline-success">اطلاعات</button> <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static"><span class="sr-only">اطلاعات</span></button>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="#" onclick="showUpdateModal('@item.Id')">ویرایش</a>
+                                                    <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade modal-add-contact" id="addUser" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <form id="frmUser">
+                <div class="modal-header px-4">
+                    <h5 class="modal-title" id="exampleModalCenterTitle">تعریف کاربر جدید</h5>
+                </div>
+                <div class="modal-body px-4">
+                    <div class="row mb-2">
+                        <div class="col-lg-4" style="margin-top:10px">
+                            <div class="ec-vendor-img-upload" style="margin-bottom:-10px; position:sticky;top:30px;">
+                                <div class="ec-vendor-main-img">
+                                    <div class="avatar-upload"
+                                         style="margin-bottom: 10px; position:relative;">
+                                        <div class="avatar-edit"
+                                             style="position:absolute; left:25px; z-index:1; top:25px">
+                                            <input type="file" id="UserImagesC" name="UserImagesC" class="ec-image-upload" accept=".png, .jpg, .jpeg" style="opacity:0; width:40px;height:40px;padding:0;border-radius:50%; position:absolute;z-index:1">
+                                            <input id="UserImageUrlC" name="UserImageUrlC" hidden />
+                                            <label for="imageUpload"
+                                                   style="display:flex; -webkit-box-align:center; align-items:center; -webkit-box-pack:center;justify-content:center;width:40px; height:40px;padding:10px;margin-bottom:auto;border-radius:10px;background:#ffffff;border: 1px solid #eeeeee;box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.15); cursor: pointer; font-weight: normal; transition: all 0.2s ease-in-out;">
+                                                <img src="~/assets/img/icons/edit.svg" class="svg_img header_svg" alt="edit"
+                                                     style="width:25px;opacity:0.6;">
+                                            </label>
+                                        </div>
+                                        <div class="avatar-preview ec-preview"
+                                             style="width:100%;height:100%;padding:15px;position:relative;border:1px solid #eeeeee;border-radius:15px;">
+                                            <div class="imagePreview ec-div-preview"
+                                                 style="width:100%;height:100%;display:flex;background-size: cover;background-repeat: no-repeat;background-position: center;">
+                                                <img id="imgUserC" name="imgUserC" class="ec-image-preview" src="~/assets/img/user/default-user.png" alt="User"
+                                                     style="margin:auto;vertical-align:middle;max-width:100%;border-radius:10px">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-8">
+                            <div class="ec-vendor-upload-detail">
+                                <div class="row mb-2">
+                                    <div class="col-lg-6">
+                                        <div class="form-group form-floating">
+                                            <input class="form-control text-end" id="UserFirstNameC" name="UserFirstNameC" placeholder="نام">
+                                            <label for="UserFirstNameC" style="right:0!important; left:unset!important;">نام</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group form-floating">
+                                            <input class="form-control text-end" id="UserLastNameC" name="UserLastNameC" placeholder="نام خانوادگی">
+                                            <label for="UserLastNameC" style="right:0!important; left:unset!important;">نام خانوادگی</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group form-floating">
+                                            <input class="form-control text-end" id="UserNameC" name="UserNameC" placeholder="نام کاربری">
+                                            <label for="UserNameC" style="right:0!important; left:unset!important;">نام کاربری</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group form-floating">
+                                            <input class="form-control text-end" id="EmailC" name="EmailC" placeholder="ایمیل">
+                                            <label for="EmailC" style="right:0!important; left:unset!important;">ایمیل</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group form-floating">
+                                            <input class="form-control text-end" id="PhoneNumberC" name="PhoneNumberC" placeholder="شماره همراه">
+                                            <label for="PhoneNumberC" style="right:0!important; left:unset!important;">شماره همراه</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label class="form-label d-block mb-2">جنسیت</label>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="UserGenderC" id="GenderMale" value="true">
+                                                <label class="form-check-label" for="GenderMale">مرد</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input checked class="form-check-input" type="radio" name="UserGenderC" id="GenderFemale" value="false">
+                                                <label class="form-check-label" for="GenderFemale">زن</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input hidden class="form-control text-end" id="TenantId" name="TenantId" value="1">
+                                    <div class="col-lg-12 alert" style="color:red">
+                                        <span class="text-danger" id="spnValidate"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer px-4">
+                    <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal">
+                        لغو
+                    </button>
+                    <button id="btnUserSubmit" type="button" class="btn btn-primary btn-pill">ذخیره </button>
+                    <div id="divMessage" class="text-center hidden position-absolute" style="left:50px;"></div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade modal-add-contact" id="editUser" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <form id="frmEditUser">
+                <div class="modal-header px-4">
+                    <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش کاربر</h5>
+                </div>
+                <div class="modal-body px-4">
+                    <div class="row mb-2">
+                        <div class="col-lg-4" style="margin-top:10px">
+                            <div class="ec-vendor-img-upload" style="margin-bottom:-10px; position:sticky;top:30px;">
+                                <div class="ec-vendor-main-img">
+                                    <div class="avatar-upload"
+                                         style="margin-bottom: 10px; position:relative;">
+                                        <div class="avatar-edit" style="position:absolute; left:25px; z-index:1; top:25px">
+                                            <input type="file" id="UserImages" name="UserImages" class="ec-image-upload" accept=".png, .jpg, .jpeg" style="opacity:0; width:40px;height:40px;padding:0;border-radius:50%; position:absolute;z-index:1">
+                                            <input id="UserImageUrl" name="UserImageUrl" hidden />
+                                            <label for="imageUpload" style="display:flex; -webkit-box-align:center; align-items:center; -webkit-box-pack:center;justify-content:center;width:40px; height:40px;padding:10px;margin-bottom:auto;border-radius:10px;background:#ffffff;border: 1px solid #eeeeee;box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.15); cursor: pointer; font-weight: normal; transition: all 0.2s ease-in-out;">
+                                                <img src="~/assets/img/icons/edit.svg" class="svg_img header_svg" alt="edit" style="width:25px;opacity:0.6;">
+                                            </label>
+                                        </div>
+                                        <div class="avatar-preview ec-preview"
+                                             style="width:100%;height:100%;padding:15px;position:relative;border:1px solid #eeeeee;border-radius:15px;">
+                                            <div class="imagePreview ec-div-preview"
+                                                 style="width:100%;height:100%;display:flex;background-size: cover;background-repeat: no-repeat;background-position: center;">
+                                                <img id="imgUser" name="imgUser" class="ec-image-preview" src="~/assets/img/user/default-user.png" alt="User" style="margin:auto;vertical-align:middle;max-width:100%;border-radius:10px">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-8">
+                            <div class="ec-vendor-upload-detail">
+                                <div class="row mb-2">
+                                    <div class="col-lg-6">
+                                        <div class="form-group form-floating">
+                                            <input id="UserId" name="UserId" hidden>
+                                            <input class="form-control text-end" id="UserFirstName" name="UserFirstName" placeholder="نام">
+                                            <label for="UserFirstName" style="right:0!important; left:unset!important;">نام</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group form-floating">
+                                            <input class="form-control text-end" id="UserLastName" name="UserLastName" placeholder="نام خانوادگی">
+                                            <label for="UserLastName" style="right:0!important; left:unset!important;">نام خانوادگی</label>
+                                        </div>
+                                    </div>                                    
+                                    <div class="col-lg-6">
+                                        <div class="form-group form-floating">
+                                            <input class="form-control text-end" id="Email" name="Email" placeholder="ایمیل">
+                                            <label for="Email" style="right:0!important; left:unset!important;">ایمیل</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group form-floating">
+                                            <input class="form-control text-end" id="PhoneNumber" name="PhoneNumber" placeholder="شماره همراه">
+                                            <label for="PhoneNumber" style="right:0!important; left:unset!important;">شماره همراه</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label class="form-label d-block mb-2">جنسیت</label>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="UserGender" id="GenderMaleEdit" value="true">
+                                                <label class="form-check-label" for="GenderMaleEdit">مرد</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input checked class="form-check-input" type="radio" name="UserGender" id="GenderFemaleEdit" value="false">
+                                                <label class="form-check-label" for="GenderFemaleEdit">زن</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-12 alert" style="color:red">
+                                        <span class="text-danger" id="spnValidate"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer px-4">
+                    <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal">
+                        لغو
+                    </button>
+                    <button id="btnUserUpdate" type="button" class="btn btn-primary btn-pill">ذخیره </button>
+                    <div id="divMessage" class="text-center hidden position-absolute" style="left:50px;"></div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section AdminScripts {
+    <script>
+        $("#btnUserSubmit").on('click', function (e) {
+            e.preventDefault();
+            var formData = new FormData($("#frmUser")[0]);
+
+            console.log(formData);
+
+            $.ajax({
+                type: 'POST',
+                url: '@ApiAddress' + 'User/CreateUser',
+                processData: false,
+                contentType: false,
+                dataType: "json",
+                data: formData,
+                success: function (xhr) {
+                    if (xhr.statusCode == 200) {
+                        // ثبت موفق اطلاعات
+                        swal({
+                            title: "ثبت اطلاعات",
+                            text: "ثبت اطلاعات با موفقیت انجام شد!",
+                            type: 'success',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            timer: 1500
+                        });
+                        $('#addUser').modal('hide');                        
+                        window.location.reload();
+                    }                    
+                },
+                error: function (xhr) {
+                    if (xhr.statusCode == 500) {
+                        swal({
+                            title: "خطا",
+                            text: "خطا در سرور!",
+                            type: 'success',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            timer: 1500
+                        });
+                        return false;
+                    } else if (xhr.statusCode == 400) {
+                         swal({
+                            title: "خطا",
+                            text: "پارامترهای ارسالی معتبر نیست!",
+                            type: 'success',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            timer: 1500
+                        });
+                        return false;
+                    }
+                    else if (xhr.statusCode == 409) {
+                        swal({
+                            title: "خطا",
+                            text: "اطلاعات تکراری می‌باشد!",
+                            type: 'success',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            timer: 1500
+                        });
+                        return false;
+                    }
+                    else if (xhr.status === 401) {
+                        swal({
+                            title: "خطا",
+                            text: "شما برای انجام این عملیات دسترسی لازم را ندارید!",
+                            type: 'success',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            timer: 1500
+                        });
+                    }
+                }
+            });
+        });
+
+    </script>
+
+    <script>
+        function showUpdateModal(userId) {
+
+            $.ajax({
+                type: 'GET',
+                url: '@ApiAddress' + 'User/GetUserById?userId=' + userId,
+                dataType: 'json',
+                success: function (xhr) {
+
+                    $("#UserId").val(xhr.data.id);
+                    $("#UserFirstName").val(xhr.data.userFirstName);
+                    $("#UserLastName").val(xhr.data.userLastName);
+                    $("#PhoneNumber").val(xhr.data.phoneNumber);
+                    $("#Email").val(xhr.data.email);
+                    $("#UserImageUrl").val(xhr.data.userImageUrl);
+
+                    $("#imgUser").attr("src", xhr.data.userImageUrl);
+
+                    if (xhr.data.userGender) {
+                        $("#editUser input[name='UserGender'][value='true']").prop("checked", true);
+                    } else {
+                        $("#editUser input[name='UserGender'][value='false']").prop("checked", true);
+                    }
+
+                    var modal = new bootstrap.Modal(document.getElementById('editUser'));
+                    modal.show();
+                }
+            });
+        }
+
+
+        $("#btnUserUpdate").on('click', function (e) {
+            e.preventDefault();
+
+            var model = {
+                UserId: $("#UserId").val(),
+                UserFirstName: $("#UserFirstName").val(),
+                UserLastName: $("#UserLastName").val(),
+                UserName: $("#UserName").val(),
+                PhoneNumber: $("#PhoneNumber").val(),
+                Email: $("#Email").val(),
+                UserImageUrl: $("#UserImageUrl").val(),
+                UserGender: $("input[name='UserGender']:checked").val() === "true"
+            };
+
+            $.ajax({
+                type: 'PUT',
+                url: '@ApiAddress' + 'User/UpdateUser',
+                contentType: 'application/json',
+                data: JSON.stringify(model),
+                success: function (xhr) {
+                    if (xhr.statusCode == 200) {
+                        swal({
+                        title: "ویرایش اطلاعات",
+                        text: "اطلاعات با موفقیت ویرایش شد!",
+                        type: 'success',
+                        showCancelButton: false,
+                        allowOutsideClick: false,
+                        confirmButtonColor: "green",
+                        confirmButtonText: "باشه",
+                        timer: 1500,
+                    });
+                        location.reload();
+                    } else {
+                        Swal({
+                            icon: "error",
+                            title: xhr.message
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+
+    <!--User Image Upload (Insert)-->
+    <script>
+        $("#UserImagesC").change(function () {
+            var data = new FormData;
+            var file = $("#UserImagesC").get(0);
+            var files = file.files;
+
+            for (var i = 0; i < files.length; i++) {
+                data.append('imagearray', files[i]);
+            }
+
+            $.ajax({
+                type: 'Post',
+                url: '@ApiAddress' + 'FileUpload/UserImageUpload',
+                data: data,
+                contentType: false,
+                processData: false
+            }).done(function (xhr) {
+                if (xhr.statusCode == '200') {
+                    $("#imgUserC").attr('src', xhr.message);
+                    $("#divMessage").removeClass('hidden');
+                    $("#divMessage").css("color", "green");
+                    $("#divMessage").html("آپلود انجام شد.");
+                    $("#UserImageUrlC").val(xhr.message);
+                }
+                else if (xhr.statusCode != '200') {
+                    $("#divMessage").removeClass('hidden');
+                    $("#divMessage").css("color", "red");
+                    $("#divMessage").html("در حین آپلود مشکلی رخ داد.");
+
+                }
+            });
+        });
+    </script>
+
+    <!--User Image Upload (Update)-->
+    <script>
+        $("#UserImages").change(function () {
+            var data = new FormData;
+            var file = $("#UserImages").get(0);
+            var files = file.files;
+
+            for (var i = 0; i < files.length; i++) {
+                data.append('imagearray', files[i]);
+            }
+
+            $.ajax({
+                type: 'Post',
+                url: '@ApiAddress' + 'FileUpload/UserImageUpload',
+                data: data,
+                contentType: false,
+                processData: false
+            }).done(function (xhr) {
+                if (xhr.statusCode == '200') {
+                    $("#imgUser").attr('src', xhr.message);
+                    $("#divMessage").removeClass('hidden');
+                    $("#divMessage").css("color", "green");
+                    $("#divMessage").html("آپلود انجام شد.");
+                    $("#UserImageUrl").val(xhr.message);
+                }
+            }).fail(function (data, textStatus, xhr) {
+                if (xhr.status != '200') {
+                    $("#divMessage").removeClass('hidden');
+                    $("#divMessage").css("color", "red");
+                    $("#divMessage").html("در حین آپلود مشکلی رخ داد.");
+                }
+            });
+        });
+    </script>
+}

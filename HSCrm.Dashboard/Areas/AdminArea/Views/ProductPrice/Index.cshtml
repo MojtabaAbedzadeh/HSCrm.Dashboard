@@ -1,0 +1,353 @@
+﻿@model IEnumerable<ProductPriceModel>
+
+@{
+    ViewData["Title"] = "قیمت محصولات";
+    ViewData["selected"] = "price_list";
+
+    string ApiAddress = ViewBag.ApiAddress;
+    string valTenantId = ViewBag.TenantId;
+    string valUserId = ViewBag.UserId;
+}
+
+@section styles {
+    <link href="~/assets/plugins/data-tables/datatables.bootstrap5.min.css" rel="stylesheet">
+    <link href="~/assets/plugins/data-tables/responsive.datatables.min.css" rel="stylesheet">
+    <link href="~/assets/css/ekka.css" id="ekka-css" rel="stylesheet">
+    <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
+}
+
+<div class="breadcrumb-wrapper breadcrumb-contacts">
+    <div>
+        <h1>قیمت محصولات</h1>
+        <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>قیمت</p>
+    </div>
+</div>
+@if (ViewBag.FiscalYearStatus != "0")
+{
+    <div class="alert alert-primary col-lg-8" role="alert" style="margin-top:40px; color:#084298;">
+        توجه!
+        <br>
+        سال مالی انتخاب شده بسته می باشد! شما فقط قادر به مشاهده گزارشات سیستم هستید.
+    </div>
+}
+<div class="row">
+    <div class="col-12">
+        <div class="ec-vendor-list card card-default">
+            <div class="card-body">
+                <div class="table-responsive-md">
+                    <div id="responsive-data-table_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
+                        <table id="responsive-data-table" class="table dataTable no-footer" aria-describedby="responsive-data-table_info">
+                            <thead>
+                                <tr>
+                                    <th>عنوان محصول</th>
+                                    <th>واحد</th>
+                                    <th>وضعیت</th>
+                                    <th>قیمت خرید</th>
+                                    <th>قیمت فروش</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td>@item.Product.ProductTitle</td>
+                                        <td>@item.Product.ProductUnit</td>
+                                        <td>
+                                            <span class="badge @(item.IsActive ? "bg-success" : "bg-danger")">
+                                                @(item.IsActive ? "فعال" : "غیرفعال")
+                                            </span>
+                                        </td>
+                                        <td>@item.BuyPrice</td>
+                                        <td>@item.SellPrice</td>
+                                        <td>
+                                            <div class="btn-group mb-1">
+                                                <button type="button" class="btn btn-outline-success">اطلاعات</button>
+                                                <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static">
+                                                    <span class="sr-only">اطلاعات</span>
+                                                </button>
+                                                @if (ViewBag.FiscalYearStatus == "0")
+                                                {
+                                                    <div class="dropdown-menu">
+                                                        <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.Id, @item.Product.ProductTitle)">قیمت جدید</a>
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">تاریخچه قیمت</a>
+                                                        <hr />
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
+                                                        <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="dropdown-menu"></div>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade modal-add-contact" id="addNewPriceModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <form id="frmPrice">
+                <div class="modal-header px-4">
+                    <h5 class="modal-title" id="productTitle"></h5>
+                </div>
+                <div class="modal-body px-4">
+                    <div class="row mb-2">
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="BuyPrice">قیمت خرید</label>
+                                <input type="number" min="0" class="form-control" id="BuyPrice" name="BuyPrice">
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="SellPrice">قیمت فروش</label>
+                                <input type="number" min="0" class="form-control" id="SellPrice" name="SellPrice">
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="form-group">
+                                <label for="ActionDate">تاریخ اعمال</label>
+                                <input autocomplete="off" class="form-control persian-date" id="ActionDate" name="ActionDate">
+                            </div>
+                        </div>
+                        <input id="UserId" name="UserId" value="@ViewBag.UserId" hidden />
+                        <input id="FiscalYearId" name="FiscalYearId" value="@ViewBag.FiscalYearId" hidden />
+                        <input id="ProductId" name="ProductId" hidden />
+                        <div class="col-lg-12 alert" style="color:red">
+                            <span class="text-danger" id="spnValidate"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer px-4">
+                    <button type="button"
+                            class="btn btn-secondary btn-pill" data-bs-dismiss="modal">
+                        لغو
+                    </button>
+                    <button id="btnPriceSubmit" type="button" class="btn btn-primary btn-pill">ذخیره </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+@if (ViewBag.FiscalYearStatus == "0")
+{
+    <div class="modal fade modal-add-contact" id="addProduct" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <form id="frmProduct">
+                    <div class="modal-header px-4">
+                        <h5 class="modal-title" id="exampleModalCenterTitle">تعریف محصول جدید</h5>
+                    </div>
+                    <div class="modal-body px-4">
+                        <div class="row mb-2">
+                            <div class="col-lg-4">
+                                <div class="form-group form-floating">
+                                    <input class="form-control text-end" id="ProductTitle" name="ProductTitle" placeholder="عنوان محصول">
+                                    <label for="ProductTitle" style="right:0!important; left:unset!important;">عنوان محصول</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="form-group form-floating">
+                                    <input class="form-control text-end" id="ProductUnit" name="ProductUnit" placeholder="واحد">
+                                    <label for="ProductUnit" style="right:0!important; left:unset!important;">واحد</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-4" style="margin-bottom:8px;">
+                                <div class="form-check" style="margin:auto;">
+                                    <input style="font-size:13px;" type="checkbox" class="form-check-input chk-date-type" id="IsActive">
+                                    <label for="IsActive" class="lbl-date-change">فعال</label>
+                                </div>
+                            </div>
+                            <input id="TenantId" name="TenantId" value="@valTenantId" hidden>
+                            <input id="UserId" name="UserId" value="@valUserId" hidden>
+                            <div class="col-lg-12 alert" style="color:red">
+                                <span class="text-danger" id="spnValidate"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer px-4">
+                        <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal">
+                            لغو
+                        </button>
+                        <button id="btnProductSubmit" type="button" class="btn btn-primary btn-pill">ذخیره </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade modal-add-contact" id="editProduct" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <form id="frmEditProduct">
+                    <div class="modal-header px-4">
+                        <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش محصول</h5>
+                    </div>
+                    <div class="modal-body px-4">
+                        <div class="row mb-2">
+                            <input id="ProductId" name="ProductId" hidden>
+                            <div class="col-lg-4">
+                                <div class="form-group form-floating">
+                                    <input class="form-control text-end" id="ProductTitleU" name="ProductTitleU" placeholder="عنوان محصول">
+                                    <label for="ProductTitleU" style="right:0!important; left:unset!important;">عنوان محصول</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="form-group form-floating">
+                                    <input class="form-control text-end" id="ProductUnitU" name="ProductUnitU" placeholder="واحد">
+                                    <label for="ProductUnitU" style="right:0!important; left:unset!important;">واحد</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-4" style="margin-bottom:8px;">
+                                <div class="form-check" style="margin:auto;">
+                                    <input style="font-size:13px;" type="checkbox" class="form-check-input chk-date-type" id="IsActiveU" name="IsActiveU">
+                                    <label for="IsActiveU" class="lbl-date-change">فعال</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-12 alert" style="color:red">
+                                <span class="text-danger" id="spnValidateU"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer px-4">
+                        <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal">
+                            لغو
+                        </button>
+                        <button id="btnProductUpdate" type="button" class="btn btn-primary btn-pill">ذخیره </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+@section AdminScripts {
+    <script src="~/lib/sweetalert/sweetalert2.min.js"></script>
+    <script src="~/lib/sweetalert/sweetalert2.js"></script>
+    <!--Show add price modal-->
+    <script>
+        function showInsertPriceModel(productId, productTitle) {
+            $("#ProductId").val(productId);
+            $("#productTitle").text('درج قیمت برای ' + productTitle);
+
+            $("#addNewPriceModal").modal('show');
+        }
+    </script>
+
+    <script>
+        $("#btnProductSubmit").on('click', function (e) {
+            e.preventDefault();
+            var formData = new FormData($("#frmProduct")[0]);
+
+            formData.set("IsActive", $("#IsActive").is(":checked"));
+
+            $.ajax({
+                type: 'POST',
+                url: '@ApiAddress' + 'Product/CreateProduct',
+                processData: false,
+                contentType: false,
+                dataType: "json",
+                data: formData,
+                success: function (xhr) {
+                    if (xhr.statusCode == 200) {
+                        // ثبت موفق اطلاعات
+                        window.location.reload();
+                        $('#addProduct').modal('hide');
+                        $('#ProductTitle').val("");
+                        $('#ProductUnit').val("");
+                        $('#chkActive').val("");
+                    }
+                    if (xhr.statusCode == 500) {
+                        $("#spnValidate").text("خطایی در انجام عملیات رخ داده است!");
+                        return false;
+                    } else if (xhr.statusCode == 400) {
+                        $("#spnValidate").text("لطفا اطلاعات را کامل وارد نمائید!");
+                        return false;
+                    }
+                }
+            });
+        });
+
+    </script>
+
+    <script>
+        function showUpdateModal(productId) {
+            $.ajax({
+                type: 'GET',
+                url: '@ApiAddress' + 'Product/GetById?productId=' + productId,
+                dataType: 'json',
+                success: function (xhr) {
+                    $("#ProductId").val(xhr.data.id);
+                    $("#ProductTitleU").val(xhr.data.productTitle);
+                    $("#ProductUnitU").val(xhr.data.productUnit);
+                    $("#IsActiveU").prop("checked", xhr.data.isActive);
+
+                    $("#editProduct").modal('show');
+                }
+            });
+        }
+
+        $("#btnProductUpdate").on('click', function (e) {
+            e.preventDefault();
+
+            var model = {
+                productId: $("#ProductId").val(),
+                productTitle: $("#ProductTitleU").val(),
+                productUnit: $("#ProductUnitU").val(),
+                isActive: $("#IsActiveU").is(":checked"),
+                modifiedById: '@valUserId'
+            }
+
+            console.log($("#IsActiveU").is(":checked"));
+
+            $.ajax({
+                type: 'PUT',
+                url: '@ApiAddress' + 'Product/UpdateProduct',
+                dataType: 'Json',
+                contentType: 'application/json',
+                processData: false,
+                data: JSON.stringify(model),
+                success: function (xhr) {
+                    if (xhr.statusCode == '200') {
+                        Swal.fire({
+                            position: "center",
+                            icon: "success",
+                            title: "ویرایش محصول با موفقیت انجام شد",
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                        window.location.reload();
+                    }
+                    if (xhr.statusCode == '400') {
+                        Swal.fire({
+                            position: "center",
+                            icon: "error",
+                            title: "پارامترهای ارسالی معتبر نیست!",
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                        return false;
+                    } else if (xhr.statusCode == '409') {
+                        Swal.fire({
+                            position: "center",
+                            icon: "error",
+                            title: "اطلاعات تکراری می‌باشد!",
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                        return false;
+                    }
+                }
+            });
+        })
+    </script>
+}

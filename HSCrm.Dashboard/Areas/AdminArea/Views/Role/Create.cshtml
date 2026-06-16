@@ -1,0 +1,30 @@
+﻿@model HSCrm.Models.ModelDto.RoleCreateDto
+
+@{
+    ViewData["Title"] = "افزودن نقش";
+}
+
+<div class="ec-content-wrapper">
+    <div class="content">
+        <div class="breadcrumb-wrapper breadcrumb-wrapper-2">
+            <h1>افزودن نقش</h1>
+        </div>
+
+        <div class="card card-default">
+            <div class="card-body">
+                <form asp-area="AdminArea" asp-controller="Role" asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Name">نام نقش</label>
+                        <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">ثبت</button>
+                    <a asp-area="AdminArea" asp-controller="Role" asp-action="Index" class="btn btn-secondary">بازگشت</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
