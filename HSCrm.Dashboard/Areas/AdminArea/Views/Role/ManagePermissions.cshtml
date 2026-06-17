@@ -1,49 +1,83 @@
 ﻿@model HSCrm.Models.ModelDto.ManageRolePermissionsDto
 
 @{
-    ViewData["Title"] = "مدیریت دسترسی‌ها";
-    var groupedPermissions = Model.Permissions
-        .GroupBy(x => x.Category)
-        .OrderBy(x => x.Key);
+    var groupedPermissions = Model.Permissions.GroupBy(x => x.Category).OrderBy(x => x.Key);
 }
 
-<div class="ec-content-wrapper">
-    <div class="content">
-        <div class="breadcrumb-wrapper breadcrumb-wrapper-2">
-            <h1>مدیریت دسترسی‌های نقش @Model.RoleName</h1>
+<style>
+    .input-check {
+        margin-left: 20px !important;
+    }
+
+    .btn {
+        border-radius: 4px;
+    }
+
+    .accordion-button::after {
+        margin-left: 0;
+        margin-right: auto;
+    }
+</style>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-md-4">
+                <input type="text" id="permissionSearch" class="form-control" placeholder="جستجوی دسترسی">
+            </div>
+            <div class="col-md-8 text-end">
+                <button type="button" id="expandAll" class="btn btn-primary btn-sm">
+                    باز کردن همه
+                </button>
+                <button type="button" id="collapseAll" class="btn btn-primary btn-sm">
+                    بستن همه
+                </button>
+                <span class="badge bg-danger" style="padding: 10px 25px; border-radius: 50px;">
+                    انتخاب شده:
+                    <span id="selectedCount">0</span>
+                </span>
+            </div>
         </div>
-
-        <div class="card card-default">
-            <div class="card-body">
-                <form asp-area="AdminArea" asp-controller="Role" asp-action="ManagePermissions" method="post">
-                    <input asp-for="RoleId" type="hidden" />
-                    <input asp-for="RoleName" type="hidden" />
-
-                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-                    @foreach (var group in groupedPermissions)
-                    {
-                        <div class="card mb-3">
-                            <div class="card-header">
+    </div>
+    <div class="card-body">
+        <form id="permissionForm">
+            <input type="hidden" name="RoleId" value="@Model.RoleId" />
+            <div class="accordion" id="permissionAccordion">
+                @{
+                    int index = 0;
+                }
+                @foreach (var group in groupedPermissions)
+                {
+                    var collapseId = "collapse_" + index;
+                    var items = group.ToList();
+                    <div class="accordion-item permission-group">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId">
                                 <strong>@group.Key</strong>
-                            </div>
-
-                            <div class="card-body">
+                                <span class="badge bg-success ms-2 category-count" style="margin: 0 15px;" data-category="@index">@group.Count(x => x.IsSelected) </span>
+                            </button>
+                        </h2>
+                        <div id="@collapseId" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                <div class="mb-2">
+                                    <label>
+                                        <input type="checkbox" class="input-check select-category" data-category="@index" />انتخاب همه
+                                    </label>
+                                </div>
                                 <div class="row">
-                                    @foreach (var permission in group)
+                                    @foreach (var permission in items)
                                     {
-                                        <div class="col-md-4 mb-2">
-                                            <div class="form-check">
-                                                <input class="form-check-input"
+                                        <div class="col-md-3 mb-2 permission-item">
+                                            <div class="d-flex form-check permission-check">
+                                                <input class="input-check form-check-input permission-checkbox m-0 cat_@index"
                                                        type="checkbox"
                                                        name="SelectedPermissionIds"
                                                        value="@permission.PermissionId"
-                                                       id="perm_@permission.PermissionId"
-                                                       @(permission.IsSelected ? "checked" : "") />
-
-                                                <label class="form-check-label" for="perm_@permission.PermissionId">
-                                                    @permission.Title
-                                                    <small class="text-muted d-block">@permission.Name</small>
+                                                       @(permission.IsSelected ? "checked" : "")
+                                                       style="cursor: pointer; width: 18px; height: 18px; flex-shrink: 0;" />
+                                                <label class="form-check-label ms-2" for="perm_@permission.PermissionId" style="cursor: pointer; line-height: 1.2;">
+                                                    <span class="d-block fw-bold">@permission.Title</span>
+                                                    <small class="text-muted" style="font-size: 0.75rem;">@permission.Name</small>
                                                 </label>
                                             </div>
                                         </div>
@@ -51,12 +85,115 @@
                                 </div>
                             </div>
                         </div>
-                    }
-
-                    <button type="submit" class="btn btn-primary">ذخیره دسترسی‌ها</button>
-                    <a asp-area="AdminArea" asp-controller="Role" asp-action="Index" class="btn btn-secondary">بازگشت</a>
-                </form>
+                    </div>
+                    index++;
+                }
             </div>
-        </div>
+            <button type="button" id="savePermissions" class="btn btn-primary mt-3">
+                ذخیره دسترسی‌ها
+            </button>
+        </form>
     </div>
 </div>
+
+@section AdminScripts {
+    <script>
+        $(document).ready(function () {
+            console.log("jquery loaded");
+            updateCount();
+            updateCategoryStates();
+
+            /* شمارش انتخاب ها */
+            function updateCount() {
+                var count = $(".permission-checkbox:checked").length;
+                $("#selectedCount").text(count);
+            }
+
+            /* بررسی Select All هوشمند */
+            function updateCategoryStates() {
+                $(".select-category").each(function () {
+                    var cat = $(this).data("category");
+                    var total = $(".cat_" + cat).length;
+                    var checked = $(".cat_" + cat + ":checked").length;
+                    $(this).prop("checked", total > 0 && total === checked);
+                    $(".category-count[data-category='" + cat + "']").text(checked);
+                });
+            }
+
+            /* تغییر checkbox */
+            $(document).on("change", ".permission-checkbox", function () {
+            updateCount();
+            updateCategoryStates();
+            });
+
+            /* انتخاب همه دسته */
+            $(document).on("change", ".select-category", function () {
+            var cat = $(this).data("category");
+            $(".cat_" + cat).prop("checked", $(this).prop("checked"));
+            updateCount();
+            updateCategoryStates();
+        });
+
+            /* باز کردن همه */
+            $("#expandAll").click(function () {
+            $(".accordion-collapse").each(function () {
+                new bootstrap.Collapse(this, {
+                    toggle: false
+                }).show();
+            });
+        });
+
+            /* بستن همه */
+            $("#collapseAll").click(function () {
+            $(".accordion-collapse").each(function () {
+                new bootstrap.Collapse(this, {
+                    toggle: false
+                }).hide();
+            });
+        });
+
+            /* جستجو */
+            $("#permissionSearch").keyup(function () {
+            var value = $(this).val().toLowerCase();
+            $(".permission-item").each(function () {
+                var text = $(this).text().toLowerCase();
+                $(this).toggle(text.indexOf(value) > -1);
+            });
+        });
+
+            /* ذخیره با Ajax */
+            $("#savePermissions").click(function () {
+            var formData = $("#permissionForm").serialize();
+            $.ajax({
+                url: '/AdminArea/Role/ManagePermissions',
+                type: 'POST',
+                data: formData,
+                success: function () {
+                    swal({
+                        title: "ثبت اطلاعات",
+                        text: "اطلاعات با موفقیت ذخیره شد!",
+                        type: 'success',
+                        showCancelButton: false,
+                        allowOutsideClick: false,
+                        confirmButtonColor: "green",
+                        confirmButtonText: "باشه",
+                        timer: 1500,
+                    });
+                },
+                error: function () {
+                    swal({
+                        title: "خطا",
+                        text: "مشکلی در ثبت اطلاعات به وجود آمده است!",
+                        type: 'warning',
+                        showCancelButton: false,
+                        allowOutsideClick: false,
+                        confirmButtonColor: "green",
+                        confirmButtonText: "باشه",
+                        timer: 1500,
+                    });
+                }
+            });
+        });
+        });
+    </script>
+}

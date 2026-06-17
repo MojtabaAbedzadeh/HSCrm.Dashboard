@@ -1,11 +1,18 @@
+using HSCrm.Dashboard.Authorization;
 using HSCrm.Dashboard.Services;
 using HSCrm.Dashboard.Services.Interface;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 
 builder.Services.AddHttpClient();
 
