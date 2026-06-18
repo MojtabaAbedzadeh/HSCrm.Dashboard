@@ -69,13 +69,6 @@ public static class SidebarMenuProvider
                         Title = "نقش‌ها",
                         Url = "/AdminArea/Role",
                         PermissionKey = Permissions.Roles.View
-                    },
-                    new SidebarMenuItem
-                    {
-                        Key = "role_permissions",
-                        Title = "مجوزهای نقش‌ها",
-                        Url = "/AdminArea/RolePermission",
-                        PermissionKey = Permissions.RolePermissions.View
                     }
                 }
             },

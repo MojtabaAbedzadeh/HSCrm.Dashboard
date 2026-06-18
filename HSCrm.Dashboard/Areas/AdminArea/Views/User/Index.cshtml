@@ -55,14 +55,15 @@
                                             </span>
                                         </td>
                                         <td>
-                                            @(item.UserType == 1 ? "ادمین" : item.UserType == 0 ? "کاربر" : "تامین کننده")
+                                            @(item.UserType == 0 ? "ادمین" : item.UserType == 1 ? "کاربر" : "مشتری")
                                         </td>
                                         <td>
                                             <div class="btn-group mb-1">
                                                 <button type="button" class="btn btn-outline-success">اطلاعات</button> <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static"><span class="sr-only">اطلاعات</span></button>
                                                 <div class="dropdown-menu">
                                                     <a class="dropdown-item" href="#" onclick="showUpdateModal('@item.Id')">ویرایش</a>
-                                                    <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                    <a class="dropdown-item" href="#">حذف</a>
+                                                    <a class="dropdown-item" href="#" onclick="openRoleModal('@item.Id','@item.UserFirstName','@item.UserLastName')">تغییر نقش</a>
                                                 </div>
                                             </div>
                                         </td>
@@ -270,14 +271,61 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="roleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">ثبت / تغییر نقش کاربر</h5>
+            </div>
+
+            <div class="modal-body">
+
+                <input type="hidden" id="roleUserId" />
+
+                <div class="mb-3">
+                    <label class="form-label">نام کاربر</label>
+                    <input type="text" id="roleUserName" class="form-control" disabled>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">نقش</label>
+
+                    <select id="roleSelect" class="form-select">
+                        <option value="">انتخاب نقش</option>
+
+                        @foreach (var role in ViewBag.Roles)
+                        {
+                            <option value="@role.Id">@role.Name</option>
+                        }
+
+                    </select>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                    انصراف
+                </button>
+
+                <button class="btn btn-success" onclick="saveUserRole()">
+                    ذخیره
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
 
 @section AdminScripts {
     <script>
         $("#btnUserSubmit").on('click', function (e) {
             e.preventDefault();
             var formData = new FormData($("#frmUser")[0]);
-
-            console.log(formData);
 
             $.ajax({
                 type: 'POST',
@@ -354,7 +402,58 @@
         });
 
     </script>
+    <script>
+        function openRoleModal(userId, firstName, lastName) {
 
+            $("#roleUserId").val(userId);
+
+            $("#roleUserName").val(firstName + " " + lastName);
+
+            $("#roleSelect").val("");
+
+            var modal = new bootstrap.Modal(document.getElementById('roleModal'));
+
+            modal.show();
+        }
+        function saveUserRole() {
+
+            var userId = $("#roleUserId").val();
+            var roleId = $("#roleSelect").val();
+
+            if (roleId == "") {
+                swal({
+                    title: "خطا",
+                    text: "لطفا یک نقش انتخاب کنید",
+                    type: "warning"
+                });
+                return;
+            }
+            $.ajax({
+                type: "POST",
+                url: 'User/AssignRole',
+                data: {
+                    userId: userId,
+                    roleId: roleId
+                },
+                success: function () {
+                    swal({
+                        title: "موفق",
+                        text: "نقش کاربر ثبت شد",
+                        type: "success",
+                        timer: 1500
+                    });
+                    $("#roleModal").modal('hide');
+                },
+                error: function () {
+                    swal({
+                        title: "خطا",
+                        text: "ثبت نقش انجام نشد",
+                        type: "error"
+                    });
+                }
+            });
+        }
+    </script>
     <script>
         function showUpdateModal(userId) {
 
@@ -384,8 +483,6 @@
                 }
             });
         }
-
-
         $("#btnUserUpdate").on('click', function (e) {
             e.preventDefault();
 

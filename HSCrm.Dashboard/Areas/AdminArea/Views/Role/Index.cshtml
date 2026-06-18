@@ -8,9 +8,18 @@
 <div class="breadcrumb-wrapper breadcrumb-contacts">
     <div>
         <h1>لیست نقش‌ها</h1>
-        <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>نقش</p>
+        <p class="breadcrumbs">
+            <span>
+                <a href="index.html">خانه</a>
+            </span>
+            <span>
+                <i class="mdi mdi-chevron-left"></i>
+            </span>نقش
+        </p>
     </div>
-    <div><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomer"> اضافه کردن نقش </button></div>
+    <div>
+        <a asp-area="AdminArea" asp-controller="Role" asp-action="Create" class="btn btn-primary">اضافه کردن نقش</a>
+    </div>
 </div>
 <div class="row">
     <div class="col-12">
@@ -32,14 +41,13 @@
                                         <td>@item.Name</td>
                                         <td>
                                             <div class="btn-group mb-1">
-                                                <a class="btn btn-outline-success">اطلاعات</a>
+                                                <button class="btn btn-outline-success">اطلاعات</button>
                                                 <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static">
                                                     <span class="sr-only">اطلاعات</span>
                                                 </button>
                                                 <div class="dropdown-menu">
                                                     <a asp-area="AdminArea" asp-controller="Role" asp-action="Edit" asp-route-id="@item.Id" class="dropdown-item">ویرایش</a>
                                                     <a asp-area="AdminArea" asp-controller="Role" asp-action="ManagePermissions" asp-route-id="@item.Id" class="dropdown-item">دسترسی‌ها</a>
-                                                    @* <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a> *@
                                                     <a class="dropdown-item" href="#">حذف</a>
                                                 </div>
                                             </div>
@@ -54,61 +62,3 @@
         </div>
     </div>
 </div>
-@* 
-<div class="ec-content-wrapper">
-    <div class="content">
-        <div class="breadcrumb-wrapper breadcrumb-wrapper-2">
-            <h1>مدیریت نقش‌ها</h1>
-            <p class="breadcrumbs">
-                <span><a href="/AdminArea/Home/Index">داشبورد</a></span>
-                <span><i class="mdi mdi-chevron-left"></i></span>
-                <span>نقش‌ها</span>
-            </p>
-        </div>
-
-        <div class="card card-default">
-            <div class="card-header">
-                <h2>لیست نقش‌ها</h2>
-                <a asp-area="AdminArea" asp-controller="Role" asp-action="Create" class="btn btn-primary">
-                    افزودن نقش
-                </a>
-            </div>
-
-            <div class="card-body">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>نام نقش</th>
-                            <th>Tenant</th>
-                            <th>عملیات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var role in Model)
-                        {
-                            <tr>
-                                <td>@role.Name</td>
-                                <td>@role.TenantId</td>
-                                <td>
-                                    <a asp-area="AdminArea" asp-controller="Role" asp-action="Edit" asp-route-id="@role.Id" class="btn btn-sm btn-warning">
-                                        ویرایش
-                                    </a>
-
-                                    <a asp-area="AdminArea" asp-controller="Role" asp-action="ManagePermissions" asp-route-id="@role.Id" class="btn btn-sm btn-info">
-                                        دسترسی‌ها
-                                    </a>
-
-                                    <form asp-area="AdminArea" asp-controller="Role" asp-action="Delete" asp-route-id="@role.Id" method="post" style="display:inline">
-                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('آیا مطمئن هستید؟')">
-                                            حذف
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div> *@
