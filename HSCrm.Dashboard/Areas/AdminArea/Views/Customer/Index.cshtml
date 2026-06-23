@@ -226,6 +226,7 @@
 </div>
 @section AdminScripts {
     <script src="~/lib/sweetalert/sweetalert2.js"></script>
+
     <script>
         $("#btnCustomerSubmit").on('click', function (e) {
             e.preventDefault();
@@ -252,11 +253,12 @@
                 dataType: "json",
                 data: formData,
                 headers: {
-                    // حتماً توکن را در هدر بفرست (اگر از قبل در تنظیمات ایجکس نیست)
                     "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
                 },
                 success: function (response ) {
-                    // در ساختار پروژه تو Status نشان‌دهنده موفقیت کلی است
+                    for (var pair of formData.entries()) {
+                        console.log(pair[0] + ': ' + pair[1]);
+                    }
                     if (response.status || response.statusCode == 200) {
                         swal({
                             title: "موفقیت",
@@ -269,61 +271,55 @@
                             window.location.reload();
                         });
                     } else if (response.status == 401) {
-                        errorTitle = "عدم احراز هویت";
-                        errorMessage = "نشست شما منقضی شده، لطفاً دوباره وارد شوید.";
+                        swal({
+                            title: "عدم احراز هویت",
+                            text: "نشست شما منقضی شده، لطفاً دوباره وارد شوید!",
+                            type: 'error',
+                            confirmButtonClass: "btn btn-success",
+                            timer: 1500
+                        });
                     } else if (response.status == 403) {
-                        errorTitle = "عدم دسترسی";
-                        errorMessage = "شما مجوز انجام این عملیات را ندارید.";
+                         swal({
+                            title: "عدم دسترسی",
+                            text: "شما مجوز انجام این عملیات را ندارید!",
+                            type: 'error',
+                            confirmButtonClass: "btn btn-success",
+                            timer: 1500
+                        });
                     } else if (response.status == 400) {
-                        // اگر سرور در بدنه پاسخ خطا فرستاده باشد
-                        if (response.responseJSON && response.responseJSON.message) {
-                            errorMessage = response.responseJSON.message;
-                        } else {
-                            errorMessage = "اطلاعات ارسالی معتبر نیست.";
-                        }
+                        swal({
+                            title: "خطا",
+                            text: "اطلاعات ارسالی معتبر نیست!",
+                            type: 'error',
+                            confirmButtonClass: "btn btn-success",
+                            timer: 1500
+                        });
                     } else if (response.status == 409) {
-                        errorMessage = "این اطلاعات قبلاً در سیستم ثبت شده است.";
+                        swal({
+                            title: "خطا",
+                            text: "این اطلاعات قبلاً در سیستم ثبت شده است!",
+                            type: 'error',
+                            confirmButtonClass: "btn btn-success",
+                            timer: 1500
+                        });
                     }else if (response.status == 500) {
-                        errorMessage = "سمت سرور خطایی رخ داده است!";
+                        swal({
+                            title: "خطا",
+                            text: "سمت سرور خطایی رخ داده است!",
+                            type: 'error',
+                            confirmButtonClass: "btn btn-success",
+                            timer: 1500
+                        });
                     }
-
-                    swal({
-                        title: errorTitle,
-                        text: errorMessage,
-                        type: 'error',
-                        confirmButtonClass: "btn btn-danger"
-                    });
                 },
                 error: function (xhr) {
-                    // این بخش زمانی اجرا می‌شود که وضعیت HTTP خطا باشد (مثل 401, 403, 500)
-                    var errorMessage = "خطایی در سیستم رخ داده است";
-                    var errorTitle = "خطا";
-
-                    if (xhr.status == 401) {
-                        errorTitle = "عدم احراز هویت";
-                        errorMessage = "نشست شما منقضی شده، لطفاً دوباره وارد شوید.";
-                    } else if (xhr.status == 403) {
-                        errorTitle = "عدم دسترسی";
-                        errorMessage = "شما مجوز انجام این عملیات را ندارید.";
-                    } else if (xhr.status == 400) {
-                        // اگر سرور در بدنه پاسخ خطا فرستاده باشد
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        } else {
-                            errorMessage = "اطلاعات ارسالی معتبر نیست.";
-                        }
-                    } else if (xhr.status == 409) {
-                        errorMessage = "این اطلاعات قبلاً در سیستم ثبت شده است.";
-                    }else if (xhr.status == 500) {
-                        errorMessage = "سمت سرور خطایی رخ داده است!";
-                    }
-
                     swal({
-                        title: errorTitle,
-                        text: errorMessage,
+                        title: "عدم احراز هویت",
+                        text: xhr + "نشست شما منقضی شده، لطفاً دوباره وارد شوید!",
                         type: 'error',
-                        confirmButtonClass: "btn btn-danger"
-                    });
+                        confirmButtonClass: "btn btn-success",
+                        timer: 1500
+                    });                   
                 }
         });
 

@@ -5,6 +5,7 @@
     ViewData["selected"] = "user_list";
 
     string ApiAddress = ViewBag.ApiAddress;
+    var token = User.FindFirstValue("Token");
 }
 
 @section styles {
@@ -326,7 +327,7 @@
         $("#btnUserSubmit").on('click', function (e) {
             e.preventDefault();
             var formData = new FormData($("#frmUser")[0]);
-
+            console.log('@token');
             $.ajax({
                 type: 'POST',
                 url: '@ApiAddress' + 'User/CreateUser',
@@ -334,9 +335,11 @@
                 contentType: false,
                 dataType: "json",
                 data: formData,
+                headers: {
+                    "Authorization": "Bearer " + "@token"
+                },
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
-                        // ثبت موفق اطلاعات
                         swal({
                             title: "ثبت اطلاعات",
                             text: "ثبت اطلاعات با موفقیت انجام شد!",
@@ -348,53 +351,92 @@
                         });
                         $('#addUser').modal('hide');                        
                         window.location.reload();
-                    }                    
+                    } 
+                    else if (xhr.statusCode == 500) {
+                        swal({
+                            title: "خطا",
+                            text: "خطا در سرور!",
+                            type: 'error',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                        });
+                        return false;
+                    } 
+                    else if (xhr.statusCode == 400) {
+                         swal({
+                            title: "اطلاعات نامعتبر",
+                            text: "پارامترهای ارسالی معتبر نیست!",
+                            type: 'error',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                        });
+                        return false;
+                    }
+                    else if (xhr.statusCode == 409) {
+                        swal({
+                            title: "اطلاعات تکراری",
+                            text: "اطلاعات وارد شده تکراری می‌باشد!",
+                            type: 'error',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                        });
+                        return false;
+                    }
+                    else if (xhr.status === 401) {
+                        swal({
+                            title: "مجوز دسترسی",
+                            text: "شما برای انجام این عملیات دسترسی لازم را ندارید!",
+                            type: 'warning',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                        });
+                    }
                 },
                 error: function (xhr) {
                     if (xhr.statusCode == 500) {
                         swal({
                             title: "خطا",
                             text: "خطا در سرور!",
-                            type: 'success',
+                            type: 'error',
                             showCancelButton: false,
                             allowOutsideClick: false,
                             confirmButtonColor: "green",
-                            timer: 1500
                         });
                         return false;
                     } else if (xhr.statusCode == 400) {
                          swal({
-                            title: "خطا",
+                            title: "اطلاعات نامعتبر",
                             text: "پارامترهای ارسالی معتبر نیست!",
-                            type: 'success',
+                            type: 'error',
                             showCancelButton: false,
                             allowOutsideClick: false,
                             confirmButtonColor: "green",
-                            timer: 1500
                         });
                         return false;
                     }
                     else if (xhr.statusCode == 409) {
                         swal({
-                            title: "خطا",
+                            title: "اطلاعات تکراری",
                             text: "اطلاعات تکراری می‌باشد!",
-                            type: 'success',
+                            type: 'error',
                             showCancelButton: false,
                             allowOutsideClick: false,
                             confirmButtonColor: "green",
-                            timer: 1500
                         });
                         return false;
                     }
                     else if (xhr.status === 401) {
                         swal({
-                            title: "خطا",
+                            title: "مجوز دسترسی",
                             text: "شما برای انجام این عملیات دسترسی لازم را ندارید!",
-                            type: 'success',
+                            type: 'error',
                             showCancelButton: false,
                             allowOutsideClick: false,
                             confirmButtonColor: "green",
-                            timer: 1500
                         });
                     }
                 }

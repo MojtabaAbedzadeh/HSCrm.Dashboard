@@ -373,31 +373,44 @@
                         window.location.reload();
                     }
                     if (xhr.statusCode == 500) {
-                    swal({
-                        title: "خطا",
-                        text: "خطایی در انجام عملیات رخ داده است!",
-                        type: 'error',
-                        showCancelButton: false,
-                        allowOutsideClick: false,
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500,
-                    });
-                    return false;
+                        swal({
+                            title: "خطا",
+                            text: "خطایی در انجام عملیات رخ داده است!",
+                            type: 'error',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                        return false;
 
                     } else if (xhr.statusCode == 400) {
-                    swal({
-                        title: "خطا",
-                        text: "لطفا اطلاعات محصول را کامل وارد نمایید!",
-                        type: 'error',
-                        showCancelButton: false,
-                        allowOutsideClick: false,
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500,
-                    });
+                        swal({
+                            title: "خطا",
+                            text: "لطفا اطلاعات محصول را کامل وارد نمایید!",
+                            type: 'error',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
                         return false;
+                    } else if (xhr.statusCode == 409) {
+                        swal({
+                            title: "خطا",
+                            text: "محصول وارد شده در بانک اطلاعاتی موجود می باشد!",
+                            type: 'error',
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500,
+                        });
+                            return false;
                     }
+
                 }
             });
         });

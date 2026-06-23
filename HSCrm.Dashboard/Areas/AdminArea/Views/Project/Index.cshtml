@@ -19,7 +19,7 @@
 
 <div class="breadcrumb-wrapper breadcrumb-contacts">
     <div>
-        <h1>لیست مشتریان</h1>
+        <h1>لیست پروژه‌ها</h1>
         <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>پروژه</p>
     </div>
     @if (ViewBag.FiscalYearStatus == "0")
@@ -200,8 +200,8 @@
         </div>
     </div>
 }
-@section AdminScripts {
 
+@section AdminScripts {
     <script>
         $("#btnProjectSubmit").on('click', function (e) {
             e.preventDefault();

@@ -36,7 +36,7 @@ public static class SidebarMenuProvider
             {
                 Key = "suppliers",
                 Title = "تأمین‌کنندگان",
-                Icon = "mdi mdi-truck-outline",
+                Icon = "mdi mdi-truck",
                 Children =
                 {
                     new SidebarMenuItem
@@ -135,7 +135,7 @@ public static class SidebarMenuProvider
             {
                 Key = "invoices",
                 Title = "فاکتورها",
-                Icon = "mdi mdi-file-document-multiple-outline",
+                Icon = "mdi mdi-file-document",
                 Children =
                 {
                     new SidebarMenuItem
