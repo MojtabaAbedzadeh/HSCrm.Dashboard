@@ -1,0 +1,87 @@
+﻿@using HSCrm.Models.ModelDto
+
+@{
+    ViewData["Title"] = "فرم ثبت نام";
+    List<FiscalYearDropDown> lstFiscalYear = ViewBag.FiscalsYearList;
+}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary">
+                <div class="ec-brand">
+                    <a href="index.html" title="Ekka">
+                        <img class="ec-brand-icon" src="~/assets/img/logo/logo-login.png" alt="">
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-5">
+                <h4 class="text-dark mb-5">ثبت نام</h4>
+                <form id="registerForm">
+                    <div class="row">
+                        <div class="form-group col-md-6 mb-4">
+                            <input name="CompanyName" placeholder="نام شرکت" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-6 mb-4">
+                            <input name="CompanyPhone" placeholder="تلفن شرکت" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-6 mb-4">
+                            <input name="CompanyEmail" placeholder="ایمیل شرکت" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-6 mb-4">
+                            <input name="FirstName" placeholder="نام" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-6 mb-4">
+                            <input name="LastName" placeholder="نام خانوادگی" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-6 mb-4">
+                            <input name="UserName" placeholder="نام کاربری" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-6 mb-4">
+                            <input name="Email" placeholder="ایمیل" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-6 mb-4">
+                            <input name="PhoneNumber" placeholder="موبایل" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-6 mb-4">
+                            <input name="Password" type="password" placeholder="رمز عبور" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-12 mb-4">
+                            <button type="submit" class="btn btn-success">
+                                ثبت نام
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@section AdminScripts {
+    <script>
+
+        $("#registerForm").submit(function(e){
+            e.preventDefault();
+            var data = {};
+
+            $("#registerForm").serializeArray().forEach(x=>{
+                data[x.name]=x.value;
+            });
+
+            $.ajax({
+                url:"https://localhost:7001/api/account/registertenant",
+                method:"POST",
+                contentType:"application/json",
+                data:JSON.stringify(data),
+                success:function(res){
+                    localStorage.setItem("token",res.token);
+                    window.location="/AdminArea/Home";
+                },
+                error:function(err){
+                    alert(err.responseText);
+                }
+            });
+        });
+
+    </script>
+
+}

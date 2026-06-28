@@ -9,7 +9,6 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
     public class HomeController : Controller
     {
         private readonly IConfiguration _config;
-
         public HomeController(IConfiguration config)
         {
             _config = config;
