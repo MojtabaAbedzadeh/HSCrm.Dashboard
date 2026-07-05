@@ -1,7 +1,6 @@
 ﻿using HSCrm.BussinessLogic.PublicMethod;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Security.Claims;
@@ -9,18 +8,16 @@ using System.Security.Claims;
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
-    [Authorize(Roles = "Admin")]
     public class SupplierController : Controller
     {
         private readonly IConfiguration _config;
-
         public SupplierController(IConfiguration config)
         {
             _config = config;
         }
         public async Task<IActionResult> Index()
         {
-            string apiUrl = "http://localhost:5001/api/Supplier/GetSupplier";
+            string apiUrl = _config["ApiAddress"] + "Supplier/GetSupplier";
             string token = User.FindFirstValue("Token");
             GetListApi GA = new GetListApi();
             var json = await GA.GetApiList(apiUrl, token);

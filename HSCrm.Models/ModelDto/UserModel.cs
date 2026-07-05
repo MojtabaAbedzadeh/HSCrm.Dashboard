@@ -40,7 +40,8 @@
 
         public string? UserAvatar { get; set; }
 
-        public string TenantId { get; set; }
+        public int TenantId { get; set; }
+        public List<FiscalYearDropDown> FiscalYears { get; set; } = new();
 
         public IEnumerable<string>? Roles { get; set; }
 

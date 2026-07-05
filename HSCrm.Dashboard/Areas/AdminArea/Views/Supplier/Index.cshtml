@@ -1,4 +1,5 @@
-﻿@model IEnumerable<SupplierModel>
+﻿@using HSCrm.Dashboard.Costants
+@model IEnumerable<SupplierModel>
 
 @{
     ViewData["Title"] = "تامین کنندگان";
@@ -19,7 +20,13 @@
         <h1>لیست تامین کنندگان</h1>
         <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>تامین کننده</p>
     </div>
-    <div><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSupplier"> اضافه کردن تامین کننده </button></div>
+    <div>
+        @if (User.HasPermission(Permissions.Suppliers.Create))
+        {
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSupplier"> اضافه کردن تامین کننده </button>
+        }
+    </div>
+
 </div>
 <div class="row">
     <div class="col-12">
@@ -164,6 +171,9 @@
                 contentType: false,
                 dataType: "json",
                 data: formData,
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
                         // ثبت موفق اطلاعات

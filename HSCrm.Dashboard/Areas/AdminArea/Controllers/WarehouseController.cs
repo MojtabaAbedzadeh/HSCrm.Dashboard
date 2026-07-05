@@ -9,7 +9,7 @@ using System.Security.Claims;
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Owner")]
     public class WarehouseController : Controller
     {
         private readonly IConfiguration _config;

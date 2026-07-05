@@ -1,4 +1,5 @@
-﻿@model IEnumerable<SalesInvoiceModel>
+﻿@using HSCrm.Dashboard.Costants
+@model IEnumerable<SalesInvoiceModel>
 
 @{
     ViewData["Title"] = "فاکتورهای فروش";
@@ -21,7 +22,10 @@
     @if (ViewBag.FiscalYearStatus == "0")
     {
         <div>
-            <a type="button" class="btn btn-primary" href="/adminarea/invoice/AddSaleInvoice">افزودن فاکتور فروش</a>
+            @if (User.HasPermission(Permissions.SalesInvoices.Create))
+            {
+                <a type="button" class="btn btn-primary" href="/adminarea/invoice/AddSaleInvoice">افزودن فاکتور فروش</a>
+            }
         </div>
     }
 </div>
@@ -74,8 +78,14 @@
                                                 @if (ViewBag.FiscalYearStatus == "0")
                                                 {
                                                     <div class="dropdown-menu">
-                                                        <a class="dropdown-item" href="#"><i class="mdi mdi-email-edit"></i> ویرایش</a>
-                                                        <a class="dropdown-item" href="#"><i class="mdi mdi-trash-can"></i> حذف</a>
+                                                        @if (User.HasPermission(Permissions.SalesInvoices.Edit))
+                                                        {
+                                                            <a class="dropdown-item" href="#"><i class="mdi mdi-email-edit"></i> ویرایش</a>
+                                                        }
+                                                        @if (User.HasPermission(Permissions.SalesInvoices.Delete))
+                                                        {
+                                                            <a class="dropdown-item" href="#"><i class="mdi mdi-trash-can"></i> حذف</a>
+                                                        }
                                                         @if (item.Status == 0)
                                                         {
                                                             <div class="dropdown-divider"></div>

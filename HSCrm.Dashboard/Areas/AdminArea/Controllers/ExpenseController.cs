@@ -10,7 +10,6 @@ using System.Security.Claims;
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
-    [Authorize(Roles = "Admin")]
     public class ExpenseController : Controller
     {
         private readonly IConfiguration _config;
@@ -22,7 +21,9 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         {
             string apiUrl = _config["ApiAddress"] + "Expense/GetExpense";
             string token = User.FindFirstValue("Token");
+
             GetListApi GA = new GetListApi();
+
             var json = await GA.GetApiList(apiUrl, token);
             var result = JsonConvert.DeserializeObject<ApiResponse<List<ExpenseModel>>>(json);
             var model = result.Data;

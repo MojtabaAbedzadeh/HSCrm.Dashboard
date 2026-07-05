@@ -56,7 +56,7 @@
                                             </span>
                                         </td>
                                         <td>
-                                            @(item.UserType == 0 ? "ادمین" : item.UserType == 1 ? "کاربر" : "مشتری")
+                                            @(item.UserType == 0 ? "کاربر" : item.UserType == 1 ? "ادمین" : item.UserType == 3 ? "مشتری" : item.UserType == 4 ? "مدیر شرکت" : "نامشخص")
                                         </td>
                                         <td>
                                             <div class="btn-group mb-1">

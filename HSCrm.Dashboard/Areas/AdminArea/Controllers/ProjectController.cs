@@ -10,7 +10,6 @@ using System.Security.Claims;
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
-    [Authorize(Roles = "Admin")]
     public class ProjectController : Controller
     {
         private readonly IConfiguration _config;

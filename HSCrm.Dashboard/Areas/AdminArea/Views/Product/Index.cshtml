@@ -1,4 +1,5 @@
-﻿@model IEnumerable<ProductModel>
+﻿@using HSCrm.Dashboard.Costants
+@model IEnumerable<ProductModel>
 
 @{
     ViewData["Title"] = "محصولات";
@@ -44,7 +45,12 @@
     </div>
     @if (ViewBag.FiscalYearStatus == "0")
     {
-        <div><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProduct"> اضافه کردن محصول </button></div>
+        <div>
+            @if (User.HasPermission(Permissions.Products.Create))
+            {
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProduct"> اضافه کردن محصول </button>
+            }
+        </div>
     }
 </div>
 @if (ViewBag.FiscalYearStatus != "0")
@@ -94,11 +100,23 @@
                                                 @if (ViewBag.FiscalYearStatus == "0")
                                                 {
                                                     <div class="dropdown-menu">
-                                                        <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.ProductId, '@item.ProductTitle')">قیمت جدید</a>
-                                                        <a class="dropdown-item" href="#" onclick="productPriceHistory(@item.ProductId, '@item.ProductTitle')">تاریخچه قیمت</a>
+                                                        @if (User.HasPermission(Permissions.ProductPrices.Create))
+                                                        {
+                                                            <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.ProductId, '@item.ProductTitle')">قیمت جدید</a>
+                                                        }
+                                                        @if (User.HasPermission(Permissions.ProductPrices.View))
+                                                        {
+                                                            <a class="dropdown-item" href="#" onclick="productPriceHistory(@item.ProductId, '@item.ProductTitle')">تاریخچه قیمت</a>
+                                                        }
                                                         <hr />
-                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.ProductId)">ویرایش</a>
-                                                        <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                        @if (User.HasPermission(Permissions.Products.Edit))
+                                                        {
+                                                            <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.ProductId)">ویرایش</a>
+                                                        }
+                                                        @if (User.HasPermission(Permissions.Products.Delete))
+                                                        {
+                                                            <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                        }
                                                     </div>
                                                 }
                                                 else
@@ -354,6 +372,9 @@
                 contentType: false,
                 dataType: "json",
                 data: formData,
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
                         swal({
@@ -524,6 +545,9 @@
                 contentType: false,
                 dataType: "json",
                 data: formData,
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
                     if (xhr.statusCode == '200') {
                         $('#addNewPriceModal').modal('hide');

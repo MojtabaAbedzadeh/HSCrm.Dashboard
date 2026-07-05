@@ -40,7 +40,6 @@ function clearProductForm() {
 // Product Search
 // ================================
 $('#ProductTitle').on('keyup', function () {
-
     const text = $(this).val().trim();
 
     if (text.length < 2) {
@@ -48,25 +47,32 @@ $('#ProductTitle').on('keyup', function () {
         return;
     }
 
-    $.get(ApiAddress + 'Product/Search', { term: text }, function (res) {
+    // گرفتن توکن از localStorage (یا هر جایی که ذخیره کرده‌اید)
+    const token = localStorage.getItem("token");
 
-        let html = '';
-
-        res.forEach(p => {
-
-            html += `
-                <li class="list-group-item product-item"
-                    data-id="${p.id}"
-                    data-title="${p.productTitle}"
-                    data-sell="${p.sellPrice}">
-                    ${p.productTitle} - ${formatPrice(p.sellPrice)}
-                </li>`;
-
-        });
-
-        $('#productAutoComplete').html(html).show();
+    $.ajax({
+        url: ApiAddress + 'Product/Search',
+        type: 'GET',
+        data: { term: text },
+        headers: {
+            Authorization: 'Bearer ' + token
+        },
+        success: function (res) {
+            let html = '';
+            res.forEach(p => {
+                html += `
+                    <li class="list-group-item product-item"
+                        data-id="${p.id}"
+                        data-title="${p.productTitle}"
+                        data-sell="${p.sellPrice}">
+                        ${p.productTitle} - ${formatPrice(p.sellPrice)}
+                    </li>`;
+            });
+            $('#productAutoComplete').html(html).show();
+        }
     });
 });
+
 
 $(document).on('click', '.product-item', function () {
 
@@ -145,7 +151,6 @@ $('#btnAddProduct').on('click', function () {
             $(this).find('td:eq(7)').text(formatPrice(newSum));
 
             merged = true;
-
         }
 
     });

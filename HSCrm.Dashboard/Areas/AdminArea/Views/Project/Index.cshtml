@@ -1,4 +1,5 @@
-﻿@model IEnumerable<ProjectModel>
+﻿@using HSCrm.Dashboard.Costants
+@model IEnumerable<ProjectModel>
 
 @{
     ViewData["Title"] = "پروژه ها";
@@ -25,7 +26,10 @@
     @if (ViewBag.FiscalYearStatus == "0")
     {
         <div>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProject"> اضافه کردن پروژه </button>
+            @if (User.HasPermission(Permissions.Projects.Create))
+            {
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProject"> اضافه کردن پروژه </button>
+            }
         </div>
     }
 </div>
@@ -76,11 +80,23 @@
                                                 @if (ViewBag.FiscalYearStatus == "0")
                                                 {
                                                     <div class="dropdown-menu">
-                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
-                                                        <a class="dropdown-item" href="#">حذف</a>
+                                                        @if (User.HasPermission(Permissions.Projects.Edit))
+                                                        {
+                                                            <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
+                                                        }
+                                                        @if (User.HasPermission(Permissions.Projects.Delete))
+                                                        {
+                                                            <a class="dropdown-item" href="#">حذف</a>
+                                                        }
                                                         <div class="dropdown-divider"></div>
-                                                        <a class="dropdown-item" href="/adminarea/expense/projectexpenses?projectId=@item.Id">مشاهده هزینه ها</a>
-                                                        <a class="dropdown-item" href="/adminarea/Invoice/ProjectInvoices?projectId=@item.Id">مشاهده فاکتورها</a>
+                                                        @if (User.HasPermission(Permissions.Expenses.View))
+                                                        {
+                                                            <a class="dropdown-item" href="/adminarea/expense/projectexpenses?projectId=@item.Id">مشاهده هزینه ها</a>
+                                                        }
+                                                        @if (User.HasPermission(Permissions.SalesInvoices.View))
+                                                        {
+                                                            <a class="dropdown-item" href="/adminarea/Invoice/ProjectInvoices?projectId=@item.Id">مشاهده فاکتورها</a>
+                                                        }
                                                     </div>
                                                 }
                                                 else
@@ -215,6 +231,9 @@
                 contentType: false,
                 dataType: "json",
                 data: formData,
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
                         swal({

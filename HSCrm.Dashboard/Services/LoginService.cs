@@ -1,6 +1,5 @@
 ﻿using HSCrm.Dashboard.Services.Interface;
 using HSCrm.Models.ModelDto;
-using System.Net.Http.Json;
 
 namespace HSCrm.Dashboard.Services
 {
@@ -17,7 +16,7 @@ namespace HSCrm.Dashboard.Services
         {
             try
             {
-                string requestUrl = _config["ApiAddress"] + "Account/Login";
+                string requestUrl = _config["ApiAddress"] + "Account/check-user";
 
                 using HttpClient http = new HttpClient();
 

@@ -1,26 +1,49 @@
-﻿using HSCrm.Dashboard.Services.Interface;
+﻿using HSCrm.BussinessLogic.PublicMethod;
+using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System.Security.Claims;
+using System.Text;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
-    [Authorize]
+    [Authorize(Roles = "Owner")]
     public class RoleController : Controller
     {
-        private readonly IRoleApiService _roleApiService;
+        private readonly IConfiguration _config;
 
-        public RoleController(IRoleApiService roleApiService)
+        public RoleController(IConfiguration config)
         {
-            _roleApiService = roleApiService;
+            _config = config;
         }
+
+        private string ApiUrl(string endpoint)
+        {
+            return _config["ApiAddress"] + endpoint;
+        }
+
+        private string Token()
+        {
+            return User.FindFirstValue("Token");
+        }
+
+        // ======================= Index =======================
 
         public async Task<IActionResult> Index()
         {
-            var model = await _roleApiService.GetRoles();
+            GetListApi GA = new GetListApi();
+            var json = await GA.GetApiList(ApiUrl("Role/GetRoles"), Token());
+
+            var result = JsonConvert.DeserializeObject<ApiResponse<List<RoleModel>>>(json);
+            var model = result?.Data ?? new List<RoleModel>();
+
             return View(model);
         }
+
+        // ======================= Create =======================
 
         [HttpGet]
         public IActionResult Create()
@@ -32,20 +55,25 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         public async Task<IActionResult> Create(RoleCreateDto model)
         {
             if (!ModelState.IsValid)
-            {
                 return View(model);
-            }
 
             var tenantId = User.FindFirst("TenantId")?.Value;
 
             if (int.TryParse(tenantId, out var parsedTenantId))
-            {
                 model.TenantId = parsedTenantId;
-            }
 
-            var result = await _roleApiService.CreateRole(model);
+            using var http = new HttpClient();
+            http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token());
 
-            if (!result)
+            var content = new StringContent(
+                JsonConvert.SerializeObject(model),
+                Encoding.UTF8,
+                "application/json");
+
+            var response = await http.PostAsync(ApiUrl("Role/CreateRole"), content);
+
+            if (!response.IsSuccessStatusCode)
             {
                 ModelState.AddModelError("", "خطا در ثبت نقش");
                 return View(model);
@@ -54,15 +82,19 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // ======================= Edit =======================
+
         [HttpGet]
         public async Task<IActionResult> Edit(string id)
         {
-            var role = await _roleApiService.GetRoleById(id);
+            GetListApi GA = new GetListApi();
+            var json = await GA.GetApiList(ApiUrl($"Role/GetRoleById?roleId={id}"), Token());
+
+            var result = JsonConvert.DeserializeObject<ApiResponse<RoleModel>>(json);
+            var role = result?.Data;
 
             if (role == null)
-            {
                 return NotFound();
-            }
 
             var model = new RoleEditDto
             {
@@ -78,13 +110,20 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         public async Task<IActionResult> Edit(RoleEditDto model)
         {
             if (!ModelState.IsValid)
-            {
                 return View(model);
-            }
 
-            var result = await _roleApiService.UpdateRole(model);
+            using var http = new HttpClient();
+            http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token());
 
-            if (!result)
+            var content = new StringContent(
+                JsonConvert.SerializeObject(model),
+                Encoding.UTF8,
+                "application/json");
+
+            var response = await http.PutAsync(ApiUrl("Role/UpdateRole"), content);
+
+            if (!response.IsSuccessStatusCode)
             {
                 ModelState.AddModelError("", "خطا در ویرایش نقش");
                 return View(model);
@@ -93,25 +132,43 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // ======================= Delete =======================
+
         [HttpPost]
         public async Task<IActionResult> Delete(string id)
         {
-            await _roleApiService.DeleteRole(id);
+            using var http = new HttpClient();
+            http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token());
+
+            await http.DeleteAsync(ApiUrl($"Role/DeleteRole/{id}"));
+
             return RedirectToAction(nameof(Index));
         }
+
+        // ======================= Manage Permissions =======================
 
         [HttpGet]
         public async Task<IActionResult> ManagePermissions(string id)
         {
-            var role = await _roleApiService.GetRoleById(id);
+            GetListApi GA = new GetListApi();
+
+            var roleJson = await GA.GetApiList(ApiUrl($"Role/GetRoleById?roleId={id}"), Token());
+            var roleResult = JsonConvert.DeserializeObject<ApiResponse<RoleModel>>(roleJson);
+            var role = roleResult?.Data;
 
             if (role == null)
-            {
                 return NotFound();
-            }
 
-            var allPermissions = await _roleApiService.GetPermissions();
-            var selectedPermissionIds = await _roleApiService.GetRolePermissions(id);
+            var permJson = await GA.GetApiList(ApiUrl("Role/GetPermissions"), Token());
+            var permResult = JsonConvert.DeserializeObject<ApiResponse<List<PermissionDto>>>(permJson);
+            var allPermissions = permResult?.Data ?? new List<PermissionDto>();
+
+            var selectedJson = await GA.GetApiList(ApiUrl($"Role/GetRolePermissions?roleId={id}"), Token());
+            var selectedResult = JsonConvert.DeserializeObject<ApiResponse<List<int>>>(selectedJson);
+            var selectedPermissionIds = selectedResult?.Data ?? new List<int>();
+
+            var check = allPermissions.Select(x => new { x.Name, x.Category, x.CategoryTitleFa }).ToList();
 
             var model = new ManageRolePermissionsDto
             {
@@ -123,13 +180,15 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
                     PermissionId = permission.Id,
                     Name = permission.Name,
                     Title = permission.Title,
+                    CategoryTitleFa = permission.CategoryTitleFa,
                     Category = permission.Category,
                     IsSelected = selectedPermissionIds.Contains(permission.Id)
                 }).ToList()
             };
-
+            
             return View(model);
         }
+
 
         [HttpPost]
         public async Task<IActionResult> ManagePermissions(ManageRolePermissionsDto model)
@@ -140,23 +199,19 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
                 PermissionIds = model.SelectedPermissionIds ?? new List<int>()
             };
 
-            var result = await _roleApiService.UpdateRolePermissions(updateModel);
+            using var http = new HttpClient();
+            http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token());
 
-            if (!result)
+            var content = new StringContent(
+                JsonConvert.SerializeObject(updateModel),
+                Encoding.UTF8,
+                "application/json");
+
+            var response = await http.PostAsync(ApiUrl("Role/UpdateRolePermissions"), content);
+
+            if (!response.IsSuccessStatusCode)
             {
                 ModelState.AddModelError("", "خطا در ذخیره دسترسی‌ها");
-
-                var allPermissions = await _roleApiService.GetPermissions();
-
-                model.Permissions = allPermissions.Select(permission => new PermissionCheckboxDto
-                {
-                    PermissionId = permission.Id,
-                    Name = permission.Name,
-                    Title = permission.Title,
-                    Category = permission.Category,
-                    IsSelected = model.SelectedPermissionIds.Contains(permission.Id)
-                }).ToList();
-
                 return View(model);
             }
 

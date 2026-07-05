@@ -1,33 +1,38 @@
 ﻿@using HSCrm.Dashboard.Models
 @using HSCrm.Dashboard.Services
+@using HSCrm.Dashboard.Services.Interface
 @using Microsoft.AspNetCore.Authorization
 @using System.Security.Claims
 @inject IAuthorizationService AuthorizationService
+@inject ISidebarMenuProvider SidebarProvider
+
 
 @{
+    var menus = SidebarProvider.GetMenus(User);
     var selected = ViewData["selected"]?.ToString() ?? "";
-    var menus = SidebarMenuProvider.GetMenus();
 }
 
 @functions {
+
     public static async Task<bool> IsMenuVisibleAsync(
         SidebarMenuItem menu,
         ClaimsPrincipal user,
         IAuthorizationService authorizationService)
     {
+        // اگر منو Permission داشته باشد باید بررسی شود
         if (!string.IsNullOrEmpty(menu.PermissionKey))
         {
-            var authorized = await authorizationService.AuthorizeAsync(
-            user,
-            $"Permission:{menu.PermissionKey}"
-        );
+            var result = await authorizationService.AuthorizeAsync(
+                user,
+                null,
+                $"Permission:{menu.PermissionKey}"
+            );
 
-            if (!authorized.Succeeded)
-            {
+            if (!result.Succeeded)
                 return false;
-            }
         }
 
+        // اگر فرزند دارد باید بررسی شود آیا حداقل یک فرزند قابل نمایش هست یا نه
         if (menu.Children != null && menu.Children.Count > 0)
         {
             foreach (var child in menu.Children)
@@ -35,34 +40,38 @@
                 if (await IsMenuVisibleAsync(child, user, authorizationService))
                     return true;
             }
+
             return false;
         }
+
         return true;
     }
 }
 
 <div class="ec-left-sidebar ec-bg-sidebar">
     <div id="sidebar" class="sidebar ec-sidebar-footer">
+
+        <!-- Logo -->
         <div class="ec-brand">
-            <a href="index.html" title="BilgiSoft">
+            <a href="/AdminArea/Home/Index" title="BilgiSoft">
                 <img class="ec-brand-icon" src="~/assets/img/logo/ec-site-logo.png" alt="">
                 <span class="ec-brand-name text-truncate">بیلگی سافت</span>
             </a>
         </div>
-
         <div class="ec-navigation" data-simplebar>
             <ul class="nav sidebar-inner" id="sidebar-menu">
+
                 @foreach (var menu in menus)
                 {
                     var menuVisible = await IsMenuVisibleAsync(menu, User, AuthorizationService);
-                    if (!menuVisible)
-                    {
-                        continue;
-                    }
 
-                    if (menu.Children.Count == 0)
+                    if (!menuVisible)
+                        continue;
+
+                    // ===== اگر منو فرزند نداشت =====
+                    if (menu.Children == null || menu.Children.Count == 0)
                     {
-                        <li class="@(selected == menu.Key ? "active" : null)">
+                        <li class="@(selected == menu.Key ? "active" : "")">
                             <a class="sidenav-item-link" href="@menu.Url">
                                 <i class="@menu.Icon"></i>
                                 <span class="nav-text">@menu.Title</span>
@@ -72,6 +81,7 @@
                     else
                     {
                         var visibleChildren = new List<SidebarMenuItem>();
+
                         foreach (var child in menu.Children)
                         {
                             if (await IsMenuVisibleAsync(child, User, AuthorizationService))
@@ -81,32 +91,40 @@
                         }
 
                         if (visibleChildren.Count == 0)
-                        {
                             continue;
-                        }
 
-                        <li class="has-sub @(selected.StartsWith(menu.Key) ? "active expand" : null)">
+                        var isExpanded = selected.StartsWith(menu.Key);
+
+                        <li class="has-sub @(isExpanded ? "active expand" : "")">
+
                             <a class="sidenav-item-link" href="javascript:void(0)">
                                 <i class="@menu.Icon"></i>
                                 <span class="nav-text">@menu.Title</span>
                                 <b class="caret"></b>
                             </a>
 
-                            <div class="collapse" style="display:@(selected.StartsWith(menu.Key) ? "block" : "none")">
+                            <div class="collapse @(isExpanded ? "show" : "")"
+                                 style="display:@(isExpanded ? "block" : "none")">
+
                                 <ul class="sub-menu">
+
                                     @foreach (var child in visibleChildren)
                                     {
-                                        <li class="@(selected == child.Key ? "active" : null)">
+                                        <li class="@(selected == child.Key ? "active" : "")">
                                             <a class="sidenav-item-link" href="@child.Url">
                                                 <span class="nav-text">@child.Title</span>
                                             </a>
                                         </li>
                                     }
+
                                 </ul>
+
                             </div>
+
                         </li>
                     }
                 }
+
             </ul>
         </div>
     </div>

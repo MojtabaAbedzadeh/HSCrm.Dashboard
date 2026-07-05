@@ -10,7 +10,6 @@ using System.Security.Claims;
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
-    [Authorize(Roles = "Admin")]
     public class InvoiceController : Controller
     {
         private readonly IConfiguration _config;
@@ -22,7 +21,9 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         {
             string apiUrl = _config["ApiAddress"] + "SalesInvoice/GetSalesInvoices";
             string token = User.FindFirstValue("Token");
+
             GetListApi GA = new GetListApi();
+
             var json = await GA.GetApiList(apiUrl, token);
             var result = JsonConvert.DeserializeObject<ApiResponse<List<SalesInvoiceModel>>>(json);
             var model = result.Data;
@@ -88,6 +89,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
             return View();
         }
+
         [HttpGet]
         private async Task<List<ProjetcsDropDown>> GetProjectList(string tenantId)
         {
@@ -114,6 +116,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
                 parsed["data"]?.ToString() ?? "[]"
             );
         }
+
         [HttpGet]
         private async Task<List<WarehousesDropDown>> GetWarehouseList(string tenantId)
         {

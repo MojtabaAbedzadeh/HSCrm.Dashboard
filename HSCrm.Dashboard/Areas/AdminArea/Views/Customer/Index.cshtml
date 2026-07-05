@@ -1,4 +1,5 @@
 ﻿@using System.Security.Claims
+@using HSCrm.Dashboard.Costants
 @model IEnumerable<CustomerModel>
 
 @{
@@ -21,7 +22,12 @@
         <h1>لیست مشتریان</h1>
         <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>مشتری</p>
     </div>
-    <div><button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomer"> اضافه کردن مشتری </button></div>
+    <div>
+        @if (User.HasPermission(Permissions.Customers.Create))
+        {
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomer"> اضافه کردن مشتری </button>
+        }
+    </div>
 </div>
 <div class="row">
     <div class="col-12">
@@ -54,8 +60,14 @@
                                                     <span class="sr-only">پروفایل</span>
                                                 </button>
                                                 <div class="dropdown-menu">
-                                                    <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
-                                                    <a class="dropdown-item" href="#">حذف</a>
+                                                    @if (User.HasPermission(Permissions.Customers.Edit))
+                                                    {
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
+                                                    }
+                                                    @if (User.HasPermission(Permissions.Customers.Delete))
+                                                    {
+                                                        <a class="dropdown-item" href="#">حذف</a>
+                                                    }
                                                 </div>
                                             </div>
                                         </td>
@@ -151,8 +163,6 @@
                                             <label for="Address" style="right:0!important; left:unset!important;">آدرس</label>
                                         </div>
                                     </div>
-                                    <input hidden class="form-control text-end" id="CreateById" name="CreateById" value="@ViewBag.UserId">
-                                    <input hidden class="form-control text-end" id="TenantId" name="TenantId" value="1">
                                     <div class="col-lg-12 alert" style="color:red">
                                         <span class="text-danger" id="spnValidate"></span>
                                     </div>
@@ -207,8 +217,6 @@
                                 <label for="AddressU" style="right:0!important; left:unset!important;">آدرس</label>
                             </div>
                         </div>
-                        <input hidden class="form-control text-end" id="ModifiedByIdU" name="ModifiedByIdU">
-                        <input hidden class="form-control text-end" id="TenantIdU" name="TenantIdU">
                         <div class="col-lg-12 alert" style="color:red">
                             <span class="text-danger" id="spnValidate"></span>
                         </div>
@@ -245,6 +253,9 @@
             }
 
             var formData = new FormData($("#frmCustomer")[0]);
+
+            console.log(formData);
+
             $.ajax({
                 type: 'POST',
                 url: '@ApiAddress' + 'Customer/CreateCustomer',
@@ -255,7 +266,7 @@
                 headers: {
                     "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
                 },
-                success: function (response ) {
+                success: function (response) {
                     for (var pair of formData.entries()) {
                         console.log(pair[0] + ': ' + pair[1]);
                     }
@@ -266,11 +277,10 @@
                             type: 'success',
                             confirmButtonClass: "btn btn-success",
                             timer: 1500
-                        }).then(() => {
+                        });
                             $('#addCustomer').modal('hide');
                             window.location.reload();
-                        });
-                    } else if (response.status == 401) {
+                    } else if (response.statusCode == 401) {
                         swal({
                             title: "عدم احراز هویت",
                             text: "نشست شما منقضی شده، لطفاً دوباره وارد شوید!",
@@ -278,7 +288,7 @@
                             confirmButtonClass: "btn btn-success",
                             timer: 1500
                         });
-                    } else if (response.status == 403) {
+                    } else if (response.statusCode == 403) {
                          swal({
                             title: "عدم دسترسی",
                             text: "شما مجوز انجام این عملیات را ندارید!",
@@ -286,7 +296,7 @@
                             confirmButtonClass: "btn btn-success",
                             timer: 1500
                         });
-                    } else if (response.status == 400) {
+                    } else if (response.statusCode == 400) {
                         swal({
                             title: "خطا",
                             text: "اطلاعات ارسالی معتبر نیست!",
@@ -294,7 +304,7 @@
                             confirmButtonClass: "btn btn-success",
                             timer: 1500
                         });
-                    } else if (response.status == 409) {
+                    } else if (response.statusCode == 409) {
                         swal({
                             title: "خطا",
                             text: "این اطلاعات قبلاً در سیستم ثبت شده است!",
@@ -302,7 +312,7 @@
                             confirmButtonClass: "btn btn-success",
                             timer: 1500
                         });
-                    }else if (response.status == 500) {
+                    }else if (response.statusCode == 500) {
                         swal({
                             title: "خطا",
                             text: "سمت سرور خطایی رخ داده است!",
@@ -311,17 +321,8 @@
                             timer: 1500
                         });
                     }
-                },
-                error: function (xhr) {
-                    swal({
-                        title: "عدم احراز هویت",
-                        text: xhr + "نشست شما منقضی شده، لطفاً دوباره وارد شوید!",
-                        type: 'error',
-                        confirmButtonClass: "btn btn-success",
-                        timer: 1500
-                    });                   
                 }
-        });
+            });
 
         });
     </script>

@@ -1,10 +1,9 @@
 ﻿@using HSCrm.Models.ModelDto
-
 @{
     ViewData["Title"] = "فرم ورود";
-    List<FiscalYearDropDown> lstFiscalYear = ViewBag.FiscalsYearList;
 }
-<div class="row justify-content-center">
+
+<div style="width:700px" class="row justify-content-center">
     <div class="col-lg-6 col-md-10">
         <div class="card">
             <div class="card-header bg-primary">
@@ -15,38 +14,80 @@
                 </div>
             </div>
             <div class="card-body p-5">
-                <h4 class="text-dark mb-5">ورود</h4>
-                <form method="post" action="/Account/Login">
+                <h4 class="text-dark mb-5">ورود به سیستم</h4>
+
+                <form id="loginForm" method="post" action="/Account/Login">
                     <div class="row">
-                        <div class="form-group col-md-12 mb-4">
-                            <input type="text" class="form-control" id="UserName" name="UserName" placeholder="نام کاربری">
+                        <!-- بخش اول: اعتبار سنجی -->
+                        <div id="step1">
+                            <div class="form-group mb-4">
+                                <input type="text" class="form-control" id="UserName" name="UserName" placeholder="نام کاربری">
+                            </div>
+                            <div class="form-group mb-4">
+                                <input type="password" class="form-control" id="Password" name="Password" placeholder="رمز عبور">
+                            </div>
+                            <button type="button" onclick="checkUser()" class="btn btn-primary btn-block">مرحله بعد</button>
                         </div>
-                        <div class="form-group col-md-12">
-                            <input type="password" class="form-control" id="Password" name="Password" placeholder="رمز عبور">
+
+                        <!-- بخش دوم: انتخاب سال مالی (در ابتدا مخفی) -->
+                        <div id="step2" style="display:none;">
+                            <div class="alert alert-info">کاربر تایید شد. لطفا سال مالی را انتخاب کنید.</div>
+                            <div class="form-group mb-4">
+                                <label>انتخاب سال مالی</label>
+                                <select id="FiscalYearId" name="FiscalYearId" class="form-control"></select>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-block">ورود به داشبورد</button>
+                            <button type="button" onclick="location.reload()" class="btn btn-link btn-block">تغییر کاربر</button>
                         </div>
-                        <div class="form-group col-md-12">
-                            <label for="FiscalYearId">انتخاب سال مالی</label>
-                            <select id="FiscalYearId" name="FiscalYearId" asp-items="@(new SelectList(lstFiscalYear, "DrId", "DrName"))" style="margin-bottom:10px;" class="form-control">
-                            </select>
-                        </div>
-                        @if (ViewBag.ErrorMessage != null)
-                        {
-                            <div class="alert" style="text-align:center; color:red;">@ViewBag.ErrorMessage</div>
-                        }
-                        <div class="col-md-12">
-                            <div class="d-flex my-2 justify-content-between">
-                                <div class="d-inline-block mr-3">
-                                    <div class="control control-checkbox">
-                                        مرا به خاطر بسپار<input type="checkbox">
-                                        <div class="control-indicator"></div>
-                                    </div>
-                                </div>
-                                <p><a class="text-blue" href="#">رمز ورود را فراموش کرده اید؟</a></p>
-                            </div><button type="submit" class="btn btn-primary btn-block mb-4">ورود</button>
-                        </div>
+
+                        <div id="errorMsg" class="alert mt-3" style="display:none; color:red; text-align:center;"></div>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    function checkUser() {
+        const user = document.getElementById("UserName").value;
+        const pass = document.getElementById("Password").value;
+
+        if (!user || !pass) {
+            showError("لطفا نام کاربری و رمز عبور را وارد کنید.");
+            return;
+        }
+
+        // ارسال درخواست برای چک کردن کاربر و گرفتن سال‌های مالی
+        fetch(`/Account/CheckUserAndGetFiscals?userName=${user}&password=${pass}`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // پر کردن Dropdown سال مالی
+                    const select = document.getElementById("FiscalYearId");
+                    select.innerHTML = "";
+                    data.fiscalYears.forEach(item => {
+                        let opt = document.createElement('option');
+                        opt.value = item.drId;
+                        opt.innerHTML = item.drName;
+                        select.appendChild(opt);
+                    });
+
+                    console.log(data.fiscalYears);
+
+                    // جابجایی بین مراحل
+                    document.getElementById("step1").style.display = "none";
+                    document.getElementById("step2").style.display = "block";
+                    document.getElementById("errorMsg").style.display = "none";
+                } else {
+                    showError(data.message);
+                }
+            });
+    }
+
+    function showError(msg) {
+        const err = document.getElementById("errorMsg");
+        err.innerHTML = msg;
+        err.style.display = "block";
+    }
+</script>

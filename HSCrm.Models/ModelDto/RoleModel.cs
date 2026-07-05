@@ -33,6 +33,7 @@ namespace HSCrm.Models.ModelDto
         public required string Name { get; set; }
         public required string Title { get; set; }
         public required string Category { get; set; }
+        public string CategoryTitleFa { get; set; }
     }
 
     public class PermissionCheckboxDto
@@ -40,6 +41,7 @@ namespace HSCrm.Models.ModelDto
         public int PermissionId { get; set; }
         public required string Name { get; set; }
         public required string Title { get; set; }
+        public string CategoryTitleFa { get; set; }
         public required string Category { get; set; }
         public bool IsSelected { get; set; }
     }

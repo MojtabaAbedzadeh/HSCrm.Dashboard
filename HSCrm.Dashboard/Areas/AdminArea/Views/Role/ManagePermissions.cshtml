@@ -48,7 +48,9 @@
                 }
                 @foreach (var group in groupedPermissions)
                 {
-                    var collapseId = "collapse_" + index;
+                    @* var collapseId = "collapse_" + index; *@
+                    var collapseId = "collapse_" + Guid.NewGuid().ToString("N");
+
                     var items = group.ToList();
                     <div class="accordion-item permission-group">
                         <h2 class="accordion-header">
@@ -97,6 +99,9 @@
 </div>
 
 @section AdminScripts {
+    <script>
+        console.log("Bootstrap version:", typeof bootstrap !== 'undefined' ? bootstrap.Alert.VERSION : "Not Loaded");
+    </script>
     <script>
         $(document).ready(function () {
             console.log("jquery loaded");

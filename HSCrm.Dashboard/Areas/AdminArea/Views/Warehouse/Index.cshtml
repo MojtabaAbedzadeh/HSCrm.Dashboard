@@ -190,6 +190,9 @@
                 contentType: false,
                 dataType: "json",
                 data: formData,
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
                         // ثبت موفق اطلاعات

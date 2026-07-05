@@ -1,6 +1,7 @@
 ﻿using HSCrm.BussinessLogic.PublicMethod;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Security.Claims;
@@ -8,6 +9,7 @@ using System.Security.Claims;
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
+    [Authorize(Roles = "Owner")]
     public class UserController : Controller
     {
         private readonly IConfiguration _config;

@@ -1,4 +1,5 @@
 using HSCrm.Dashboard.Authorization;
+using HSCrm.Dashboard.Filters;
 using HSCrm.Dashboard.Services;
 using HSCrm.Dashboard.Services.Interface;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -7,7 +8,10 @@ using Microsoft.AspNetCore.Authorization;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<GlobalExceptionFilter>();
+});
 
 builder.Services.AddAuthorization();
 
@@ -20,6 +24,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRoleApiService, RoleApiService>();
 builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<IRegisterService, RegisterService>();
+builder.Services.AddScoped<ISidebarMenuProvider, SidebarMenuProvider>();
 
 builder.Services.AddAuthentication(options =>
 {
