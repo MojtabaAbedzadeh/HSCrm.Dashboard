@@ -1,7 +1,6 @@
 ﻿using HSCrm.BussinessLogic.PublicMethod;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -86,10 +85,8 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             ViewBag.LastName = User.FindFirstValue("LastName");
             ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
             ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus");
-
             return View();
         }
-
         [HttpGet]
         private async Task<List<ProjetcsDropDown>> GetProjectList(string tenantId)
         {
@@ -116,7 +113,6 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
                 parsed["data"]?.ToString() ?? "[]"
             );
         }
-
         [HttpGet]
         private async Task<List<WarehousesDropDown>> GetWarehouseList(string tenantId)
         {
@@ -129,8 +125,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             return JsonConvert.DeserializeObject<List<WarehousesDropDown>>(
                 parsed["data"]?.ToString() ?? "[]"
             );
-        }
-        
+        }        
         [HttpGet]
         public async Task<IActionResult> ProjectInvoices(int projectId)
         {

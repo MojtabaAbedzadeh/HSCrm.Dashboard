@@ -68,7 +68,7 @@
                                                 @(item.Status == 1 ? "فاکتور نهایی" : "پیش فاکتور")
                                             </span>
                                         </td>
-                                        <td>@item.Total</td>
+                                        <td>@item.Total.ToString("N0")</td>
                                         <td>
                                             <div class="btn-group mb-1">
                                                 <button type="button" class="btn btn-outline-success" onclick="showInvoiceDetail('@item.Id')">جزئیات</button>
@@ -252,6 +252,9 @@
                 type: 'GET',
                 url: '@ApiAddress' + 'SalesInvoice/GetInvoiceDetail?invoiceId=' + invoiceId,
                 dataType: 'json',
+                headers: {
+                    "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                },
                 success: function (xhr) {
 
                     if (xhr.statusCode == 200) {

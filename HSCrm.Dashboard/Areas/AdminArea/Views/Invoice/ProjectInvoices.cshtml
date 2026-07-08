@@ -72,7 +72,7 @@
                                                 @(item.Status == 1 ? "فاکتور نهایی" : "پیش فاکتور")
                                             </span>
                                         </td>
-                                        <td>@item.Total</td>
+                                        <td>@item.Total.ToString("N0")</td>
                                         <td>
                                             <div class="btn-group mb-1">
                                                 <button type="button" class="btn btn-outline-success" onclick="showInvoiceDetail('@item.Id')">جزئیات</button>

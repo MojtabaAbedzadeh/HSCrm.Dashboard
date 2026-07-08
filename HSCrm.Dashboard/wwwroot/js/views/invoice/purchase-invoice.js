@@ -4,8 +4,12 @@
 const ApiAddress = AppContext.apiAddress;
 const TId = AppContext.tenantId;
 const UId = AppContext.userId;
+const Token = AppContext.token;
 
 $(document).ready(function () {
+    const Token = AppContext.token;
+    console.log("Token from AppContext:", Token); // این را چک کن ببین در کنسول چی چاپ می‌کنه
+
     $('.persian-date').persianDatepicker({
         format: 'YYYY/MM/DD',
         autoClose: true,
@@ -43,21 +47,32 @@ $('#ProductTitle').on('keyup', function () {
         return;
     }
 
-    $.get(ApiAddress + 'Product/Search', { term: text }, function (res) {
-        let html = '';
-        res.forEach(p => {
-            html += `
-                <li class="list-group-item product-item"
-                    data-id="${p.id}"
-                    data-title="${p.productTitle}"
-                    data-buy="${p.buyPrice}">
-                    ${p.productTitle} - ${formatPrice(p.buyPrice)}
-                </li>`;
-        });
-
-        $('#productAutoComplete').html(html).show();
+    $.ajax({
+        url: ApiAddress + 'Product/Search',
+        type: 'GET',
+        data: { term: text },
+        headers: {
+            'Authorization': 'Bearer ' + Token
+        },
+        success: function (res) {
+            let html = '';
+            res.forEach(p => {
+                html += `
+                    <li class="list-group-item product-item"
+                        data-id="${p.id}"
+                        data-title="${p.productTitle}"
+                        data-buy="${p.buyPrice}">
+                        ${p.productTitle} - ${formatPrice(p.buyPrice)}
+                    </li>`;
+            });
+            $('#productAutoComplete').html(html).show();
+        },
+        error: function (xhr) {
+            console.error("خطا در سرچ محصول:", xhr.status, xhr.responseText);
+        }
     });
 });
+
 $(document).on('click', '.product-item', function () {
     $('#ProductTitle').val($(this).data('title'));
     $('#ProductId').val($(this).data('id'));
@@ -66,6 +81,7 @@ $(document).on('click', '.product-item', function () {
     $('#productCount').focus();
     $('#productCount').select();
 });
+
 // ================================
 // Row Sum Calculation
 // ================================
@@ -74,13 +90,13 @@ function calculateRowSum() {
     const price = unFormatPrice($('#buyPrice').val());
     const discount = unFormatPrice($('#discount').val());
     const tax = unFormatPrice($('#tax').val());
-
     let sum = (qty * price) - discount + tax;
     if (sum < 0) sum = 0;
-
     $('#rowSum').val(formatPrice(sum));
 }
+
 $('#productCount, #buyPrice, #discount, #tax').on('keyup change', calculateRowSum);
+
 // ================================
 // Add / Merge Product Row
 // ================================
@@ -95,6 +111,8 @@ $('#btnAddProduct').on('click', function () {
             title: "خطا",
             text: "محصول و تعداد را وارد کنید",
             type: "error",
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
             timer: 1500
         });
         return;
@@ -109,17 +127,12 @@ $('#btnAddProduct').on('click', function () {
 
     $('#tblBody tr').each(function () {
         const rowProductId = $(this).find('td:eq(1)').text();
-
         if (rowProductId === productId) {
             const oldQty = parseFloat($(this).find('td:eq(3)').text());
             const newQty = oldQty + qty;
-
-            const newSum =
-                (newQty * price) - discount + tax;
-
+            const newSum = (newQty * price) - discount + tax;
             $(this).find('td:eq(3)').text(newQty);
             $(this).find('td:eq(7)').text(formatPrice(newSum));
-
             merged = true;
         }
     });
@@ -223,7 +236,9 @@ $('#btnRegInvoice').on('click', function () {
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(model),
-
+        headers: {
+            'Authorization': 'Bearer ' + Token
+        },
         success: function (status) {
             // ✅ اگر عملیات موفق بوده
             if (status.status === true) {
@@ -235,99 +250,78 @@ $('#btnRegInvoice').on('click', function () {
                     confirmButtonText: "باشه",
                     timer: 1500
                 });
-
-                // اختیاری: ریدایرکت یا ریست فرم
-                // location.href = '/PurchaseInvoice/List';
-                // resetForm();
-
+                window.location.href = '/AdminArea/Invoice/PurchaseInvoice';
                 return;
-            }
+            } else {
+                switch (status.statusCode) {
 
-            // ❌ اگر Status=false ولی HTTP 200 بوده
-            switch (status.statusCode) {
+                    case 204:
+                        swal({
+                            title: "اطلاعات ناقص",
+                            text: "آیتمی برای ثبت وجود ندارد",
+                            type: "warning",
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500
+                        });
+                        break;
 
-                case 204:
+                    case 400:
 
-                    swal({
-                        title: "اطلاعات ناقص",
-                        text: "آیتمی برای ثبت وجود ندارد",
-                        type: "warning",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500
-                    });
+                        swal({
+                            title: "درخواست نامعتبر",
+                            text: "اطلاعات ارسالی صحیح نیست",
+                            type: "warning",
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500
+                        });
 
-                    break;
+                        break;
 
-                case 400:
+                    case 403:
 
-                    swal({
-                        title: "درخواست نامعتبر",
-                        text: "اطلاعات ارسالی صحیح نیست",
-                        type: "warning",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500
-                    });
+                        swal({
+                            title: "عدم دسترسی",
+                            text: "شما مجاز به انجام این عملیات نیستید",
+                            type: "error",
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500
+                        });
 
-                    break;
+                        break;
 
-                case 403:
+                    case 404:
 
-                    swal({
-                        title: "عدم دسترسی",
-                        text: "شما مجاز به انجام این عملیات نیستید",
-                        type: "error",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500
-                    });
+                        swal({
+                            title: "یافت نشد",
+                            text: "رکورد مورد نظر یافت نشد",
+                            type: "error",
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500
+                        });
 
-                    break;
+                        break;
 
-                case 404:
+                    case 406:
 
-                    swal({
-                        title: "یافت نشد",
-                        text: "رکورد مورد نظر یافت نشد",
-                        type: "error",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500
-                    });
+                        swal({
+                            title: "کمبود موجودی",
+                            text: "موجودی محصول کافی نمی‌باشد!",
+                            type: "warning",
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500
+                        });
 
-                    break;
-
-                case 406:
-
-                    swal({
-                        title: "کمبود موجودی",
-                        text: "موجودی محصول کافی نمی‌باشد!",
-                        type: "warning",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500
-                    });
-
-                    break;
-
-                default:
-
-                    swal({
-                        title: "خطای سرور",
-                        text: "خطایی در سرور رخ داده است",
-                        type: "error",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500
-                    });
-
-                    break;
+                        break;
+                }
             }
         },
 
         error: function (xhr) {
-            // ❌ خطاهای واقعی HTTP (500، 502، Timeout و ...)
             swal({
                 title: "خطای ارتباط با سرور",
                 text: "امکان ارتباط با سرور وجود ندارد، لطفاً مجدداً تلاش کنید",

@@ -66,9 +66,9 @@
                                     <tr>
                                         <td>@item.ExpenseTitle</td>
                                         <td>@item.Project.ProjectTitle</td>
-                                        <td>@item.Amount</td>
+                                        <td>@item.Amount.ToString("N0")</td>
                                         <td>@ConvertDate.ConvertMiladiToShamsi(item.ExpenseDate, "yyyy/MM/dd")</td>
-                                        <td>@item.CreatedBy.UserFirstName @item.CreatedBy.UserFirstName</td>
+                                        <td>@item.CreatedBy.UserFirstName @item.CreatedBy.UserLastName</td>
                                         <td>@item.Description</td>
                                         <td>
                                             <div class="btn-group mb-1">
@@ -266,6 +266,9 @@
                 contentType: false,
                 dataType: "json",
                 data: formData,
+                headers: {
+                    "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                },
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
                         swal({

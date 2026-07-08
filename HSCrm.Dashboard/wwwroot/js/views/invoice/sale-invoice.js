@@ -1,11 +1,20 @@
 ﻿// ================================
 // Helpers
 // ================================
-const ApiAddress = AppContext.apiAddress;
-const TId = AppContext.tenantId;
-const UId = AppContext.userId;
+const ApiAddress = window.AppContext.apiAddress || '';
+const TId = window.AppContext.tenantId || '';
+const UId = window.AppContext.userId || '';
+var Token = window.AppContext.token || '';
 
 $(document).ready(function () {
+    $.ajaxSetup({
+        beforeSend: function (xhr) {
+            if (Token) {
+                xhr.setRequestHeader("Authorization", `Bearer ${Token}`);
+            }
+        }
+    });;
+
     $('.persian-date').persianDatepicker({
         format: 'YYYY/MM/DD',
         autoClose: true,
@@ -20,12 +29,10 @@ function formatPrice(value) {
     if (!value) return '0';
     return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
-
 function unFormatPrice(value) {
     if (!value) return 0;
     return parseFloat(value.toString().replace(/,/g, '')) || 0;
 }
-
 function clearProductForm() {
     $('#ProductTitle').val('');
     $('#ProductId').val('');
@@ -37,7 +44,7 @@ function clearProductForm() {
 }
 
 // ================================
-// Product Search
+// Product Search (Autocomplete)
 // ================================
 $('#ProductTitle').on('keyup', function () {
     const text = $(this).val().trim();
@@ -47,15 +54,12 @@ $('#ProductTitle').on('keyup', function () {
         return;
     }
 
-    // گرفتن توکن از localStorage (یا هر جایی که ذخیره کرده‌اید)
-    const token = localStorage.getItem("token");
-
     $.ajax({
-        url: ApiAddress + 'Product/Search',
+        url: window.AppContext.apiAddress + 'Product/Search',
         type: 'GET',
         data: { term: text },
         headers: {
-            Authorization: 'Bearer ' + token
+            'Authorization': 'Bearer ' + Token
         },
         success: function (res) {
             let html = '';
@@ -69,38 +73,33 @@ $('#ProductTitle').on('keyup', function () {
                     </li>`;
             });
             $('#productAutoComplete').html(html).show();
+        },
+        error: function (xhr) {
+            console.error("خطا در سرچ محصول:", xhr.status, xhr.responseText);
         }
     });
 });
 
 
 $(document).on('click', '.product-item', function () {
-
     $('#ProductTitle').val($(this).data('title'));
     $('#ProductId').val($(this).data('id'));
     $('#sellPrice').val(formatPrice($(this).data('sell')));
-
     $('#productAutoComplete').hide();
-
     $('#productCount').focus();
     $('#productCount').select();
-
 });
 
 // ================================
-// Row Sum
+// Row Sum Calculation
 // ================================
 function calculateRowSum() {
-
     const qty = parseFloat($('#productCount').val()) || 0;
     const price = unFormatPrice($('#sellPrice').val());
     const discount = unFormatPrice($('#discount').val());
     const tax = unFormatPrice($('#tax').val());
-
     let sum = (qty * price) - discount + tax;
-
     if (sum < 0) sum = 0;
-
     $('#rowSum').val(formatPrice(sum));
 }
 
@@ -116,7 +115,6 @@ $('#btnAddProduct').on('click', function () {
     const qty = parseFloat($('#productCount').val()) || 0;
 
     if (!productId || qty <= 0) {
-
         swal({
             title: "خطا",
             text: "محصول و تعداد را وارد کنید",
@@ -125,7 +123,6 @@ $('#btnAddProduct').on('click', function () {
             confirmButtonText: "باشه",
             timer: 1500
         });
-
         return;
     }
 
@@ -137,26 +134,18 @@ $('#btnAddProduct').on('click', function () {
     let merged = false;
 
     $('#tblBody tr').each(function () {
-
         const rowProductId = $(this).find('td:eq(1)').text();
-
         if (rowProductId === productId) {
-
             const oldQty = parseFloat($(this).find('td:eq(3)').text());
             const newQty = oldQty + qty;
-
             const newSum = (newQty * price) - discount + tax;
-
             $(this).find('td:eq(3)').text(newQty);
             $(this).find('td:eq(7)').text(formatPrice(newSum));
-
             merged = true;
         }
-
     });
 
     if (!merged) {
-
         const rowIndex = $('#tblBody tr').length + 1;
 
         $('#tblBody').append(`
@@ -276,102 +265,84 @@ $('#btnRegInvoice').on('click', function () {
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(model),
-
         success: function (status) {
-
             if (status.status === true) {
-
                 swal({
                     title: "موفق",
-                    text: status.message || "فاکتور با موفقیت ثبت شد",
+                    text: "فاکتور با موفقیت ثبت شد",
                     type: "success",
                     confirmButtonColor: "green",
                     confirmButtonText: "باشه",
                     timer: 1500
                 });
-
+                window.location.href = '/AdminArea/Invoice/SalesInvoice';
                 return;
-            }
+            } else {
+                switch (status.statusCode) {
 
-            switch (status.statusCode) {
+                    case 204:
+                        swal({
+                            title: "اطلاعات ناقص",
+                            text: "آیتمی برای ثبت وجود ندارد",
+                            type: "warning",
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500
+                        });
+                        break;
 
-                case 204:
+                    case 400:
 
-                    swal({
-                        title: "اطلاعات ناقص",
-                        text: status.message || "آیتمی برای ثبت وجود ندارد",
-                        type: "warning",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500
-                    });
+                        swal({
+                            title: "درخواست نامعتبر",
+                            text: "اطلاعات ارسالی صحیح نیست",
+                            type: "warning",
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500
+                        });
 
-                    break;
+                        break;
 
-                case 400:
+                    case 403:
 
-                    swal({
-                        title: "درخواست نامعتبر",
-                        text: status.message || "اطلاعات ارسالی صحیح نیست",
-                        type: "warning",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500
-                    });
+                        swal({
+                            title: "عدم دسترسی",
+                            text: "شما مجاز به انجام این عملیات نیستید",
+                            type: "error",
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500
+                        });
 
-                    break;
+                        break;
 
-                case 403:
+                    case 404:
 
-                    swal({
-                        title: "عدم دسترسی",
-                        text: status.message || "شما مجاز به انجام این عملیات نیستید",
-                        type: "error",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500
-                    });
+                        swal({
+                            title: "یافت نشد",
+                            text: "رکورد مورد نظر یافت نشد",
+                            type: "error",
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500
+                        });
 
-                    break;
+                        break;
 
-                case 404:
+                    case 406:
 
-                    swal({
-                        title: "یافت نشد",
-                        text: status.message || "رکورد مورد نظر یافت نشد",
-                        type: "error",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500
-                    });
+                        swal({
+                            title: "کمبود موجودی",
+                            text: "موجودی محصول کافی نمی‌باشد!",
+                            type: "warning",
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه",
+                            timer: 1500
+                        });
 
-                    break;
-
-                case 406:
-
-                    swal({
-                        title: "کمبود موجودی",
-                        text: "موجودی محصول کافی نمی‌باشد!",
-                        type: "warning",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500
-                    });
-
-                    break;
-
-                default:
-
-                    swal({
-                        title: "خطای سرور",
-                        text: status.message || "خطایی در سرور رخ داده است",
-                        type: "error",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500
-                    });
-
-                    break;
+                        break;
+                }
             }
         },
 

@@ -192,12 +192,15 @@ else
             });
         });
     </script>
+
     <script>
         window.AppContext = {
             apiAddress: '@ViewBag.ApiAddress',
             tenantId: '@ViewBag.TenantId',
-            userId: '@ViewBag.UserId'
+            userId: '@ViewBag.UserId',
+            token: '@ViewBag.Token'
         };
     </script>
+
     <script src="~/js/views/invoice/purchase-invoice.js"></script>
 }

@@ -4,6 +4,7 @@
     string ApiAddress = ViewBag.ApiAddress;
     string UId = ViewBag.UserId;
     string TId = ViewBag.TenantId;
+    var Token = ViewBag.Token;
 
     List<ProjetcsDropDown> lstProject = ViewBag.Projects;
     lstProject.Insert(0, new ProjetcsDropDown { DrId = "0", DrName = "انتخاب پروژه" });
@@ -185,9 +186,10 @@ else
     </div>
 }
 @section AdminScripts {
+    <script src="~/lib/sweetalert/sweetalert2.min.js"></script>
     <script src="~/lib/sweetalert/sweetalert2.js"></script>
     <script src="~/lib/persiandate/persian-date.js"></script>
-    <script src="~/lib/persiandate/persian-datepicker.js"></script>
+    <script src="~/lib/persiandate/persian-datepicker.js"></script>    
     <script>
         $(document).ready(function () {
             $(".persian-date").persianDatepicker({
@@ -196,14 +198,17 @@ else
                 initialValue: true,
                 initialValueType: 'persian'
             });
-        });
+        });        
     </script>
+
     <script>
         window.AppContext = {
             apiAddress: '@ViewBag.ApiAddress',
             tenantId: '@ViewBag.TenantId',
-            userId: '@ViewBag.UserId'
+            userId: '@ViewBag.UserId',
+            token: '@ViewBag.Token'
         };
     </script>
+
     <script src="~/js/views/invoice/sale-invoice.js"></script>
 }
