@@ -124,7 +124,6 @@
     <script src="~/lib/sweetalert/sweetalert2.js"></script>
     <script>
         function confirmInvoice(invoiceId) {
-
             swal({
                 title: "تأیید فاکتور",
                 text: "آیا از تبدیل پیش‌فاکتور به فاکتور نهایی مطمئن هستید؟",
@@ -150,6 +149,9 @@
                     contentType: false,
                     dataType: 'json',
                     data: formData,
+                    headers: {
+                        "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                    },
                     success: function (xhr) {
 
                         if (xhr.statusCode == 200) {
@@ -261,6 +263,9 @@
                 type: 'GET',
                 url: '@ApiAddress' + 'SalesInvoice/GetInvoiceDetail?invoiceId=' + invoiceId,
                 dataType: 'json',
+                headers: {
+                        "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                },
                 success: function (xhr) {
 
                     if (xhr.statusCode == 200) {

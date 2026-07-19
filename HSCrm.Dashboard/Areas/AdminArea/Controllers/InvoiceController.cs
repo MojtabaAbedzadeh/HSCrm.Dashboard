@@ -1,4 +1,5 @@
 ﻿using HSCrm.BussinessLogic.PublicMethod;
+using HSCrm.Dashboard.Controllers;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Mvc;
@@ -9,31 +10,25 @@ using System.Security.Claims;
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
-    public class InvoiceController : Controller
+    public class InvoiceController : BaseController
     {
         private readonly IConfiguration _config;
-        public InvoiceController(IConfiguration config)
+        private readonly GetListApi _getListApi;
+
+        public InvoiceController(IConfiguration config, GetListApi getListApi) : base(config)
         {
-            _config = config;
+            _getListApi = getListApi;
         }
         public async Task<IActionResult> SalesInvoice()
         {
-            string apiUrl = _config["ApiAddress"] + "SalesInvoice/GetSalesInvoices";
+            string apiUrl = "SalesInvoice/GetSalesInvoices";
             string token = User.FindFirstValue("Token");
 
-            GetListApi GA = new GetListApi();
+            var json = await _getListApi.GetApiList(apiUrl);
 
-            var json = await GA.GetApiList(apiUrl, token);
             var result = JsonConvert.DeserializeObject<ApiResponse<List<SalesInvoiceModel>>>(json);
             var model = result.Data;
-            ViewBag.ApiAddress = _config["ApiAddress"];
-            ViewBag.UserId = User.FindFirstValue("UserId");
-            ViewBag.TenantId = User.FindFirstValue("TenantId");
-            ViewBag.Token = User.FindFirstValue("Token");
-            ViewBag.FirstName = User.FindFirstValue("FirstName");
-            ViewBag.LastName = User.FindFirstValue("LastName");
-            ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
-            ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus");
+
             return View(model);
         }
         public async Task<IActionResult> AddSaleInvoice()
@@ -42,32 +37,17 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             ViewBag.Projects = await GetProjectList(tenantId);
             ViewBag.Warehouses = await GetWarehouseList(tenantId);
 
-            ViewBag.ApiAddress = _config["ApiAddress"];
-            ViewBag.UserId = User.FindFirstValue("UserId");
-            ViewBag.TenantId = User.FindFirstValue("TenantId");
-            ViewBag.Token = User.FindFirstValue("Token");
-            ViewBag.FirstName = User.FindFirstValue("FirstName");
-            ViewBag.LastName = User.FindFirstValue("LastName");
-            ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
-            ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus");
             return View();
         }
         public async Task<IActionResult> PurchaseInvoice()
         {
-            string apiUrl = _config["ApiAddress"] + "PurchaseInvoice/GetPurchaseInvoices";
+            string apiUrl = "PurchaseInvoice/GetPurchaseInvoices";
             string token = User.FindFirstValue("Token");
-            GetListApi GA = new GetListApi();
-            var json = await GA.GetApiList(apiUrl, token);
+
+            var json = await _getListApi.GetApiList(apiUrl);
             var result = JsonConvert.DeserializeObject<ApiResponse<List<PurchaseInvoiceModel>>>(json);
             var model = result.Data;
-            ViewBag.ApiAddress = _config["ApiAddress"];
-            ViewBag.UserId = User.FindFirstValue("UserId");
-            ViewBag.TenantId = User.FindFirstValue("TenantId");
-            ViewBag.Token = User.FindFirstValue("Token");
-            ViewBag.FirstName = User.FindFirstValue("FirstName");
-            ViewBag.LastName = User.FindFirstValue("LastName");
-            ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
-            ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus");
+
             return View(model);
         }
         public async Task<IActionResult> AddPurchaseInvoice()
@@ -77,23 +57,15 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             ViewBag.Suppliers = await GetSupplierList(tenantId);
             ViewBag.Warehouses = await GetWarehouseList(tenantId);
 
-            ViewBag.ApiAddress = _config["ApiAddress"];
-            ViewBag.UserId = User.FindFirstValue("UserId");
-            ViewBag.TenantId = User.FindFirstValue("TenantId");
-            ViewBag.Token = User.FindFirstValue("Token");
-            ViewBag.FirstName = User.FindFirstValue("FirstName");
-            ViewBag.LastName = User.FindFirstValue("LastName");
-            ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
-            ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus");
             return View();
         }
         [HttpGet]
         private async Task<List<ProjetcsDropDown>> GetProjectList(string tenantId)
         {
-            string apiUrlProject = _config["ApiAddress"] + "Project/ProjectDropdownList?tenantId=" + tenantId;
+            string apiUrlProject = "Project/ProjectDropdownList?tenantId=" + tenantId;
             string token = User.FindFirstValue("Token");
-            GetListApi getListProject = new GetListApi();
-            string json = await getListProject.GetApiList(apiUrlProject, token);
+
+            string json = await _getListApi.GetApiList(apiUrlProject);
 
             var parsed = JObject.Parse(json);
             return JsonConvert.DeserializeObject<List<ProjetcsDropDown>>(
@@ -103,10 +75,10 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         [HttpGet]
         private async Task<List<SuppliersDropDown>> GetSupplierList(string tenantId)
         {
-            string apiUrlSupplier = _config["ApiAddress"] + "Supplier/SupplierDropdownList?tenantId=" + tenantId;
+            string apiUrlSupplier = "Supplier/SupplierDropdownList?tenantId=" + tenantId;
             string token = User.FindFirstValue("Token");
-            GetListApi getListSupplier = new GetListApi();
-            string json = await getListSupplier.GetApiList(apiUrlSupplier, token);
+
+            string json = await _getListApi.GetApiList(apiUrlSupplier);
 
             var parsed = JObject.Parse(json);
             return JsonConvert.DeserializeObject<List<SuppliersDropDown>>(
@@ -116,10 +88,10 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         [HttpGet]
         private async Task<List<WarehousesDropDown>> GetWarehouseList(string tenantId)
         {
-            string apiUrlWarehouse = _config["ApiAddress"] + "Warehouse/WarehouseDropdownList?tenantId=" + tenantId;
+            string apiUrlWarehouse = "Warehouse/WarehouseDropdownList?tenantId=" + tenantId;
             string token = User.FindFirstValue("Token");
-            GetListApi getListWarehouse = new GetListApi();
-            string json = await getListWarehouse.GetApiList(apiUrlWarehouse, token);
+
+            string json = await _getListApi.GetApiList(apiUrlWarehouse);
 
             var parsed = JObject.Parse(json);
             return JsonConvert.DeserializeObject<List<WarehousesDropDown>>(
@@ -129,23 +101,14 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         [HttpGet]
         public async Task<IActionResult> ProjectInvoices(int projectId)
         {
-            string apiUrl = _config["ApiAddress"] + "SalesInvoice/GetByProjectId?projectId=" + projectId;
+            string apiUrl = "SalesInvoice/GetByProjectId?projectId=" + projectId;
             string token = User.FindFirstValue("Token");
-            GetListApi GA = new GetListApi();
-            var json = await GA.GetApiList(apiUrl, token);
+
+            var json = await _getListApi.GetApiList(apiUrl);
             var result = JsonConvert.DeserializeObject<ApiResponse<List<SalesInvoiceModel>>>(json);
             var model = result.Data;
 
             var tenantId = User.FindFirstValue("TenantId");
-
-            ViewBag.ApiAddress = _config["ApiAddress"];
-            ViewBag.TenantId = User.FindFirstValue("TenantId");
-            ViewBag.UserId = User.FindFirstValue("UserId");
-            ViewBag.Token = User.FindFirstValue("Token");
-            ViewBag.FirstName = User.FindFirstValue("FirstName");
-            ViewBag.LastName = User.FindFirstValue("LastName");
-            ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
-            ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus");
 
             return View(model);
         }

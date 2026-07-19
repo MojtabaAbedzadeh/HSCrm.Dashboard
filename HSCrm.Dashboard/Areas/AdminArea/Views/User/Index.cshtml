@@ -327,7 +327,6 @@
         $("#btnUserSubmit").on('click', function (e) {
             e.preventDefault();
             var formData = new FormData($("#frmUser")[0]);
-            console.log('@token');
             $.ajax({
                 type: 'POST',
                 url: '@ApiAddress' + 'User/CreateUser',
@@ -503,6 +502,9 @@
                 type: 'GET',
                 url: '@ApiAddress' + 'User/GetUserById?userId=' + userId,
                 dataType: 'json',
+                headers: {
+                    "Authorization": "Bearer " + "@token"
+                },
                 success: function (xhr) {
 
                     $("#UserId").val(xhr.data.id);
@@ -544,6 +546,9 @@
                 url: '@ApiAddress' + 'User/UpdateUser',
                 contentType: 'application/json',
                 data: JSON.stringify(model),
+                headers: {
+                    "Authorization": "Bearer " + "@token"
+                },
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
                         swal({
@@ -583,6 +588,9 @@
                 type: 'Post',
                 url: '@ApiAddress' + 'FileUpload/UserImageUpload',
                 data: data,
+                headers: {
+                    "Authorization": "Bearer " + "@token"
+                },
                 contentType: false,
                 processData: false
             }).done(function (xhr) {
@@ -618,6 +626,9 @@
                 type: 'Post',
                 url: '@ApiAddress' + 'FileUpload/UserImageUpload',
                 data: data,
+                headers: {
+                    "Authorization": "Bearer " + "@token"
+                },
                 contentType: false,
                 processData: false
             }).done(function (xhr) {

@@ -1,10 +1,6 @@
 ﻿using Newtonsoft.Json;
-using System;
 using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace HSCrm.BussinessLogic.PublicMethod
 {
@@ -21,54 +17,43 @@ namespace HSCrm.BussinessLogic.PublicMethod
 
     public class GetListApi
     {
-        public async Task<string> GetApiList(string apiUrl, string token)
+        private readonly IHttpClientFactory _httpClientFactory;
+
+        public GetListApi(IHttpClientFactory httpClientFactory)
         {
-            using (HttpClient client = new HttpClient())
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-                HttpResponseMessage response = await client.GetAsync(apiUrl);
-
-                // مدیریت کدهای خطا به جای منفجر کردن چرخه با EnsureSuccessStatusCode
-                if (response.StatusCode == HttpStatusCode.Forbidden)
-                {
-                    throw new AccessDeniedException();
-                }
-                if (response.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    throw new UnauthorizedException();
-                }
-
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync();
-            }
+            _httpClientFactory = httpClientFactory;
         }
 
-        public async Task<string> PostApi(string apiUrl, object model, string token = "")
+        public async Task<string> GetApiList(string apiUrl)
         {
-            using (HttpClient client = new HttpClient())
+            // استفاده از کلاینت نام‌دار "ApiClient" که در Program.cs تنظیم شده است
+            // با این کار AuthHeaderHandler خودکار اجرا می‌شود
+            var client = _httpClientFactory.CreateClient("ApiClient");
+
+            HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+            if (response.IsSuccessStatusCode)
             {
-                if (!string.IsNullOrEmpty(token))
-                    client.DefaultRequestHeaders.Authorization =
-                        new AuthenticationHeaderValue("Bearer", token);
-
-                var json = JsonConvert.SerializeObject(model);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                HttpResponseMessage response = await client.PostAsync(apiUrl, content);
-
-                if (response.StatusCode == HttpStatusCode.Forbidden)
-                {
-                    throw new AccessDeniedException();
-                }
-                if (response.StatusCode == HttpStatusCode.Unauthorized)
-                {
-                    throw new UnauthorizedException();
-                }
-
-                response.EnsureSuccessStatusCode();
                 return await response.Content.ReadAsStringAsync();
             }
+
+            return string.Empty;
+        }
+    
+        public async Task<string> PostApi(string endpoint, object model)
+        {
+            var client = _httpClientFactory.CreateClient("ApiClient");
+
+            var json = JsonConvert.SerializeObject(model);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response = await client.PostAsync(endpoint, content);
+
+            if (response.StatusCode == HttpStatusCode.Forbidden) throw new AccessDeniedException();
+            if (response.StatusCode == HttpStatusCode.Unauthorized) throw new UnauthorizedException();
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsStringAsync();
         }
     }
 }

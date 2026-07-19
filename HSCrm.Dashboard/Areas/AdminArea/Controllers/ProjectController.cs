@@ -1,4 +1,5 @@
 ﻿using HSCrm.BussinessLogic.PublicMethod;
+using HSCrm.Dashboard.Controllers;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Authorization;
@@ -10,20 +11,21 @@ using System.Security.Claims;
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
-    public class ProjectController : Controller
+    public class ProjectController : BaseController
     {
         private readonly IConfiguration _config;
+        private readonly GetListApi _getListApi;
 
-        public ProjectController(IConfiguration config)
+        public ProjectController(IConfiguration config, GetListApi getListApi) : base(config)
         {
-            _config = config;
+            _getListApi = getListApi;
         }
         public async Task<IActionResult> Index()
         {
-            string apiUrl = _config["ApiAddress"] + "Project/GetProjects";
+            string apiUrl = "Project/GetProjects";
             string token = User.FindFirstValue("Token");
-            GetListApi GA = new GetListApi();
-            var json = await GA.GetApiList(apiUrl, token);
+
+            var json = await _getListApi.GetApiList(apiUrl);
 
             var result = JsonConvert.DeserializeObject<ApiResponse<List<ProjectModel>>>(json);
             var model = result?.Data ?? new List<ProjectModel>();
@@ -32,25 +34,15 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
             ViewBag.Customers = await GetCustomerList(tenantId);
 
-            ViewBag.ApiAddress = _config["ApiAddress"];
-            ViewBag.UserId = User.FindFirstValue("UserId");
-            ViewBag.Token = User.FindFirstValue("Token");
-            ViewBag.FirstName = User.FindFirstValue("FirstName");
-            ViewBag.LastName = User.FindFirstValue("LastName");
-            ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
-            ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus");
-
             return View(model);
         }
-
-
         [HttpGet]
         private async Task<List<CustomersDropDown>> GetCustomerList(string tenantId)
         {
-            string apiUrlCustomer = _config["ApiAddress"] + "Customer/CustomerDropdownList?tenantId=" + tenantId;
+            string apiUrlCustomer = "Customer/CustomerDropdownList?tenantId=" + tenantId;
             string token = User.FindFirstValue("Token");
-            GetListApi getListCustomer = new GetListApi();
-            string json = await getListCustomer.GetApiList(apiUrlCustomer, token);
+            
+            string json = await _getListApi.GetApiList(apiUrlCustomer);
 
             var parsed = JObject.Parse(json);
             return JsonConvert.DeserializeObject<List<CustomersDropDown>>(parsed["data"]?.ToString() ?? "[]");

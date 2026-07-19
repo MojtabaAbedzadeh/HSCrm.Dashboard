@@ -300,6 +300,9 @@
                 type: 'GET',
                 url: '@ApiAddress' + 'Project/GetById?projectId=' + projectId,
                 dataType: 'json',
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
                     const data = xhr.data;
 
@@ -329,6 +332,9 @@
                 dataType: 'json',
                 contentType: 'application/json',
                 data: JSON.stringify(model),
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
                         swal({

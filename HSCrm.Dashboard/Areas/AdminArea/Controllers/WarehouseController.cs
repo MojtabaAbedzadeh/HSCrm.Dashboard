@@ -1,4 +1,5 @@
 ﻿using HSCrm.BussinessLogic.PublicMethod;
+using HSCrm.Dashboard.Controllers;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Authorization;
@@ -10,32 +11,25 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
     [Authorize(Roles = "Owner")]
-    public class WarehouseController : Controller
+    public class WarehouseController : BaseController
     {
         private readonly IConfiguration _config;
+        private readonly GetListApi _getListApi;
 
-        public WarehouseController(IConfiguration config)
+        public WarehouseController(IConfiguration config, GetListApi getListApi) : base(config) 
         {
             _config = config;
+            _getListApi = getListApi;
         }
 
         public async Task<IActionResult> Index()
         {
             string apiUrl = _config["ApiAddress"] + "Warehouse/GetWarehouses";
             string token = User.FindFirstValue("Token");
-            GetListApi GA = new GetListApi();
-            var json = await GA.GetApiList(apiUrl, token);
+
+            var json = await _getListApi.GetApiList(apiUrl);
             var result = JsonConvert.DeserializeObject<ApiResponse<List<WarehousesModel>>>(json);
             var model = result.Data;
-
-            ViewBag.ApiAddress = _config["ApiAddress"];
-            ViewBag.UserId = User.FindFirstValue("UserId");
-            ViewBag.TenantId = User.FindFirstValue("TenantId");
-            ViewBag.Token = User.FindFirstValue("Token");
-            ViewBag.FirstName = User.FindFirstValue("FirstName");
-            ViewBag.LastName = User.FindFirstValue("LastName");
-            ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
-            ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus");
 
             return View(model);
         }

@@ -173,6 +173,9 @@
                 url: '/AdminArea/Role/ManagePermissions',
                 type: 'POST',
                 data: formData,
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function () {
                     swal({
                         title: "ثبت اطلاعات",

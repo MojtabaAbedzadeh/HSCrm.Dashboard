@@ -1,3 +1,4 @@
+using HSCrm.BussinessLogic.PublicMethod;
 using HSCrm.Dashboard.Authorization;
 using HSCrm.Dashboard.Filters;
 using HSCrm.Dashboard.Services;
@@ -14,17 +15,24 @@ builder.Services.AddControllersWithViews(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddTransient<AuthHeaderHandler>();
+
 
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient("ApiClient", client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiAddress"]);
+}).AddHttpMessageHandler<AuthHeaderHandler>();
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRoleApiService, RoleApiService>();
 builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<IRegisterService, RegisterService>();
 builder.Services.AddScoped<ISidebarMenuProvider, SidebarMenuProvider>();
+builder.Services.AddScoped<GetListApi>();
+
 
 builder.Services.AddAuthentication(options =>
 {

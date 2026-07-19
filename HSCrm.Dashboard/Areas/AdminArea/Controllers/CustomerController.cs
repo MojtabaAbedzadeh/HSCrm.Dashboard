@@ -1,4 +1,5 @@
 ﻿using HSCrm.BussinessLogic.PublicMethod;
+using HSCrm.Dashboard.Controllers;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Mvc;
@@ -7,51 +8,37 @@ using System.Security.Claims;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
-    [Area(nameof(AdminArea))]    
-    public class CustomerController : Controller
+    [Area(nameof(AdminArea))]
+    public class CustomerController : BaseController
     {
         private readonly IConfiguration _config;
+        private readonly GetListApi _getListApi; // اضافه کردن فیلد برای GetListApi
 
-        public CustomerController(IConfiguration config)
+        public CustomerController(IConfiguration config, GetListApi getListApi) : base(config)
         {
-            _config = config;
+            _getListApi = getListApi;
         }
+
         public async Task<IActionResult> Index()
         {
-            string apiUrl = _config["ApiAddress"] + "Customer/GetCustomer";
-            string token = User.FindFirstValue("Token");
+            string apiUrl = "Customer/GetCustomer";
 
-            GetListApi GA = new GetListApi();
-            var json = await GA.GetApiList(apiUrl, token);
+            var json = await _getListApi.GetApiList(apiUrl);
+
             var result = JsonConvert.DeserializeObject<ApiResponse<List<CustomerModel>>>(json);
-            var model = result.Data;
-
-            ViewBag.ApiAddress = _config["ApiAddress"];
-            ViewBag.UserId = User.FindFirstValue("UserId");
-            ViewBag.Token = User.FindFirstValue("Token");
-            ViewBag.FirstName = User.FindFirstValue("FirstName");
-            ViewBag.LastName = User.FindFirstValue("LastName");
-            ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
+            var model = result?.Data;
 
             return View(model);
         }
 
         public async Task<IActionResult> CustomerProfile(int customerId)
         {
-            string apiUrl = _config["ApiAddress"] + "Customer/GetCustomerById?customerId=" + customerId;
-            string token = User.FindFirstValue("Token");
+            string apiUrl = $"Customer/GetCustomerById?customerId={customerId}";
 
-            GetListApi GA = new GetListApi();
-            var json = await GA.GetApiList(apiUrl, token);
+            var json = await _getListApi.GetApiList(apiUrl);
+
             var result = JsonConvert.DeserializeObject<ApiResponse<CustomerDetailViewModel>>(json);
-            var model = result.Data;
-
-            ViewBag.ApiAddress = _config["ApiAddress"];
-            ViewBag.UserId = User.FindFirstValue("UserId");
-            ViewBag.Token = User.FindFirstValue("Token");
-            ViewBag.FirstName = User.FindFirstValue("FirstName");
-            ViewBag.LastName = User.FindFirstValue("LastName");
-            ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
+            var model = result?.Data;
 
             return View(model);
         }

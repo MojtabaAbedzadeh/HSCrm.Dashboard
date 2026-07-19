@@ -333,6 +333,9 @@
                 type: 'GET',
                 url: '@ApiAddress' + 'Expense/GetById?expenseId=' + expenseId,
                 dataType: 'json',
+                headers: {
+                    "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                },
                 success: function (xhr) {
                     const expense = xhr.data[0];
 
@@ -372,6 +375,9 @@
                 contentType: 'application/json',
                 processData: false,
                 data: JSON.stringify(model),
+                headers: {
+                    "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                },
                 success: function (xhr) {
                     if (xhr.statusCode == '200') {
                         swal({

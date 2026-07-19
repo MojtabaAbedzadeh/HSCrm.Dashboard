@@ -335,6 +335,9 @@
                 type: 'GET',
                 url: '@ApiAddress' + 'Customer/GetById?customerId=' + customerId,
                 dataType: 'json',
+                headers: {
+                    "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                },
                 success: function (xhr) {
                     $("#customerId").val(xhr.data.id);
                     $("#NameU").val(xhr.data.name);
@@ -367,6 +370,9 @@
                 type: 'PUT',
                 url: '@ApiAddress' + 'Customer/UpdateCustomer',
                 dataType: 'Json',
+                headers: {
+                    "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                },
                 contentType: 'application/json',
                 processData: false,
                 data: JSON.stringify(model),

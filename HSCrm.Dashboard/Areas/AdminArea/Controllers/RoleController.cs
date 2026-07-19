@@ -1,4 +1,5 @@
 ﻿using HSCrm.BussinessLogic.PublicMethod;
+using HSCrm.Dashboard.Controllers;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Authorization;
@@ -11,46 +12,38 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
     [Authorize(Roles = "Owner")]
-    public class RoleController : Controller
+    public class RoleController : BaseController
     {
         private readonly IConfiguration _config;
+        private readonly GetListApi _getListApi;
 
-        public RoleController(IConfiguration config)
+        public RoleController(IConfiguration config, GetListApi getListApi) : base(config)
         {
             _config = config;
+            _getListApi = getListApi;
         }
-
         private string ApiUrl(string endpoint)
         {
             return _config["ApiAddress"] + endpoint;
         }
-
         private string Token()
         {
             return User.FindFirstValue("Token");
         }
-
-        // ======================= Index =======================
-
         public async Task<IActionResult> Index()
         {
-            GetListApi GA = new GetListApi();
-            var json = await GA.GetApiList(ApiUrl("Role/GetRoles"), Token());
+            var json = await _getListApi.GetApiList(ApiUrl("Role/GetRoles"));
 
             var result = JsonConvert.DeserializeObject<ApiResponse<List<RoleModel>>>(json);
             var model = result?.Data ?? new List<RoleModel>();
 
             return View(model);
         }
-
-        // ======================= Create =======================
-
         [HttpGet]
         public IActionResult Create()
         {
             return View(new RoleCreateDto());
         }
-
         [HttpPost]
         public async Task<IActionResult> Create(RoleCreateDto model)
         {
@@ -81,14 +74,10 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-
-        // ======================= Edit =======================
-
         [HttpGet]
         public async Task<IActionResult> Edit(string id)
         {
-            GetListApi GA = new GetListApi();
-            var json = await GA.GetApiList(ApiUrl($"Role/GetRoleById?roleId={id}"), Token());
+            var json = await _getListApi.GetApiList(ApiUrl($"Role/GetRoleById?roleId={id}"));
 
             var result = JsonConvert.DeserializeObject<ApiResponse<RoleModel>>(json);
             var role = result?.Data;
@@ -105,7 +94,6 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
             return View(model);
         }
-
         [HttpPost]
         public async Task<IActionResult> Edit(RoleEditDto model)
         {
@@ -131,9 +119,6 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-
-        // ======================= Delete =======================
-
         [HttpPost]
         public async Task<IActionResult> Delete(string id)
         {
@@ -145,26 +130,21 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-
-        // ======================= Manage Permissions =======================
-
         [HttpGet]
         public async Task<IActionResult> ManagePermissions(string id)
         {
-            GetListApi GA = new GetListApi();
-
-            var roleJson = await GA.GetApiList(ApiUrl($"Role/GetRoleById?roleId={id}"), Token());
+            var roleJson = await _getListApi.GetApiList(ApiUrl($"Role/GetRoleById?roleId={id}"));
             var roleResult = JsonConvert.DeserializeObject<ApiResponse<RoleModel>>(roleJson);
             var role = roleResult?.Data;
 
             if (role == null)
                 return NotFound();
 
-            var permJson = await GA.GetApiList(ApiUrl("Role/GetPermissions"), Token());
+            var permJson = await _getListApi.GetApiList(ApiUrl("Role/GetPermissions"));
             var permResult = JsonConvert.DeserializeObject<ApiResponse<List<PermissionDto>>>(permJson);
             var allPermissions = permResult?.Data ?? new List<PermissionDto>();
 
-            var selectedJson = await GA.GetApiList(ApiUrl($"Role/GetRolePermissions?roleId={id}"), Token());
+            var selectedJson = await _getListApi.GetApiList(ApiUrl($"Role/GetRolePermissions?roleId={id}"));
             var selectedResult = JsonConvert.DeserializeObject<ApiResponse<List<int>>>(selectedJson);
             var selectedPermissionIds = selectedResult?.Data ?? new List<int>();
 
@@ -188,8 +168,6 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             
             return View(model);
         }
-
-
         [HttpPost]
         public async Task<IActionResult> ManagePermissions(ManageRolePermissionsDto model)
         {

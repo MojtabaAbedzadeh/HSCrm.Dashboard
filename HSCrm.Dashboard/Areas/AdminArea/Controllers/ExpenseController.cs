@@ -1,7 +1,7 @@
 ﻿using HSCrm.BussinessLogic.PublicMethod;
+using HSCrm.Dashboard.Controllers;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -10,71 +10,53 @@ using System.Security.Claims;
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
-    public class ExpenseController : Controller
+    public class ExpenseController : BaseController
     {
         private readonly IConfiguration _config;
-        public ExpenseController(IConfiguration config)
+        private readonly GetListApi _getListApi;
+        public ExpenseController(IConfiguration config, GetListApi getListApi) : base(config)
         {
-            _config = config;
+            _getListApi = getListApi;
         }
         public async Task<IActionResult> Index()
         {
-            string apiUrl = _config["ApiAddress"] + "Expense/GetExpense";
-            string token = User.FindFirstValue("Token");
+            string apiUrl = "Expense/GetExpense"; // اگر BaseAddress را در Program.cs ست کردی، فقط ادامه آدرس کافیست
 
-            GetListApi GA = new GetListApi();
+            // اضافه کردن await در اینجا الزامی است
+            var json = await _getListApi.GetApiList(apiUrl);
 
-            var json = await GA.GetApiList(apiUrl, token);
+            // حالا json یک رشته واقعی است و Deserialize به درستی کار می‌کند
             var result = JsonConvert.DeserializeObject<ApiResponse<List<ExpenseModel>>>(json);
-            var model = result.Data;
+            var model = result?.Data;
 
             var tenantId = User.FindFirstValue("TenantId");
             ViewBag.Projects = await GetProjectList(tenantId);
-
-            ViewBag.ApiAddress = _config["ApiAddress"];
-            ViewBag.TenantId = User.FindFirstValue("TenantId");
-            ViewBag.UserId = User.FindFirstValue("UserId");
-            ViewBag.Token = User.FindFirstValue("Token");
-            ViewBag.FirstName = User.FindFirstValue("FirstName");
-            ViewBag.LastName = User.FindFirstValue("LastName");
-            ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
-            ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus");
 
             return View(model);
         }
         [HttpGet]
         private async Task<List<ProjetcsDropDown>> GetProjectList(string tenantId)
         {
-            string apiUrlProject = _config["ApiAddress"] + "Project/ProjectDropdownList?tenantId=" + tenantId;
-            string token = User.FindFirstValue("Token");
-            GetListApi getListProject = new GetListApi();
-            string json = await getListProject.GetApiList(apiUrlProject, token);
+            string apiUrl = "Project/ProjectDropdownList?tenantId=" + tenantId;
 
-            var parsed = JObject.Parse(json);
+            var json = await _getListApi.GetApiList(apiUrl);
+            var result = JObject.Parse(json);
+
             return JsonConvert.DeserializeObject<List<ProjetcsDropDown>>(
-                parsed["data"]?.ToString() ?? "[]"
+                result["data"]?.ToString() ?? "[]"
             );
         }
         [HttpGet]
         public async Task<IActionResult> ProjectExpenses(int projectId)
         {
-            string apiUrl = _config["ApiAddress"] + "Expense/GetByProjectId?projectId=" + projectId;
-            string token = User.FindFirstValue("Token");
-            GetListApi GA = new GetListApi();
-            var json = await GA.GetApiList(apiUrl, token);
+            string apiUrl = "Expense/GetByProjectId?projectId=" + projectId;
+
+            var json = await _getListApi.GetApiList(apiUrl);
+
             var result = JsonConvert.DeserializeObject<ApiResponse<List<ExpenseModel>>>(json);
-            var model = result.Data;
+            var model = result?.Data;
 
             var tenantId = User.FindFirstValue("TenantId");
-
-            ViewBag.ApiAddress = _config["ApiAddress"];
-            ViewBag.TenantId = User.FindFirstValue("TenantId");
-            ViewBag.UserId = User.FindFirstValue("UserId");
-            ViewBag.Token = User.FindFirstValue("Token");
-            ViewBag.FirstName = User.FindFirstValue("FirstName");
-            ViewBag.LastName = User.FindFirstValue("LastName");
-            ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
-            ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus");
 
             return View(model);
         }

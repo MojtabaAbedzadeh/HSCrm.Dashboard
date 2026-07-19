@@ -444,6 +444,9 @@
                 type: 'GET',
                 url: '@ApiAddress' + 'Product/GetById?productId=' + productId,
                 dataType: 'json',
+                headers: {
+                        "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                    },
                 success: function (xhr) {
                     $("#ProductId").val(xhr.data.id);
                     $("#ProductTitleU").val(xhr.data.productTitle);
@@ -475,6 +478,9 @@
                 contentType: 'application/json',
                 processData: false,
                 data: JSON.stringify(model),
+                headers: {
+                        "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                    },
                 success: function (xhr) {
                     if (xhr.statusCode == '200') {
                     swal({
@@ -537,7 +543,6 @@
             e.preventDefault();
 
             var formData = new FormData($("#frmPrice")[0]);
-            console.log(formData);
             $.ajax({
                 type: 'Post',
                 url: '@ApiAddress' + 'ProductPrice/CreatePrice',
@@ -613,6 +618,9 @@
                 type: 'GET',
                 url: '@ApiAddress' + 'ProductPrice/GetProductPriceHistory?productId=' + productId,
                 dataType: 'json',
+                headers: {
+                        "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                    },
                 success: function (xhr) {
                     $("#tblProductPriceHistory tbody").empty();
                     $.each(xhr.data, function (i, v) {

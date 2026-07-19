@@ -232,6 +232,9 @@
                 type: 'GET',
                 url: '@ApiAddress' + 'Supplier/GetById?supplierId=' + supplierId,
                 dataType: 'json',
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
                     $("#supplierId").val(xhr.data.id);
                     $("#SupplierFullNameU").val(xhr.data.supplierFullName);
@@ -261,6 +264,9 @@
                 contentType: 'application/json',
                 processData: false,
                 data: JSON.stringify(model),
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
                     if (xhr.statusCode == '200') {
                         swal({

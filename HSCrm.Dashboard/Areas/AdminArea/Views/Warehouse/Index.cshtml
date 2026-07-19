@@ -263,6 +263,9 @@
                 type: 'GET',
                 url: '@ApiAddress' + 'Warehouse/GetById?warehouseId=' + warehouseId,
                 dataType: 'json',
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
                     $("#warehouseId").val(xhr.data.id);
                     $("#TitleE").val(xhr.data.title);
@@ -293,6 +296,9 @@
                 contentType: 'application/json',
                 processData: false,
                 data: JSON.stringify(model),
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
                     if (xhr.statusCode == '200') {
                         swal({

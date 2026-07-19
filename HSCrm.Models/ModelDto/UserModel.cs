@@ -28,23 +28,19 @@
     public class UserLoginDto
     {
         public string? Token { get; set; }
+        public int TenantId { get; set; }
         public string? UserId { get; set; }
         public string? UserName { get; set; }
 
-        public string? FirstName { get; set; }
-        public string? LastName { get; set; }
-
-        public string? PhoneNumber { get; set; }
+        public string? UserFirstName { get; set; }
+        public string? UserLastName { get; set; }
         public string? Email { get; set; }
-        public byte FiscalYearStatus { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? UserImageUrl { get; set; }
 
-        public string? UserAvatar { get; set; }
-
-        public int TenantId { get; set; }
-        public List<FiscalYearDropDown> FiscalYears { get; set; } = new();
-
-        public IEnumerable<string>? Roles { get; set; }
-
-        public IEnumerable<string>? Permissions { get; set; }   // ✅ این را اضافه کن
+        public int FiscalYearStatus { get; set; }
+        public IList<string>? Roles { get; set; }
+        public IList<string>? Permissions { get; set; }
+        public IList<object>? FiscalYears { get; set; }
     }
 }
