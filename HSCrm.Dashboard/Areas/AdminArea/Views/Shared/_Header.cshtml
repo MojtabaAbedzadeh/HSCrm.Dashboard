@@ -4,16 +4,17 @@
     var firstName = User.FindFirst("UserFirstName")?.Value;
     var lastName = User.FindFirst("UserLastName")?.Value;
     var email = User.FindFirst(ClaimTypes.Email)?.Value;
-    var fullName = $"{firstName} {lastName}".Trim();
 
+    var fullName = $"{firstName} {lastName}".Trim();
     if (string.IsNullOrWhiteSpace(fullName))
     {
-        fullName = User.Identity?.Name ?? "";
+        fullName = User.Identity?.Name ?? "کاربر سیستم";
     }
 
+    // آدرس‌دهی تصویر پروفایل (استفاده از تصویر پیش‌فرض در صورت نبود فایل)
     var avatarSrc = string.IsNullOrWhiteSpace(userImageUrl)
         ? Url.Content("~/assets/img/user/img-user.jpg")
-        : Url.Content(userImageUrl);
+        : (userImageUrl.StartsWith("http") ? userImageUrl : $"https://localhost:7001{userImageUrl}");
 }
 
 <header class="ec-main-header" id="header">

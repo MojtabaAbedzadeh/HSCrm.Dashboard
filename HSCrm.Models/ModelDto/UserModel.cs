@@ -31,16 +31,20 @@
         public int TenantId { get; set; }
         public string? UserId { get; set; }
         public string? UserName { get; set; }
-
         public string? UserFirstName { get; set; }
         public string? UserLastName { get; set; }
         public string? Email { get; set; }
         public string? PhoneNumber { get; set; }
         public string? UserImageUrl { get; set; }
-
         public int FiscalYearStatus { get; set; }
         public IList<string>? Roles { get; set; }
         public IList<string>? Permissions { get; set; }
-        public IList<object>? FiscalYears { get; set; }
+        public IList<FiscalYearDropDownDto>? FiscalYears { get; set; }
+    }
+
+    public class FiscalYearDropDownDto
+    {
+        public long DrId { get; set; }
+        public string? DrName { get; set; }
     }
 }

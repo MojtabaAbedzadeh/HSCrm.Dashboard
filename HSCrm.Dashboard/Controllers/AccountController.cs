@@ -99,20 +99,23 @@ namespace Automation.Dashboard.Controllers
                 return View();
             }
 
+            // ایجاد کل Claimهای مورد نیاز فرانت از روی اطلاعات واقعی کاربر
             var claims = new List<Claim>
-            {
-                new Claim("Token", result.Token ?? ""),
-                new Claim("TenantId", result.TenantId.ToString()),
-                new Claim("FiscalYearId", model.FiscalYearId.ToString()),
-                new Claim(ClaimTypes.NameIdentifier, result.UserId ?? ""),
-                new Claim(ClaimTypes.Name, result.UserName ?? ""),
-                new Claim("FiscalYearStatus", result.FiscalYearStatus.ToString()),
-                new Claim("UserFirstName", result.UserFirstName ?? ""),
-                new Claim("UserLastName", result.UserLastName ?? ""),
-                new Claim(ClaimTypes.Email, result.Email ?? ""),
-                new Claim(ClaimTypes.MobilePhone, result.PhoneNumber ?? ""),
-                new Claim("UserImageUrl", result.UserImageUrl ?? "")
-            };
+    {
+        new Claim("Token", result.Token ?? ""),
+        new Claim("TenantId", result.TenantId.ToString()),
+        new Claim("FiscalYearId", model.FiscalYearId.ToString()),
+        new Claim(ClaimTypes.NameIdentifier, result.UserId ?? ""),
+        new Claim(ClaimTypes.Name, result.UserName ?? ""),
+        new Claim("FiscalYearStatus", result.FiscalYearStatus.ToString()),
+        
+        // Claimهای جدید پروفایل
+        new Claim("UserFirstName", result.UserFirstName ?? ""),
+        new Claim("UserLastName", result.UserLastName ?? ""),
+        new Claim(ClaimTypes.Email, result.Email ?? ""),
+        new Claim(ClaimTypes.MobilePhone, result.PhoneNumber ?? ""),
+        new Claim("UserImageUrl", result.UserImageUrl ?? "")
+    };
 
             if (result.Roles != null)
                 claims.AddRange(result.Roles.Select(r => new Claim(ClaimTypes.Role, r)));

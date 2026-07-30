@@ -1,0 +1,213 @@
+﻿@using HSCrm.Dashboard.Costants
+@model IEnumerable<PaymentModel>
+
+@{
+    ViewData["Title"] = "پرداخت‌ها";
+    ViewData["selected"] = "payment_list";
+
+    string apiAddress = ViewBag.ApiAddress?.ToString() ?? "";
+    string fiscalYearStatus = ViewBag.FiscalYearStatus?.ToString() ?? "1"; // 0=open
+}
+
+@section styles {
+    <link href="~/assets/plugins/data-tables/datatables.bootstrap5.min.css" rel="stylesheet">
+    <link href="~/assets/plugins/data-tables/responsive.datatables.min.css" rel="stylesheet">
+    <link href="~/assets/css/ekka.css" id="ekka-css" rel="stylesheet">
+    <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
+}
+
+<div class="breadcrumb-wrapper breadcrumb-contacts">
+    <div>
+        <h1>لیست پرداخت‌ها</h1>
+        <p class="breadcrumbs">
+            <span><a href="/">خانه</a></span>
+            <span><i class="mdi mdi-chevron-left"></i></span>
+            پرداخت
+        </p>
+    </div>
+
+    @if (fiscalYearStatus == "0")
+    {
+        @if (User.HasPermission(Permissions.Payments.Create))
+        {
+            <div>
+                <button type="button" class="btn btn-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#paymentModal"
+                        onclick="resetPaymentForm()">
+                    پرداخت جدید
+                </button>
+            </div>
+        }
+    }
+</div>
+
+@if (fiscalYearStatus != "0")
+{
+    <div class="alert alert-primary col-lg-8" role="alert" style="margin-top:40px; color:#084298;">
+        توجه!
+        <br />
+        سال مالی انتخاب شده بسته می‌باشد! شما فقط قادر به مشاهده گزارشات سیستم هستید.
+    </div>
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="ec-vendor-list card card-default">
+            <div class="card-body">
+                <div class="table-responsive-md">
+                    <table id="responsive-data-table" class="table dataTable no-footer">
+                        <thead>
+                            <tr>
+                                <th>مبلغ پرداختی</th>
+                                <th>تاریخ</th>
+                                <th>نوع پرداخت</th>
+                                <th>شماره مرجع</th>
+                                <th>شناسه مرجع</th>
+                                <th style="width:140px;">عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">در حال بارگذاری...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Create/Edit Payment -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalTitle">ثبت پرداخت</h5>
+                <button style="margin: 0;" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="close"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="frmPayment" autocomplete="off">
+                    <input type="hidden" id="PaymentId" value="0" />
+
+                    <div class="row g-3">
+
+                        <div class="col-md-4">
+                            <label class="form-label">مبلغ</label>
+                            <input type="number" min="0" step="0.01" class="form-control" id="Amount" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">تاریخ پرداخت (شمسی)</label>
+                            <input type="text" class="form-control persian-date" id="PaymentDateFa" />
+                            <!-- مقدار میلادی برای ارسال به API -->
+                            <input type="hidden" id="PaymentDate" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">نوع پرداخت</label>
+                            <select class="form-select" id="Method">
+                                <option value="Cash">Cash</option>
+                                <option value="Card">Card</option>
+                                <option value="Transfer">Transfer</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">شماره مرجع</label>
+                            <input type="text" class="form-control" id="ReferenceNo" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">شناسه مرجع (فقط یکی)</label>
+                            <small class="text-muted d-block">یکی از موارد زیر را وارد کنید (فاکتور فروش/فاکتور خرید/هزینه)</small>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">شناسه فاکتور فروش</label>
+                            <input type="number" class="form-control ref-input" id="SalesInvoiceId" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">شناسه فاکتور خرید</label>
+                            <input type="number" class="form-control ref-input" id="PurchaseInvoiceId" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">شناسه هزینه</label>
+                            <input type="number" class="form-control ref-input" id="ExpenseId" />
+                        </div>
+
+                        <div class="col-12">
+                            <div class="alert alert-warning py-2 mb-0">
+                                نکته: دقیقاً یکی از سه فیلد مرجع باید پر شود.
+                            </div>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button>
+
+                @if (fiscalYearStatus == "0")
+                {
+                    @if (User.HasPermission(Permissions.Payments.Create) || User.HasPermission(Permissions.Payments.Edit))
+                    {
+                        <button type="button" class="btn btn-primary" onclick="savePayment()">ذخیره</button>
+                    }
+                }
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section AdminScripts {
+    <script src="~/lib/persiandate/persian-date.js"></script>
+    <script src="~/lib/persiandate/persian-datepicker.js"></script>
+    <script src="~/lib/sweetalert/sweetalert2.min.js"></script>
+
+    <script>
+        // base api for payment.js
+        window.paymentApiBase = '@apiAddress/api/Payment';
+        window.fiscalYearStatus = '@fiscalYearStatus';
+    </script>
+
+    <script src="~/js/views/payment/payment.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            // Persian datepicker -> keep selected date as Gregorian in hidden input #PaymentDate
+            $("#PaymentDateFa").persianDatepicker({
+                format: 'YYYY/MM/DD',
+                autoClose: true,
+                onSelect: function (unix) {
+                    // تبدیل تاریخ انتخابی به میلادی (YYYY-MM-DD) برای API
+                    try {
+                        const g = new persianDate(unix).toCalendar('gregorian').toLocale('en').format('YYYY-MM-DD');
+                        $("#PaymentDate").val(g);
+                    } catch (e) {
+                        $("#PaymentDate").val('');
+                    }
+                }
+            });
+
+            // UX: اگر کاربر یکی از ref ها رو پر کرد، بقیه خالی بشن
+            $(document).on('input', '.ref-input', function () {
+                const id = $(this).attr('id');
+                const val = $(this).val();
+                if (val && val.toString().trim() !== '') {
+                    ['SalesInvoiceId', 'PurchaseInvoiceId', 'ExpenseId']
+                        .filter(x => x !== id)
+                        .forEach(x => $('#' + x).val(''));
+                }
+            });
+        });
+    </script>
+}

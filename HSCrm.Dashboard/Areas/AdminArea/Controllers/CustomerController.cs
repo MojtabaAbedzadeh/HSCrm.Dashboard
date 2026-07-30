@@ -11,7 +11,6 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
     [Area(nameof(AdminArea))]
     public class CustomerController : BaseController
     {
-        private readonly IConfiguration _config;
         private readonly GetListApi _getListApi; // اضافه کردن فیلد برای GetListApi
 
         public CustomerController(IConfiguration config, GetListApi getListApi) : base(config)
