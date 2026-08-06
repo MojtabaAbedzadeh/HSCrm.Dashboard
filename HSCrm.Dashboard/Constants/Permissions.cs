@@ -97,6 +97,7 @@ public static class Permissions
         public const string Create = "purchaseInvoices.create";
         public const string Edit = "purchaseInvoices.edit";
         public const string Delete = "purchaseInvoices.delete";
+        public const string ApproveReject = "purchaseInvoices.approve";
     }
 
     public static class RolePermissions

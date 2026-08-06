@@ -56,6 +56,8 @@
                                                 <div class="dropdown-menu">
                                                     <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
                                                     <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                    <hr />
+                                                    <a style="cursor:pointer;" class="dropdown-item btn-show-financial" data-id="@item.Id">وضعیت مالی</a>
                                                 </div>
                                             </div>
                                         </td>
@@ -158,6 +160,92 @@
         </div>
     </div>
 </div>
+<!-- Modal -->
+<div class="modal fade" id="financialModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">پرونده مالی: <span id="lblSupplierName"></span></h5>
+                <!-- اصلاح دکمه بستن برای Bootstrap 5 -->
+                <button type="button" style="margin:0" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- کارت خلاصه‌ وضعیت مانده بدهی -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="card bg-light text-center p-2">
+                            <h6>جمع کل فاکتورها</h6>
+                            <h5 class="text-primary font-weight-bold" id="lblTotalInvoices">۰</h5>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light text-center p-2">
+                            <h6>جمع کل پرداختی‌ها</h6>
+                            <h5 class="text-success font-weight-bold" id="lblTotalPayments">۰</h5>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center p-2" id="cardBalanceDue">
+                            <h6>مانده بدهی</h6>
+                            <h5 class="font-weight-bold" id="lblBalanceDue">۰</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- تب‌ها -->
+                <ul class="nav nav-tabs" id="financialTab" role="tablist">
+                    <li class="nav-item">
+                        <!-- تغییر data-toggle به data-bs-toggle -->
+                        <a class="nav-link active" id="invoices-tab" data-bs-toggle="tab" href="#invoicesPanel" role="tab">فاکتورهای خرید</a>
+                    </li>
+                    <li class="nav-item">
+                        <!-- تغییر data-toggle به data-bs-toggle -->
+                        <a class="nav-link" id="payments-tab" data-bs-toggle="tab" href="#paymentsPanel" role="tab">پرداخت‌ها</a>
+                    </li>
+                </ul>
+                <div class="tab-content pt-3" id="financialTabContent">
+                    <!-- پنل فاکتورها -->
+                    <div class="tab-pane fade show active" id="invoicesPanel" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped" id="tblInvoices">
+                                <thead>
+                                    <tr>
+                                        <th>شماره فاکتور</th>
+                                        <th>تاریخ فاکتور</th>
+                                        <th>مبلغ کل</th>
+                                        <th>توضیحات</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- پنل پرداخت‌ها -->
+                    <div class="tab-pane fade" id="paymentsPanel" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped" id="tblPayments">
+                                <thead>
+                                    <tr>
+                                        <th>مبلغ پرداختی</th>
+                                        <th>تاریخ پرداخت</th>
+                                        <th>روش پرداخت</th>
+                                        <th>کد رهگیری</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <!-- تغییر data-dismiss به data-bs-dismiss -->
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section AdminScripts {
     <script src="~/lib/sweetalert/sweetalert2.js"></script>
     <script>
@@ -221,6 +309,106 @@
                     }
                 }
             });
+        });
+
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            $('.btn-show-financial').on('click', function () {
+                var supplierId = $(this).data('id');
+
+                // نمایش لودینگ یا شروع درخواست Ajax
+                $.ajax({
+                    url: '@ApiAddress' + 'Supplier/GetFinancialProfile/' + supplierId, // آدرس کنترلر خودت
+                    type: 'GET',
+                     headers: {
+                        Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                    },
+                    success: function (response) {
+                        if (response.status) {
+                            var data = response.data;
+
+                            // پر کردن هدر و خلاصه‌ها
+                            $('#lblSupplierName').text(data.supplierName);
+                            $('#lblTotalInvoices').text(formatCurrency(data.totalInvoices));
+                            $('#lblTotalPayments').text(formatCurrency(data.totalPayments));
+                            $('#lblBalanceDue').text(formatCurrency(Math.abs(data.balanceDue)));
+
+                            // تغییر رنگ وضعیت مانده بدهی بر اساس مثبت یا منفی بودن بدهی
+                            if (data.balanceDue > 0) {
+                                $('#cardBalanceDue').removeClass('bg-light bg-success text-white').addClass('bg-danger text-white');
+                                $('#lblBalanceDue').append(' (بدهکار)');
+                            } else if (data.balanceDue < 0) {
+                                $('#cardBalanceDue').removeClass('bg-light bg-danger text-white').addClass('bg-success text-white');
+                                $('#lblBalanceDue').append(' (بستانکار)');
+                            } else {
+                                $('#cardBalanceDue').removeClass('bg-danger bg-success text-white').addClass('bg-light text-dark');
+                                $('#lblBalanceDue').append(' (تسویه)');
+                            }
+
+                            // پر کردن جدول فاکتورها
+                            var invoiceRows = '';
+                            if (data.invoices.length > 0) {
+                                $.each(data.invoices, function (i, item) {
+                                    invoiceRows += `<tr>
+                                        <td>${item.invoiceNumber}</td>
+                                        <td>${item.invoiceDate}</td> <!-- در صورت نیاز مبدل تاریخ شمسی اضافه شود -->
+                                        <td>${formatCurrency(item.totalAmount)} ریال</td>
+                                        <td>${item.description || '-'}</td>
+                                    </tr>`;
+                                });
+                            } else {
+                                invoiceRows = '<tr><td colspan="4" class="text-center">هیچ فاکتوری یافت نشد.</td></tr>';
+                            }
+                            $('#tblInvoices tbody').html(invoiceRows);
+
+                            // پر کردن جدول پرداخت‌ها
+                            var paymentRows = '';
+                            if (data.payments.length > 0) {
+                                $.each(data.payments, function (i, item) {
+                                    paymentRows += `<tr>
+                                        <td>${formatCurrency(item.amount)} ریال</td>
+                                        <td>${item.paymentDate}</td>
+                                        <td>${item.method}</td>
+                                        <td>${item.referenceNo || '-'}</td>
+                                    </tr>`;
+                                });
+                            } else {
+                                paymentRows = '<tr><td colspan="4" class="text-center">هیچ پرداختی یافت نشد.</td></tr>';
+                            }
+                            $('#tblPayments tbody').html(paymentRows);
+
+                            // باز کردن مودال
+                            $('#financialModal').modal('show');
+                        } else {
+                            swal({
+                                title: "خطا",
+                                text: "خطایی رخ داده است!",
+                                type: 'error',
+                                position: "center",
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        }
+                    },
+                    error: function () {
+                        swal({
+                            title: "خطا",
+                            text: "خطای ارتباط با سرور!",
+                            type: 'error',
+                            position: "center",
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    }
+                });
+            });
+
+            // تابع کمکی فرمت‌دهی به اعداد ریالی/تومانی
+            function formatCurrency(amount) {
+                return new Intl.NumberFormat('fa-IR').format(amount);
+            }
         });
 
     </script>

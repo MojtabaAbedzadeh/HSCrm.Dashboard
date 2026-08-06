@@ -20,12 +20,10 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         }
         public async Task<IActionResult> Index()
         {
-            string apiUrl = "Expense/GetExpense"; // اگر BaseAddress را در Program.cs ست کردی، فقط ادامه آدرس کافیست
+            string apiUrl = "Expense/GetExpense";
 
-            // اضافه کردن await در اینجا الزامی است
             var json = await _getListApi.GetApiList(apiUrl);
 
-            // حالا json یک رشته واقعی است و Deserialize به درستی کار می‌کند
             var result = JsonConvert.DeserializeObject<ApiResponse<List<ExpenseModel>>>(json);
             var model = result?.Data;
 

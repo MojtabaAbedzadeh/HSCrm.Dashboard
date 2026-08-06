@@ -48,45 +48,181 @@
             <div class="card-body">
                 <div class="table-responsive-md">
                     <div id="responsive-data-table_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
-                        <table id="responsive-data-table" class="table dataTable no-footer" aria-describedby="responsive-data-table_info">
+                        <form method="get"
+                              asp-area="AdminArea"
+                              asp-controller="Invoice"
+                              asp-action="PurchaseInvoice"
+                              class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">فیلتر فاکتورهای خرید</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-2">
+                                        <label for="supplierId" class="form-label">
+                                            شناسه تأمین‌کننده
+                                        </label>
+
+                                        <input type="number" id="supplierId" name="supplierId" class="form-control" value="@Context.Request.Query["supplierId"]" min="1" />
+                                    </div>
+
+                                    <div class="col-md-2">
+                                        <label for="fromDate" class="form-label">
+                                            از تاریخ
+                                        </label>
+
+                                        <input type="date"
+                                               id="fromDate"
+                                               name="fromDate"
+                                               class="form-control"
+                                               value="@Context.Request.Query["fromDate"]" />
+                                    </div>
+
+                                    <div class="col-md-2">
+                                        <label for="toDate" class="form-label">
+                                            تا تاریخ
+                                        </label>
+
+                                        <input type="date"
+                                               id="toDate"
+                                               name="toDate"
+                                               class="form-control"
+                                               value="@Context.Request.Query["toDate"]" />
+                                    </div>
+
+                                    <div class="col-md-2">
+                                        <label for="minTotal" class="form-label">
+                                            حداقل مبلغ
+                                        </label>
+
+                                        <input type="number"
+                                               id="minTotal"
+                                               name="minTotal"
+                                               class="form-control"
+                                               value="@Context.Request.Query["minTotal"]"
+                                               min="0"
+                                               step="1" />
+                                    </div>
+
+                                    <div class="col-md-2">
+                                        <label for="maxTotal" class="form-label">
+                                            حداکثر مبلغ
+                                        </label>
+
+                                        <input type="number"
+                                               id="maxTotal"
+                                               name="maxTotal"
+                                               class="form-control"
+                                               value="@Context.Request.Query["maxTotal"]"
+                                               min="0"
+                                               step="1" />
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <div class="card-footer d-flex gap-2">
+                                <button type="submit" class="btn btn-primary" style="margin-left: 8px;">
+                                    <i class="fa fa-filter"></i>
+                                    اعمال فیلتر
+                                </button>
+
+                                <a asp-area="AdminArea"
+                                   asp-controller="Invoice"
+                                   asp-action="PurchaseInvoice"
+                                   class="btn btn-outline-secondary">
+                                    حذف فیلترها
+                                </a>
+                            </div>
+                        </form>
+
+                        <table id="responsive-data-table" class="table no-footer" aria-describedby="responsive-data-table_info">
                             <thead>
                                 <tr>
-                                    <th>شماره</th>
-                                    <th>تاریخ</th>
+                                    <th>شماره فاکتور</th>
+                                    <th>تاریخ فاکتور</th>
                                     <th>تامین کننده</th>
                                     <th>جمع فاکتور</th>
+                                    <th>وضعیت فاکتور</th>
                                     <th>عملیات</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach (var item in Model)
                                 {
+                                    var remaining = item.Total - item.PaidAmount;
+
                                     <tr>
                                         <td>@item.Number</td>
                                         <td>@item.IssueDate.ToString("yyyy/MM/dd")</td>
                                         <td>@item.Supplier.SupplierFullName</td>
                                         <td>@item.Total.ToString("N0")</td>
                                         <td>
+                                            @if (remaining <= 0)
+                                            {
+                                                <span class="badge bg-success">تسویه‌شده</span>
+                                            }
+                                            else if (item.PaidAmount > 0)
+                                            {
+                                                <span class="badge bg-warning text-dark">پرداخت جزئی</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">پرداخت‌نشده</span>
+                                            }
+
+                                        </td>
+                                        <td>
                                             <div class="btn-group mb-1">
-                                                <button type="button" class="btn btn-outline-success">اطلاعات</button>
+                                                <button type="button" class="btn btn-outline-success">نمایش فاکتور</button>
                                                 <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static">
                                                     <span class="sr-only">اطلاعات</span>
                                                 </button>
                                                 @if (ViewBag.FiscalYearStatus == "0")
                                                 {
                                                     <div class="dropdown-menu">
+
                                                         @if (User.HasPermission(Permissions.PurchaseInvoices.Edit))
                                                         {
                                                             <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">
                                                                 ویرایش
                                                             </a>
                                                         }
+
                                                         @if (User.HasPermission(Permissions.PurchaseInvoices.Delete))
                                                         {
-                                                            <a class="dropdown-item" href="#" onclick="deleteExpense(@item.Id)">
+                                                            <a class="dropdown-item" href="#" onclick="deletePurchaseInvoice(@item.Id)">
                                                                 حذف
                                                             </a>
+                                                            <hr />
                                                         }
+
+                                                        @if (User.HasPermission(Permissions.PurchaseInvoices.ApproveReject))
+                                                        {
+                                                            <a class="dropdown-item" href="#" onclick="">
+                                                                تائید فاکتور
+                                                            </a>
+                                                            <a class="dropdown-item" href="#" onclick="">
+                                                                رد فاکتور
+                                                            </a>
+                                                            <hr />
+                                                        }
+
+
+
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">
+                                                            ثبت پرداخت
+                                                        </a>
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">
+                                                            لیست پرداخت‌ها
+                                                        </a>
+                                                        <hr />
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">
+                                                            چاپ
+                                                        </a>
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">
+                                                            خروجی PDF
+                                                        </a>
                                                     </div>
                                                 }
                                                 else
@@ -107,5 +243,37 @@
     </div>
 </div>
 @section AdminScripts {
+    <script>
+        $(document).ready(function () {
+            const tableElement = $('#responsive-data-table');
+
+            if ($.fn.DataTable.isDataTable('#responsive-data-table')) {
+                tableElement.DataTable().destroy();
+            }
+
+            tableElement.DataTable({
+                order: [[1, 'desc']],
+                columnDefs: [
+                    {
+                        targets: [5],
+                        orderable: false
+                    }
+                ],
+                language: {
+                    search: 'جستجو:',
+                    lengthMenu: 'نمایش _MENU_ رکورد',
+                    info: 'نمایش _START_ تا _END_ از _TOTAL_ رکورد',
+                    infoEmpty: 'رکوردی وجود ندارد',
+                    zeroRecords: 'رکوردی پیدا نشد',
+                    paginate: {
+                        first: 'اول',
+                        last: 'آخر',
+                        next: 'بعدی',
+                        previous: 'قبلی'
+                    }
+                }
+            });
+        });
+    </script>
 
 }

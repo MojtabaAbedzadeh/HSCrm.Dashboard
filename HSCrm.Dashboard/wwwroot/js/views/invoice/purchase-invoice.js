@@ -208,17 +208,23 @@ $('#btnRegInvoice').on('click', function () {
     if (!validateInvoiceForm()) return;
 
     const model = {
-        supplierId: parseInt($('#SupplierId').val()),
-        warehouseId: parseInt($('#WarehouseId').val()),
-        tenantId: TId,
-        invoiceNumber: $('#invoiceNumber').val(),
-        issueDate: $('#invoiceDate').val(),
-        status: parseInt($('#InvoiceStatus').val()),
-        invoiceDiscount: unFormatPrice($('#invoiceDiscount').val()),
-        invoiceTax: unFormatPrice($('#invoiceTax').val()),
+        SupplierId: parseInt($('#SupplierId').val(), 10),
+        WarehouseId: parseInt($('#WarehouseId').val(), 10),
+        TenantId: TId,
+        InvoiceNumber: $('#invoiceNumber').val(),
+        IssueDate: $('#invoiceDate').val(),
+        Status: parseInt($('#InvoiceStatus').val(), 10),
+        InvoiceDiscount: unFormatPrice($('#invoiceDiscount').val()) || 0,
+        InvoiceTax: unFormatPrice($('#invoiceTax').val()) || 0,
         PurchaserId: UId,
-        items: []
+
+        PaidAmount: unFormatPrice($('#paidAmount').val()) || 0,
+        PaymentMethod: $('#paymentMethod').val() || 'Cash',
+        PaymentReferenceNo: $('#paymentReferenceNo').val() || null,
+
+        Items: items
     };
+
 
 
     $('#tblBody tr').each(function () {
@@ -230,6 +236,10 @@ $('#btnRegInvoice').on('click', function () {
             tax: unFormatPrice($(this).find('td:eq(6)').text())
         });
     });
+
+    console.log('payload', model);
+    console.log('payload json', JSON.stringify(model));
+
 
     $.ajax({
         url: ApiAddress + 'PurchaseInvoice/CreateInvoice',
@@ -250,7 +260,7 @@ $('#btnRegInvoice').on('click', function () {
                     confirmButtonText: "باشه",
                     timer: 1500
                 });
-                window.location.href = '/AdminArea/Invoice/PurchaseInvoice';
+                //window.location.href = '/AdminArea/Invoice/PurchaseInvoice';
                 return;
             } else {
                 switch (status.statusCode) {
@@ -391,3 +401,336 @@ function validateInvoiceForm() {
 
     return true;
 }
+
+"use strict";
+
+/*
+|--------------------------------------------------------------------------
+| توابع عمومی مبلغ
+|--------------------------------------------------------------------------
+*/
+
+function normalizeNumber(value) {
+    if (value === null || value === undefined) {
+        return 0;
+    }
+
+    let text = String(value);
+
+    // تبدیل ارقام فارسی و عربی به انگلیسی
+    text = text
+        .replace(/[۰-۹]/g, function (digit) {
+            return String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit));
+        })
+        .replace(/[٠-٩]/g, function (digit) {
+            return String("٠١٢٣٤٥٦٧٨٩".indexOf(digit));
+        });
+
+    // حذف جداکننده هزارگان و فاصله
+    text = text
+        .replace(/,/g, "")
+        .replace(/٬/g, "")
+        .replace(/\s/g, "");
+
+    const result = parseFloat(text);
+
+    if (isNaN(result)) {
+        return 0;
+    }
+
+    return result;
+}
+
+function formatPrice(value) {
+    const number = normalizeNumber(value);
+
+    return number.toLocaleString("en-US", {
+        maximumFractionDigits: 2
+    });
+}
+
+/*
+|--------------------------------------------------------------------------
+| مبلغ کل فاکتور
+|--------------------------------------------------------------------------
+*/
+
+function getInvoiceTotal() {
+    return normalizeNumber($("#invoiceSumPrice").val());
+}
+
+function calculateInvoiceSum() {
+    let total = 0;
+
+    $("#tblBody tr").each(function () {
+        /*
+         * ستون شماره 7 مبلغ نهایی ردیف است.
+         */
+        const lineTotal = normalizeNumber($(this).find("td:eq(7)").text());
+
+        total += lineTotal;
+    });
+
+    const invoiceDiscount =
+        normalizeNumber($("#invoiceDiscount").val());
+
+    const invoiceTax =
+        normalizeNumber($("#invoiceTax").val());
+
+    total = total - invoiceDiscount + invoiceTax;
+
+    if (total < 0) {
+        total = 0;
+    }
+
+    $("#invoiceSumPrice").val(formatPrice(total));
+
+    updatePaymentFields();
+}
+
+/*
+|--------------------------------------------------------------------------
+| وضعیت پرداخت
+|--------------------------------------------------------------------------
+*/
+
+function getPaymentStatus() {
+    const value = parseInt($("#paymentStatus").val());
+
+    if (isNaN(value)) {
+        return 0;
+    }
+
+    return value;
+}
+
+function getPaidAmount() {
+    return normalizeNumber($("#paidAmount").val());
+}
+
+function updateRemainingAmount() {
+    const invoiceTotal = getInvoiceTotal();
+    const paidAmount = getPaidAmount();
+
+    const remainingAmount = Math.max(
+        invoiceTotal - paidAmount,
+        0
+    );
+
+    $("#remainingAmount").val(formatPrice(remainingAmount));
+}
+
+function updatePaymentFields() {
+    const paymentStatus = getPaymentStatus();
+    const invoiceTotal = getInvoiceTotal();
+
+    const paidAmount = $("#paidAmount");
+    const paymentMethod = $("#paymentMethod");
+    const remainingAmount = $("#remainingAmount");
+
+    if (paymentStatus === 0) {
+        /*
+         * بدون پرداخت
+         */
+        paidAmount
+            .val("0")
+            .prop("disabled", true);
+
+        paymentMethod
+            .val("Cash")
+            .prop("disabled", true);
+
+        remainingAmount.val(formatPrice(invoiceTotal));
+
+        return;
+    }
+
+    if (paymentStatus === 1) {
+        /*
+         * پرداخت کامل
+         */
+        paidAmount
+            .val(formatPrice(invoiceTotal))
+            .prop("disabled", true);
+
+        paymentMethod.prop("disabled", false);
+
+        remainingAmount.val("0");
+
+        return;
+    }
+
+    if (paymentStatus === 2) {
+        /*
+         * پرداخت بخشی
+         */
+        paidAmount.prop("disabled", false);
+
+        paymentMethod.prop("disabled", false);
+
+        updateRemainingAmount();
+
+        return;
+    }
+
+    /*
+     * مقدار نامعتبر؛ بازگشت به بدون پرداخت
+     */
+    $("#paymentStatus").val("0");
+
+    paidAmount
+        .val("0")
+        .prop("disabled", true);
+
+    paymentMethod
+        .val("Cash")
+        .prop("disabled", true);
+
+    remainingAmount.val(formatPrice(invoiceTotal));
+}
+
+/*
+|--------------------------------------------------------------------------
+| اعتبارسنجی پرداخت
+|--------------------------------------------------------------------------
+*/
+
+function validatePayment() {
+    const paymentStatus = getPaymentStatus();
+    const invoiceTotal = getInvoiceTotal();
+
+    let paidAmount = 0;
+
+    if (paymentStatus === 0) {
+        return {
+            isValid: true,
+            paymentStatus: 0,
+            paidAmount: 0,
+            paymentMethod: null
+        };
+    }
+
+    if (paymentStatus === 1) {
+        return {
+            isValid: true,
+            paymentStatus: 1,
+            paidAmount: invoiceTotal,
+            paymentMethod: $("#paymentMethod").val() || "Cash"
+        };
+    }
+
+    if (paymentStatus === 2) {
+        paidAmount = getPaidAmount();
+
+        if (invoiceTotal <= 0) {
+            swal({
+                title: "مبلغ فاکتور",
+                text: "مبلغ کل فاکتور باید بیشتر از صفر باشد",
+                type: "warning",
+            });
+
+            return {
+                isValid: false
+            };
+        }
+
+        if (paidAmount <= 0) {
+            swal({
+                title: "مبلغ پرداختی",
+                text: "برای پرداخت بخشی، مبلغ پرداختی را وارد کنید",
+                type: "warning",
+            });
+
+            return {
+                isValid: false
+            };
+        }
+
+        if (paidAmount >= invoiceTotal) {
+            swal({
+                title: "مبلغ پرداختی",
+                text: "در حالت پرداخت بخشی، مبلغ باید کمتر از مبلغ کل فاکتور باشد",
+                type: "warning",
+            });
+
+            return {
+                isValid: false
+            };
+        }
+
+        return {
+            isValid: true,
+            paymentStatus: 2,
+            paidAmount: paidAmount,
+            paymentMethod: $("#paymentMethod").val() || "Cash"
+        };
+    }
+
+    swal({
+        title: "وضعیت پرداخت",
+        text: "وضعیت پرداخت انتخاب‌شده معتبر نیست",
+        type: "warning",
+    });
+
+    return {
+        isValid: false
+    };
+}
+
+/*
+|--------------------------------------------------------------------------
+| رویدادهای مربوط به پرداخت
+|--------------------------------------------------------------------------
+*/
+
+$(document).on("change", "#paymentStatus", function () {
+    updatePaymentFields();
+});
+
+$(document).on("input change", "#paidAmount", function () {
+    const invoiceTotal = getInvoiceTotal();
+
+    let paidAmount = normalizeNumber($(this).val());
+
+    if (paidAmount < 0) {
+        paidAmount = 0;
+    }
+
+    if (paidAmount > invoiceTotal) {
+        paidAmount = invoiceTotal;
+
+        $(this).val(formatPrice(paidAmount));
+
+        swal({
+            title: "مبلغ نامعتبر",
+            text: "مبلغ پرداختی نمی‌تواند بیشتر از مبلغ فاکتور باشد",
+            type: "warning",
+        });
+    }
+
+    updateRemainingAmount();
+});
+
+/*
+|--------------------------------------------------------------------------
+| بارگذاری اولیه
+|--------------------------------------------------------------------------
+*/
+
+$(document).ready(function () {
+    updatePaymentFields();
+
+    /*
+     * در صورت وجود رویدادهای محاسبه مبلغ در فایل فعلی،
+     * این فیلدها باید پس از تغییر دوباره به‌روزرسانی شوند.
+     */
+    $(document).on(
+        "input change",
+        "#invoiceDiscount, #invoiceTax",
+        function () {
+            setTimeout(function () {
+                calculateInvoiceSum();
+            }, 0);
+        }
+    );
+});

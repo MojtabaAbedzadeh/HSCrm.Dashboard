@@ -39,17 +39,52 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
             return View();
         }
-        public async Task<IActionResult> PurchaseInvoice()
+        [HttpGet]
+        public async Task<IActionResult> PurchaseInvoice(int? supplierId = null, DateTime? fromDate = null, DateTime? toDate = null, decimal? minTotal = null, decimal? maxTotal = null)
         {
-            string apiUrl = "PurchaseInvoice/GetPurchaseInvoices";
-            string token = User.FindFirstValue("Token");
+            var queryParameters = new List<string>();
+
+            if (supplierId.HasValue)
+            {
+                queryParameters.Add($"supplierId={Uri.EscapeDataString(supplierId.Value.ToString())}");
+            }
+
+            if (fromDate.HasValue)
+            {
+                queryParameters.Add($"fromDate={Uri.EscapeDataString(fromDate.Value.ToString("yyyy-MM-dd"))}");
+            }
+
+            if (toDate.HasValue)
+            {
+                queryParameters.Add($"toDate={Uri.EscapeDataString(toDate.Value.ToString("yyyy-MM-dd"))}");
+            }
+
+            if (minTotal.HasValue)
+            {
+                queryParameters.Add($"minTotal={Uri.EscapeDataString(minTotal.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))}");
+            }
+
+            if (maxTotal.HasValue)
+            {
+                queryParameters.Add($"maxTotal={Uri.EscapeDataString(maxTotal.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))}");
+            }
+
+            var apiUrl = "PurchaseInvoice/GetPurchaseInvoices";
+
+            if (queryParameters.Count > 0)
+            {
+                apiUrl += "?" + string.Join("&", queryParameters);
+            }
 
             var json = await _getListApi.GetApiList(apiUrl);
+
             var result = JsonConvert.DeserializeObject<ApiResponse<List<PurchaseInvoiceModel>>>(json);
-            var model = result.Data;
+
+            var model = result?.Data ?? new List<PurchaseInvoiceModel>();
 
             return View(model);
         }
+
         public async Task<IActionResult> AddPurchaseInvoice()
         {
             var tenantId = User.FindFirstValue("TenantId");

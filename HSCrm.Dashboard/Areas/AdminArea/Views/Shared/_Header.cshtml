@@ -11,7 +11,6 @@
         fullName = User.Identity?.Name ?? "کاربر سیستم";
     }
 
-    // آدرس‌دهی تصویر پروفایل (استفاده از تصویر پیش‌فرض در صورت نبود فایل)
     var avatarSrc = string.IsNullOrWhiteSpace(userImageUrl)
         ? Url.Content("~/assets/img/user/img-user.jpg")
         : (userImageUrl.StartsWith("http") ? userImageUrl : $"https://localhost:7001{userImageUrl}");
@@ -72,17 +71,17 @@
                                 <li class="nav-item mx-3 my-0 py-0">
                                     <a href="#" class="nav-link active pb-3"
                                        id="home2-tab" data-bs-toggle="tab" data-bs-target="#home2"
-                                       role="tab" aria-controls="home2" aria-selected="true">همه (10)</a>
+                                       role="tab" aria-controls="home2" aria-selected="true">همه (1)</a>
                                 </li>
                                 <li class="nav-item mx-3 my-0 py-0">
                                     <a href="#" class="nav-link pb-3"
                                        id="profile2-tab" data-bs-toggle="tab" data-bs-target="#profile2"
-                                       role="tab" aria-controls="profile2" aria-selected="false">پیام (5)</a>
+                                       role="tab" aria-controls="profile2" aria-selected="false">پیام (1)</a>
                                 </li>
                                 <li class="nav-item mx-3 my-0 py-0">
                                     <a href="#" class="nav-link pb-3"
                                        id="contact2-tab" data-bs-toggle="tab" data-bs-target="#contact2"
-                                       role="tab" aria-controls="contact2" aria-selected="false">دیگر (5)</a>
+                                       role="tab" aria-controls="contact2" aria-selected="false">دیگر (1)</a>
                                 </li>
                             </ul>
                             <div class="tab-content" id="myNotifications">
@@ -105,129 +104,7 @@
                                                     </div>
                                                 </div>
                                             </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification media-active">
-                                                <div class="position-relative mr-3">
-                                                    <img class="rounded-circle" src="@avatarSrc"
-                                                         alt="Image"> <span class="status active"></span>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">لوینا</h4>
-                                                        <p class="last-msg">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. </p>
-                                                        <span class="font-size-12 font-weight-medium text-white">
-                                                            <i class="mdi mdi-clock-outline"></i>حالا...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification">
-                                                <div class="position-relative mr-3">
-                                                    <img class="rounded-circle" src="@avatarSrc"
-                                                         alt="Image"> <span class="status away"></span>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">کرینال</h4>
-                                                        <p class="last-msg">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. </p>
-                                                        <span class="font-size-12 font-weight-medium text-secondary">
-                                                            <i class="mdi mdi-clock-outline"></i> 1ساعت قبل...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification event-active">
-                                                <div class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-info text-white">
-                                                    <i class="mdi mdi-calendar-check font-size-20"></i>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title"> رویدادهای آینده </h4>
-                                                        <p class="last-msg font-size-14">
-                                                            03/02/1401(1عصر -
-                                                            2عصر)
-                                                        </p><span class="font-size-12 font-weight-medium text-secondary">
-                                                            <i class="mdi mdi-clock-outline"></i> 10دقیقه...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification">
-                                                <div class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-warning text-white">
-                                                    <i class="mdi mdi-chart-areaspline font-size-20"></i>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title"> گزارش فروش سالانه </h4>
-                                                        <p class="last-msg font-size-14">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است.  </p><span class="font-size-12 font-weight-medium text-secondary">
-                                                            <i class="mdi mdi-clock-outline"></i> 1ساعت قبل...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification">
-                                                <div class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-primary text-white">
-                                                    <i class="mdi mdi-account-multiple-check font-size-20"></i>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">درخواست جدید</h4>
-                                                        <p class="last-msg font-size-14">اضافه کردن دنی به لیست دوستان لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از</p><span class="my-1 btn btn-sm btn-success">پذیرفتن</span>
-                                                        <span class="my-1 btn btn-sm btn-secondary">حذف</span>
-                                                        <span class="font-size-12 font-weight-medium text-secondary d-block">
-                                                            <i class="mdi mdi-clock-outline"></i> 5دقیقه...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification">
-                                                <div class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-danger text-white">
-                                                    <i class="mdi mdi-server-network-off font-size-20"></i>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">سرور لود شده</h4>
-                                                        <p class="last-msg font-size-14">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. </p>
-                                                        <span class="font-size-12 font-weight-medium text-secondary">
-                                                            <i class="mdi mdi-clock-outline"></i> 30دقیقه...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification">
-                                                <div class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-purple text-white">
-                                                    <i class="mdi mdi-playlist-check font-size-20"></i>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">کار انجام شده</h4>
-                                                        <p class="last-msg font-size-14">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. </p><span class="font-size-12 font-weight-medium text-secondary">
-                                                            <i class="mdi mdi-clock-outline"></i> 2ساعت قبل...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
+                                        </li>                                        
                                     </ul>
                                 </div>
                                 <div class="tab-pane fade" id="profile2" role="tabpanel">
@@ -242,77 +119,6 @@
                                                 <div class="media-body d-flex justify-content-between">
                                                     <div class="message-contents">
                                                         <h4 class="title">هاردیکو</h4>
-                                                        <p class="last-msg">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. </p>
-                                                        <span class="font-size-12 font-weight-medium text-secondary">
-                                                            <i class="mdi mdi-clock-outline"></i> 1ساعت قبل...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification">
-                                                <div class="position-relative mr-3">
-                                                    <img class="rounded-circle" src="@avatarSrc"
-                                                         alt="Image"> <span class="status away"></span>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">روانکو</h4>
-                                                        <p class="last-msg">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. </p><span class="font-size-12 font-weight-medium text-secondary">
-                                                            <i class="mdi mdi-clock-outline"></i> 1ساعت قبل...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification media-active">
-                                                <div class="position-relative mr-3">
-                                                    <img class="rounded-circle" src="@avatarSrc"
-                                                         alt="Image"> <span class="status active"></span>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">جمیتا</h4>
-                                                        <p class="last-msg">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. </p>
-                                                        <span class="font-size-12 font-weight-medium text-white">
-                                                            <i class="mdi mdi-clock-outline"></i>حالا...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification">
-                                                <div class="position-relative mr-3">
-                                                    <img class="rounded-circle" src="@avatarSrc"
-                                                         alt="Image"> <span class="status away"></span>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">بالیوی</h4>
-                                                        <p class="last-msg">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. </p>
-                                                        <span class="font-size-12 font-weight-medium text-secondary">
-                                                            <i class="mdi mdi-clock-outline"></i> 1ساعت قبل...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification">
-                                                <div class="position-relative mr-3">
-                                                    <img class="rounded-circle" src="@avatarSrc"
-                                                         alt="Image"> <span class="status away"></span>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">برونی</h4>
                                                         <p class="last-msg">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. </p>
                                                         <span class="font-size-12 font-weight-medium text-secondary">
                                                             <i class="mdi mdi-clock-outline"></i> 1ساعت قبل...
@@ -339,73 +145,6 @@
                                                             2عصر)
                                                         </p><span class="font-size-12 font-weight-medium text-secondary">
                                                             <i class="mdi mdi-clock-outline"></i> 10دقیقه...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification">
-                                                <div class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-warning text-white">
-                                                    <i class="mdi mdi-chart-areaspline font-size-20"></i>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">گزارش فروش جدید</h4>
-                                                        <p class="last-msg font-size-14">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است.  </p><span class="font-size-12 font-weight-medium text-secondary">
-                                                            <i class="mdi mdi-clock-outline"></i> 1ساعت قبل...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification">
-                                                <div class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-primary text-white">
-                                                    <i class="mdi mdi-account-multiple-check font-size-20"></i>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">درخواست جدید</h4>
-                                                        <p class="last-msg font-size-14">اضافه کردن دنی به لیست دوستان لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از</p><span class="my-1 btn btn-sm btn-success">پذیرفتن</span>
-                                                        <span class="my-1 btn btn-sm btn-secondary">حذف</span>
-                                                        <span class="font-size-12 font-weight-medium text-secondary d-block">
-                                                            <i class="mdi mdi-clock-outline"></i> 5دقیقه...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification">
-                                                <div class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-danger text-white">
-                                                    <i class="mdi mdi-server-network-off font-size-20"></i>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">سرور لود شده</h4>
-                                                        <p class="last-msg font-size-14">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. </p>
-                                                        <span class="font-size-12 font-weight-medium text-secondary">
-                                                            <i class="mdi mdi-clock-outline"></i> 30دقیقه...
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="javscript:void(0)"
-                                               class="media media-message media-notification">
-                                                <div class="d-flex rounded-circle align-items-center justify-content-center mr-3 media-icon iconbox-45 bg-purple text-white">
-                                                    <i class="mdi mdi-playlist-check font-size-20"></i>
-                                                </div>
-                                                <div class="media-body d-flex justify-content-between">
-                                                    <div class="message-contents">
-                                                        <h4 class="title">گزارش کار انجام شده </h4>
-                                                        <p class="last-msg font-size-14">لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده از طراحان گرافیک است. </p><span class="font-size-12 font-weight-medium text-secondary">
-                                                            <i class="mdi mdi-clock-outline"></i> 2ساعت قبل...
                                                         </span>
                                                     </div>
                                                 </div>
@@ -455,9 +194,6 @@
                         </li>
                         <li class="dropdown-footer"><a class="text-center" href="#"> مشاهده همه </a></li>
                     </ul>
-                </li>
-                <li class="right-sidebar-in right-sidebar-2-menu">
-                    <i class="mdi mdi-settings-outline mdi-spin"></i>
                 </li>
             </ul>
         </div>

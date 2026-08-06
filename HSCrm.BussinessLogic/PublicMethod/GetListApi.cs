@@ -26,8 +26,6 @@ namespace HSCrm.BussinessLogic.PublicMethod
 
         public async Task<string> GetApiList(string apiUrl)
         {
-            // استفاده از کلاینت نام‌دار "ApiClient" که در Program.cs تنظیم شده است
-            // با این کار AuthHeaderHandler خودکار اجرا می‌شود
             var client = _httpClientFactory.CreateClient("ApiClient");
 
             HttpResponseMessage response = await client.GetAsync(apiUrl);

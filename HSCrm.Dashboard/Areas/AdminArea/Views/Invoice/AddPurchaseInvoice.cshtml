@@ -159,6 +159,59 @@
                                         <input hidden id="sellerUserId" name="sellerUserId" value="@UId">
                                         <input hidden id="tenantId" name="tenantId" value="@TId">
                                     </ul>
+                                    <div class="row mt-3">
+                                        <div class="col-lg-4 col-md-6 col-12">
+                                            <div class="form-group form-floating">
+                                                <select id="paymentStatus" name="paymentStatus" class="form-control text-end">
+                                                    <option value="0">بدون پرداخت</option>
+                                                    <option value="1">پرداخت کامل</option>
+                                                    <option value="2">پرداخت بخشی</option>
+                                                </select>
+
+                                                <label for="paymentStatus">
+                                                    وضعیت پرداخت
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-lg-4 col-md-6 col-12">
+                                            <div class="form-group form-floating">
+                                                <input type="text" id="paidAmount" name="paidAmount" value="0" class="form-control text-end" autocomplete="off" disabled />
+
+                                                <label for="paidAmount">
+                                                    مبلغ پرداختی
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-lg-4 col-md-6 col-12">
+                                            <div class="form-group form-floating">
+                                                <select id="paymentMethod" name="paymentMethod" class="form-control text-end" disabled>
+                                                    <option value="Cash">نقدی</option>
+                                                    <option value="Card">کارتخوان</option>
+                                                    <option value="BankTransfer">واریز بانکی</option>
+                                                    <option value="Cheque">چک</option>
+                                                    <option value="Other">سایر</option>
+                                                </select>
+
+                                                <label for="paymentMethod">
+                                                    روش پرداخت
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-lg-4 col-md-6 col-12">
+                                            <div class="form-group form-floating">
+                                                <input type="text" id="remainingAmount" name="remainingAmount" value="0" class="form-control text-end" readonly />
+
+                                                <label for="remainingAmount">
+                                                    مانده فاکتور
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
                                     <button id="btnRegInvoice" href="javascript:void(0)" class="btn btn-inline-block float-start mt-3 btn-primary btn-pill">ثبت</button>
                                 </div>
                             </div>

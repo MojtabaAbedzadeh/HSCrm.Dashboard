@@ -119,31 +119,76 @@
                 </div>
                 <div class="modal-body px-4">
                     <div class="row mb-2">
-                        <div class="col-lg-6">
+                        <div class="col-lg-4">
                             <div class="form-group form-floating">
                                 <input class="form-control text-end" id="ExpenseTitle" name="ExpenseTitle" placeholder="عنوان هزینه">
                                 <label for="ExpenseTitle" style="right:0!important; left:unset!important;">عنوان هزینه</label>
                             </div>
                         </div>
-                        <div class="col-lg-6">
+                        <div class="col-lg-4">
                             <div class="form-group form-floating">
                                 <input type="number" class="form-control text-end" id="Amount" name="Amount" placeholder="مبلغ">
                                 <label for="Amount" style="right:0!important; left:unset!important;">مبلغ</label>
                             </div>
                         </div>
-                        <div class="col-lg-4 form-floating">
-                            <select id="ProjectId" name="ProjectId" class="form-control text-end" asp-items="@(new SelectList(lstProject, "DrId", "DrName"))">
-                            </select>
-                            <label for="ProjectId" style="right:0!important; left:unset!important;">پروژه</label>
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
+                                <select id="PaymentStatus" name="PaymentStatus" class="form-control text-end">
+                                    <option value="0">بدون پرداخت</option>
+                                    <option value="1">پرداخت بخشی</option>
+                                    <option value="2">پرداخت کامل</option>
+                                </select>
+                                <label for="PaymentStatus" style="right:0!important; left:unset!important;">وضعیت پرداخت</label>
+                            </div>
                         </div>
-                        <div class="col-lg-4 form-floating">
-                            <select id="Type" name="Type" class="form-control text-end">
-                                <option value="1">حمل و نقل</option>
-                                <option value="2">غذا</option>
-                                <option value="3">هزینه اقامت</option>
-                                <option value="4">سایر</option>
-                            </select>
-                            <label for="Type" style="right:0!important; left:unset!important;">نوع هزینه</label>
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
+                                <input type="number" class="form-control text-end" id="PaidAmount" name="PaidAmount" placeholder="مبلغ پرداختی" value="0">
+                                <label for="PaidAmount" style="right:0!important; left:unset!important;">مبلغ پرداختی</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
+                                <select id="PaymentMethod" name="PaymentMethod" class="form-control text-end">
+                                    <option value="">انتخاب روش پرداخت</option>
+                                    <option value="Cash">نقدی</option>
+                                    <option value="Card">کارت به کارت</option>
+                                    <option value="Transfer">انتقال بانکی</option>
+                                    <option value="Cheque">چک</option>
+                                </select>
+                                <label for="PaymentMethod" style="right:0!important; left:unset!important;">روش پرداخت</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
+                                <input type="text" class="form-control text-end" id="ReferenceNo" name="ReferenceNo" placeholder="شماره پیگیری">
+                                <label for="ReferenceNo" style="right:0!important; left:unset!important;">شماره پیگیری</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
+                                <input type="text" class="form-control text-end" id="RemainingAmount" readonly placeholder="مانده">
+                                <label for="RemainingAmount" style="right:0!important; left:unset!important;">مانده</label>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
+                                <select id="ProjectId" name="ProjectId" class="form-control text-end" asp-items="@(new SelectList(lstProject, "DrId", "DrName"))">
+                                </select>
+                                <label for="ProjectId" style="right:0!important; left:unset!important;">پروژه</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
+                                <select id="Type" name="Type" class="form-control text-end">
+                                    <option value="1">حمل و نقل</option>
+                                    <option value="2">غذا</option>
+                                    <option value="3">هزینه اقامت</option>
+                                    <option value="4">سایر</option>
+                                </select>
+                                <label for="Type" style="right:0!important; left:unset!important;">نوع هزینه</label>
+                            </div>
                         </div>
                         <div class="col-lg-4 form-floating">
                             <input autocomplete="off" id="ExpenseDate" name="ExpenseDate" class="form-control persian-date text-end" placeholder="تاریخ" />
@@ -195,6 +240,36 @@
                                 <label for="AmountE" style="right:0!important; left:unset!important;">مبلغ</label>
                             </div>
                         </div>
+                        <div class="col-lg-4 form-floating">
+                            <select id="PaymentStatusE" name="PaymentStatusE" class="form-control text-end">
+                                <option value="0">بدون پرداخت</option>
+                                <option value="1">پرداخت بخشی</option>
+                                <option value="2">پرداخت کامل</option>
+                            </select>
+                            <label for="PaymentStatusE" style="right:0!important; left:unset!important;">وضعیت پرداخت</label>
+                        </div>
+
+                        <div class="col-lg-4 form-floating">
+                            <input type="number" class="form-control text-end" id="PaidAmountE" name="PaidAmountE" placeholder="مبلغ پرداختی">
+                            <label for="PaidAmountE" style="right:0!important; left:unset!important;">مبلغ پرداختی</label>
+                        </div>
+
+                        <div class="col-lg-4 form-floating">
+                            <select id="PaymentMethodE" name="PaymentMethodE" class="form-control text-end">
+                                <option value="">انتخاب روش پرداخت</option>
+                                <option value="Cash">نقدی</option>
+                                <option value="Card">کارت به کارت</option>
+                                <option value="Transfer">انتقال بانکی</option>
+                                <option value="Cheque">چک</option>
+                            </select>
+                            <label for="PaymentMethodE" style="right:0!important; left:unset!important;">روش پرداخت</label>
+                        </div>
+
+                        <div class="col-lg-4 form-floating">
+                            <input type="text" class="form-control text-end" id="ReferenceNoE" name="ReferenceNoE" placeholder="شماره پیگیری">
+                            <label for="ReferenceNoE" style="right:0!important; left:unset!important;">شماره پیگیری</label>
+                        </div>
+
                         <div class="col-lg-4 form-floating">
                             <select id="ProjectIdE" name="ProjectIdE" class="form-control text-end" asp-items="@(new SelectList(lstProject, "DrId", "DrName"))">
                             </select>
@@ -280,7 +355,7 @@
                             confirmButtonColor: "green",
                             confirmButtonText: "باشه",
                             timer: 1500,
-                        });                        
+                        });
                         $('#addExpense').modal('hide');
                         window.location.reload();
                     }
@@ -294,7 +369,7 @@
                             confirmButtonColor: "green",
                             confirmButtonText: "باشه",
                             timer: 1500,
-                        });                        
+                        });
                         return false;
                     } else if (xhr.statusCode == 400) {
                         swal({
@@ -347,6 +422,11 @@
                     $("#DescriptionE").val(expense.description);
                     $("#TenantIdE").val(expense.tenantId);
                     $("#ExpenseDateE").val(expense.expenseDate);
+                    $("#PaymentStatusE").val(expense.paymentStatus);
+                    $("#PaidAmountE").val(expense.paidAmount);
+                    $("#PaymentMethodE").val(expense.paymentMethod);
+                    $("#ReferenceNoE").val(expense.referenceNo);
+
 
                     $("#editExpense").modal('show');
                 }
@@ -365,6 +445,10 @@
                 expenseDate: $("#ExpenseDateE").val(),
                 amount: $("#AmountE").val(),
                 description: $("#DescriptionE").val(),
+                paymentStatus: $("#PaymentStatusE").val(),
+                paidAmount: $("#PaidAmountE").val(),
+                paymentMethod: $("#PaymentMethodE").val(),
+                referenceNo: $("#ReferenceNoE").val(),
                 modifiedById: $("#ModifiedByIdE").val()
             }
 
@@ -420,5 +504,51 @@
                 }
             });
         })
+    </script>
+
+    <script>
+                function calcExpenseRemaining() {
+            var amount = parseFloat($("#Amount").val() || 0);
+            var paidAmount = parseFloat($("#PaidAmount").val() || 0);
+
+            if ($("#PaymentStatus").val() == "0") {
+                $("#PaidAmount").val(0);
+                $("#PaymentMethod").val("");
+                $("#ReferenceNo").val("");
+                paidAmount = 0;
+            }
+
+            if ($("#PaymentStatus").val() == "2") {
+                $("#PaidAmount").val(amount);
+                paidAmount = amount;
+            }
+
+            if (paidAmount > amount) {
+                $("#PaidAmount").val(amount);
+                paidAmount = amount;
+            }
+
+            $("#RemainingAmount").val(amount - paidAmount);
+        }
+
+        $("#Amount, #PaidAmount, #PaymentStatus").on("input change", function () {
+            calcExpenseRemaining();
+        });
+
+        $("#PaymentStatus").on("change", function () {
+            var status = $(this).val();
+
+            if (status == "0") {
+                $("#PaidAmount").val(0);
+                $("#PaymentMethod").val("");
+                $("#ReferenceNo").val("");
+            }
+            else if (status == "2") {
+                $("#PaidAmount").val($("#Amount").val() || 0);
+            }
+
+            calcExpenseRemaining();
+        });
+
     </script>
 }

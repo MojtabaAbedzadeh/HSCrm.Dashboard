@@ -10,6 +10,7 @@
         public ProjectModel? Project { get; set; }
         public DateTime IssueDate { get; set; }
         public byte PayStatus { get; set; }
+        public decimal PaidAmount { get; set; }
         public decimal Subtotal { get; set; }
         public decimal Tax { get; set; }
         public decimal Discount { get; set; }
