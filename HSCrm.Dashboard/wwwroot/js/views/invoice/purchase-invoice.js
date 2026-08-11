@@ -1,15 +1,13 @@
 ﻿// ================================
 // Helpers
 // ================================
+
 const ApiAddress = AppContext.apiAddress;
 const TId = AppContext.tenantId;
 const UId = AppContext.userId;
 const Token = AppContext.token;
 
 $(document).ready(function () {
-    const Token = AppContext.token;
-    console.log("Token from AppContext:", Token); // این را چک کن ببین در کنسول چی چاپ می‌کنه
-
     $('.persian-date').persianDatepicker({
         format: 'YYYY/MM/DD',
         autoClose: true,
@@ -207,6 +205,21 @@ $('#btnRegInvoice').on('click', function () {
 
     if (!validateInvoiceForm()) return;
 
+    const items = [];
+
+    $('#tblBody tr').each(function () {
+        items.push({
+            productId: parseInt($(this).find('td:eq(1)').text()),
+            quantity: parseFloat($(this).find('td:eq(3)').text()),
+            unitPrice: unFormatPrice($(this).find('td:eq(4)').text()),
+            discount: unFormatPrice($(this).find('td:eq(5)').text()),
+            tax: unFormatPrice($(this).find('td:eq(6)').text())
+        });
+    });
+
+    const payment = validatePayment();
+    if (!payment.isValid) return;
+
     const model = {
         SupplierId: parseInt($('#SupplierId').val(), 10),
         WarehouseId: parseInt($('#WarehouseId').val(), 10),
@@ -217,40 +230,21 @@ $('#btnRegInvoice').on('click', function () {
         InvoiceDiscount: unFormatPrice($('#invoiceDiscount').val()) || 0,
         InvoiceTax: unFormatPrice($('#invoiceTax').val()) || 0,
         PurchaserId: UId,
-
-        PaidAmount: unFormatPrice($('#paidAmount').val()) || 0,
-        PaymentMethod: $('#paymentMethod').val() || 'Cash',
+        PaidAmount: payment.paidAmount,
+        PaymentMethod: payment.paymentMethod,
         PaymentReferenceNo: $('#paymentReferenceNo').val() || null,
-
         Items: items
     };
 
-
-
-    $('#tblBody tr').each(function () {
-        model.items.push({
-            productId: parseInt($(this).find('td:eq(1)').text()),
-            quantity: parseFloat($(this).find('td:eq(3)').text()),
-            unitPrice: unFormatPrice($(this).find('td:eq(4)').text()),
-            discount: unFormatPrice($(this).find('td:eq(5)').text()),
-            tax: unFormatPrice($(this).find('td:eq(6)').text())
-        });
-    });
-
     console.log('payload', model);
-    console.log('payload json', JSON.stringify(model));
-
 
     $.ajax({
         url: ApiAddress + 'PurchaseInvoice/CreateInvoice',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(model),
-        headers: {
-            'Authorization': 'Bearer ' + Token
-        },
+        headers: { 'Authorization': 'Bearer ' + Token },
         success: function (status) {
-            // ✅ اگر عملیات موفق بوده
             if (status.status === true) {
                 swal({
                     title: "موفق",
@@ -260,78 +254,19 @@ $('#btnRegInvoice').on('click', function () {
                     confirmButtonText: "باشه",
                     timer: 1500
                 });
-                //window.location.href = '/AdminArea/Invoice/PurchaseInvoice';
                 return;
-            } else {
-                switch (status.statusCode) {
-
-                    case 204:
-                        swal({
-                            title: "اطلاعات ناقص",
-                            text: "آیتمی برای ثبت وجود ندارد",
-                            type: "warning",
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500
-                        });
-                        break;
-
-                    case 400:
-
-                        swal({
-                            title: "درخواست نامعتبر",
-                            text: "اطلاعات ارسالی صحیح نیست",
-                            type: "warning",
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500
-                        });
-
-                        break;
-
-                    case 403:
-
-                        swal({
-                            title: "عدم دسترسی",
-                            text: "شما مجاز به انجام این عملیات نیستید",
-                            type: "error",
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500
-                        });
-
-                        break;
-
-                    case 404:
-
-                        swal({
-                            title: "یافت نشد",
-                            text: "رکورد مورد نظر یافت نشد",
-                            type: "error",
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500
-                        });
-
-                        break;
-
-                    case 406:
-
-                        swal({
-                            title: "کمبود موجودی",
-                            text: "موجودی محصول کافی نمی‌باشد!",
-                            type: "warning",
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500
-                        });
-
-                        break;
-                }
             }
-        },
 
-        error: function (xhr) {
+            swal({
+                title: "خطا",
+                text: status.message || "ثبت فاکتور انجام نشد",
+                type: "error",
+                confirmButtonColor: "green",
+                confirmButtonText: "باشه",
+                timer: 1500
+            });
+        },
+        error: function () {
             swal({
                 title: "خطای ارتباط با سرور",
                 text: "امکان ارتباط با سرور وجود ندارد، لطفاً مجدداً تلاش کنید",
@@ -401,6 +336,23 @@ function validateInvoiceForm() {
 
     return true;
 }
+
+// ذخیره تغییرات با زدن Enter یا خارج شدن از فیلد (Blur)
+$(document).on('blur keyup', '.edit-qty', function (e) {
+    if (e.type === 'keyup' && e.keyCode !== 13) return;
+
+    const $input = $(this);    
+    const newVal = $input.val();
+    const $td = $input.parent();
+
+    // بازگرداندن مقدار به متن
+    $td.text(newVal);
+
+    // به‌روزرسانی جمع همان ردیف (اختیاری: اگر نیاز است قیمت هم محاسبه شود)
+    // در اینجا فقط جمع کل را دوباره محاسبه می‌کنیم
+    calculateInvoiceSum();
+});
+
 
 "use strict";
 
@@ -589,6 +541,16 @@ function updatePaymentFields() {
     remainingAmount.val(formatPrice(invoiceTotal));
 }
 
+
+// در هنگام لود صفحه (document.ready) به این شکل صدا بزنید:
+$(document).ready(function () {
+    // True به معنی لود اولیه است و مقادیر input را نباید overwrite کند
+    updatePaymentFields(true);
+
+    // ... سایر کدها
+});
+
+
 /*
 |--------------------------------------------------------------------------
 | اعتبارسنجی پرداخت
@@ -733,4 +695,90 @@ $(document).ready(function () {
             }, 0);
         }
     );
+});
+
+// ================================
+// Update Invoice (Edit Mode)
+// ================================
+$('#btnUpdateInvoice').on('click', function () {
+
+    // ۱. اعتبارسنجی فرم و لیست کالاها
+    if (!validateInvoiceForm()) return;
+
+    const items = [];
+    $('#tblBody tr').each(function () {
+        items.push({
+            productId: parseInt($(this).find('td:eq(1)').text()),
+            quantity: parseFloat($(this).find('td:eq(3)').text()),
+            unitPrice: unFormatPrice($(this).find('td:eq(4)').text()),
+            discount: unFormatPrice($(this).find('td:eq(5)').text()),
+            tax: unFormatPrice($(this).find('td:eq(6)').text())
+        });
+    });
+
+    // ۲. اعتبارسنجی وضعیت پرداخت
+    const payment = validatePayment();
+    if (!payment.isValid) return;
+
+    const issueDateValue = "2026-08-09";
+
+    // ۳. ساخت آبجکت نهایی (مطابق با مدل Update در بک‌اند)
+    const model = {
+        InvoiceId: parseInt($('#InvoiceId').val(), 10), // حتماً در ویو این فیلد مخفی را داشته باشید
+        SupplierId: parseInt($('#SupplierId').val(), 10),
+        WarehouseId: parseInt($('#WarehouseId').val(), 10),
+        TenantId: TId,
+        InvoiceNumber: $('#invoiceNumber').val(),
+        IssueDate: issueDateValue,
+        Status: parseInt($('#InvoiceStatus').val(), 10),
+        InvoiceDiscount: unFormatPrice($('#invoiceDiscount').val()) || 0,
+        InvoiceTax: unFormatPrice($('#invoiceTax').val()) || 0,
+        PurchaserId: UId,
+        PaidAmount: payment.paidAmount,
+        PaymentMethod: payment.paymentMethod,
+        PaymentReferenceNo: $('#paymentReferenceNo').val() || null,
+        Items: items
+    };
+
+    // ۴. ارسال درخواست PUT
+    $.ajax({
+        url: ApiAddress + 'PurchaseInvoice/UpdateInvoice',
+        type: 'PUT', 
+        contentType: 'application/json',
+        data: JSON.stringify(model),
+        headers:
+        {
+            'Authorization': 'Bearer ' + Token
+        },
+        success: function (status) {
+            if (status.Status === true) {
+                swal({
+                    title: "موفق",
+                    text: "فاکتور با موفقیت ویرایش شد",
+                    type: "success",
+                    confirmButtonColor: "green",
+                    confirmButtonText: "باشه",
+                    timer: 1500
+                }, function () {
+                    // هدایت به لیست فاکتورها پس از موفقیت
+                    window.location.href = '/AdminArea/PurchaseInvoice/Index';
+                });
+                return;
+            }
+
+            swal({
+                title: "خطا",
+                text: status.message || "ویرایش فاکتور انجام نشد",
+                type: "error",
+                confirmButtonColor: "red"
+            });
+        },
+        error: function () {
+            swal({
+                title: "خطا",
+                text: "ارتباط با سرور برقرار نشد",
+                type: "error"
+            });
+        }
+    });
 });

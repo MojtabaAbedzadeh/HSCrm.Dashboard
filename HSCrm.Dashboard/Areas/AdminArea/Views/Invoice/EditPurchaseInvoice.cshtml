@@ -1,5 +1,7 @@
-﻿@{
-    ViewData["AdminTitle"] = "ثبت فاکتور خرید";
+﻿@using HSCrm.Dashboard.Costants
+@model PurchaseInvoiceEditModel
+@{
+    ViewData["AdminTitle"] = "ویرایش فاکتور خرید";
     ViewData["selected"] = "warehouse_purchase_invoice";
     string ApiAddress = ViewBag.ApiAddress;
     string UId = ViewBag.UserId;
@@ -13,53 +15,57 @@
 }
 
 @section styles {
-
     <link href="~/assets/plugins/data-tables/datatables.bootstrap5.min.css" rel="stylesheet">
     <link href="~/assets/plugins/data-tables/responsive.datatables.min.css" rel="stylesheet">
     <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
     <link href="~/css/Views/invoice/invoice.css" rel="stylesheet" />
 }
+
 @if (ViewBag.FiscalYearStatus == "0")
 {
     <div class="row">
+        <!-- شناسه مخفی فاکتور برای استفاده در آپدیت -->
+        <input type="hidden" id="InvoiceId" value="@Model.Id" />
+
         <div class="col-12" style="margin-top:20px;">
-            <div class="card card-default">
+            <div class="ec-vendor-list card card-default">
                 <div class="card-body" style="justify-content: end;">
                     <div class="table-responsive row">
                         <div class="col-lg-2 col-md-4 form-floating">
                             <select id="InvoiceStatus" class="form-control text-end">
                                 <option value="1">فاکتور خرید</option>
                             </select>
-                            <label for="InvoiceTypeId" style="right:0!important; left:unset!important;">نوع سند</label>
+                            <label for="InvoiceStatus" style="right:0!important; left:unset!important;">نوع سند</label>
                         </div>
                         <div class="col-lg-2 col-md-4 form-floating">
-                            <select id="SupplierId" name="SupplierId" class="form-control text-end" asp-items="@(new SelectList(lstSupplier, "DrId", "DrName"))">
+                            <select id="SupplierId" name="SupplierId" class="form-control text-end" asp-items="@(new SelectList(lstSupplier, "DrId", "DrName", Model.SupplierId.ToString()))">
                             </select>
                             <label for="SupplierId" style="right:0!important; left:unset!important;">تامین کننده</label>
                         </div>
                         <div class="col-lg-2 col-md-4 form-floating">
-                            <select id="WarehouseId" name="WarehouseId" class="form-control text-end" asp-items="@(new SelectList(lstWarehouse, "DrId", "DrName"))">
+                            <select id="WarehouseId" name="WarehouseId" class="form-control text-end" asp-items="@(new SelectList(lstWarehouse, "DrId", "DrName", Model.WarehouseId.ToString()))">
                             </select>
                             <label for="WarehouseId" style="right:0!important; left:unset!important;">انبار</label>
                         </div>
                         <div class="col-lg-2 col-md-4 form-floating">
-                            <input id="invoiceNumber" name="invoiceNumber" class="form-control text-end" placeholder="شماره فاکتور" />
+                            <input id="invoiceNumber" name="invoiceNumber" class="form-control text-end" placeholder="شماره فاکتور" value="@Model.Number" />
                             <label for="invoiceNumber" style="right:0!important; left:unset!important;">شماره فاکتور</label>
                         </div>
                         <div class="col-lg-2 col-md-4 form-floating">
-                            <input autocomplete="off" id="invoiceDate" name="invoiceDate" class="form-control persian-date text-end" placeholder="تاریخ فاکتور" />
+                            <!-- فیلد تاریخ که مقدار تاریخ میلادی فاکتور را برای تبدیل نگه می‌دارد -->
+                            <input autocomplete="off" id="invoiceDate" name="invoiceDate" class="form-control persian-date text-end" placeholder="تاریخ فاکتور" value="@Model.IssueDate.ToString("yyyy/MM/dd")" />
                             <label for="invoiceDate" style="right:0!important; left:unset!important;">تاریخ فاکتور</label>
                         </div>
-                    </div>
-                    <div class="table-responsive row">
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- بخش افزودن کالا به لیست فاکتور -->
         <div class="col-4" style="margin-top:20px;">
             <div class="card card-default">
                 <div class="card-body">
-                    <form>
+                    <form id="frmAddProduct">
                         <div class="table-responsive row">
                             <div class="col-lg-12" style="margin-bottom:8px;">
                                 <div class="form-group form-floating" style="margin:auto;">
@@ -74,14 +80,14 @@
                             </div>
                             <div class="col-lg-6" style="margin-bottom:8px;">
                                 <div class="form-group form-floating" style="margin:auto;">
-                                    <input type="number" value="0" style="font-size:13px;" class="form-control text-end" id="productCount" name="productCount" placeholder="تعداد">
+                                    <input type="number" value="1" style="font-size:13px;" class="form-control text-end" id="productCount" name="productCount" placeholder="تعداد">
                                     <label for="productCount" style="right:0!important; left:unset!important;">تعداد</label>
                                 </div>
                             </div>
                             <div class="col-lg-6" style="margin-bottom:8px;">
                                 <div class="form-group form-floating" style="margin:auto;">
-                                    <input type="text" style="font-size:13px;" class="form-control text-end" id="buyPrice" name="buyPrice" placeholder="قیمت فروش">
-                                    <label for="buyPrice" style="right:0!important; left:unset!important;">قیمت فروش</label>
+                                    <input type="text" style="font-size:13px;" class="form-control text-end" id="buyPrice" name="buyPrice" placeholder="قیمت خرید">
+                                    <label for="buyPrice" style="right:0!important; left:unset!important;">قیمت خرید</label>
                                 </div>
                             </div>
                             <div class="col-lg-6" style="margin-bottom:8px;">
@@ -98,20 +104,21 @@
                             </div>
                             <div class="col-lg-6" style="margin-bottom:8px;">
                                 <div class="form-group form-floating" style="margin:auto;">
-                                    <input type="text" value="0" style="font-size:13px;" class="form-control text-end" id="rowSum" name="rowSum" placeholder="جمع">
+                                    <input type="text" value="0" readonly style="font-size:13px;" class="form-control text-end" id="rowSum" name="rowSum" placeholder="جمع">
                                     <label for="rowSum" style="right:0!important; left:unset!important;">جمع</label>
                                 </div>
                             </div>
                             <div class="col-lg-12" style="margin-bottom:8px;">
-                                <button type="button" value="Submit" id="btnAddProduct" class="btn-block mt-3 btn-pill btn btn-success" style="width:100%">+ افزودن</button>
+                                <button type="button" id="btnAddProduct" class="btn-block mt-3 btn-pill btn btn-success" style="width:100%">+ افزودن به لیست</button>
                             </div>
                         </div>
                     </form>
-
                 </div>
             </div>
         </div>
-        <div class="col-8" style=" margin-top:20px;">
+
+        <!-- جدول نمایش اقلام فاکتور -->
+        <div class="col-8" style="margin-top:20px;">
             <div class="card card-default">
                 <div class="card-body">
                     <div class="row">
@@ -131,32 +138,68 @@
                                     </tr>
                                 </thead>
                                 <tbody id="tblBody">
+                                    @if (Model != null && Model.Items != null && Model.Items.Any())
+                                    {
+                                        var index = 1;
+                                        foreach (var item in Model.Items)
+                                        {
+                                            var price = item.UnitPricePurchase > 0 ? item.UnitPricePurchase : item.UnitPrice;
+                                            var totalRow = (item.Quantity * price) - item.Discount + item.Tax;
+                                            var productName = item.Product?.ProductTitle ?? item.Product?.ProductTitle ?? "کالای نامشخص";
+
+                                            <tr>
+                                                <td hidden class="dblclick row-num">@index</td>
+                                                <td hidden class="dblclick item-product-id">@item.ProductId</td>
+                                                <td style="text-align:right" class="item-product-title">@productName</td>
+                                                <td style="text-align:center" class="item-count">@item.Quantity</td>
+                                                <td style="text-align:center" class="item-price">@price.ToString("N0")</td>
+                                                <td style="text-align:center" class="item-discount">@item.Discount.ToString("N0")</td>
+                                                <td style="text-align:center" class="item-tax">@item.Tax.ToString("N0")</td>
+                                                <td style="text-align:center" class="item-total">@totalRow.ToString("N0")</td>
+                                                <td style="text-align:center">
+                                                    <button type="button" class="btn btn-sm btn-warning btnEdit">✎</button>
+                                                    <button type="button" class="btn btn-sm btn-danger btnRemove">✖</button>
+                                                </td>
+
+                                            </tr>
+                                            index++;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr id="empty-row">
+                                            <td colspan="7" class="text-center text-muted">هیچ کالا یا قلم فاکتوری در این فاکتور یافت نشد.</td>
+                                        </tr>
+                                    }
                                 </tbody>
+
+
                             </table>
                             <div class="row justify-content-end inc-total">
-                                <div class="col-lg-12 col-xl-12 col-xl-12 ml-sm-auto">
+                                <div class="col-lg-12 col-xl-12 ml-sm-auto">
                                     <ul class="list-unstyled mt-3 row">
                                         <li class="mid text-dark col-lg-4">
                                             <div class="form-group form-floating">
-                                                <input type="number" min="0" value="0" class="form-control text-end" id="invoiceDiscount" name="invoiceDiscount" placeholder="تخفیف ریالی">
+                                                <input type="number" min="0" class="form-control text-end" id="invoiceDiscount" name="invoiceDiscount" placeholder="تخفیف ریالی" value="@Model.Discount.ToString("N0")" />
                                                 <label for="invoiceDiscount" style="right:0!important; left:unset!important;">تخفیف ریالی</label>
                                             </div>
                                         </li>
                                         <li class="mid text-dark col-lg-4">
                                             <div class="form-group form-floating">
-                                                <input type="number" min="0" value="0" class="form-control text-end" id="invoiceTax" name="invoiceTax" placeholder="مالیات و عوارض">
+                                                <input type="number" min="0" class="form-control text-end" id="invoiceTax" name="invoiceTax" placeholder="مالیات و عوارض" value="@Model.Tax.ToString("N0")" />
                                                 <label for="invoiceTax" style="right:0!important; left:unset!important;">مالیات و عوارض</label>
                                             </div>
                                         </li>
                                         <li class="mid text-dark col-lg-4">
                                             <div class="form-group form-floating">
-                                                <input type="text" disabled class="form-control text-end" id="invoiceSumPrice" name="invoiceSumPrice" placeholder="مبلغ قابل پرداخت">
+                                                <input type="text" disabled class="form-control text-end" id="invoiceSumPrice" name="invoiceSumPrice" placeholder="مبلغ قابل پرداخت" value="@Model.Total.ToString("N0")" />
                                                 <label for="invoiceSumPrice" style="right:0!important; left:unset!important;">مبلغ قابل پرداخت</label>
                                             </div>
                                         </li>
                                         <input hidden id="sellerUserId" name="sellerUserId" value="@UId">
                                         <input hidden id="tenantId" name="tenantId" value="@TId">
                                     </ul>
+
                                     <div class="row mt-3">
                                         <div class="col-lg-4 col-md-6 col-12">
                                             <div class="form-group form-floating">
@@ -165,23 +208,15 @@
                                                     <option value="1">پرداخت کامل</option>
                                                     <option value="2">پرداخت بخشی</option>
                                                 </select>
-
-                                                <label for="paymentStatus">
-                                                    وضعیت پرداخت
-                                                </label>
+                                                <label for="paymentStatus">وضعیت پرداخت</label>
                                             </div>
                                         </div>
-
                                         <div class="col-lg-4 col-md-6 col-12">
                                             <div class="form-group form-floating">
-                                                <input type="text" id="paidAmount" name="paidAmount" value="0" class="form-control text-end" autocomplete="off" disabled />
-
-                                                <label for="paidAmount">
-                                                    مبلغ پرداختی
-                                                </label>
+                                                <input type="text" id="paidAmount" name="paidAmount" class="form-control text-end" autocomplete="off" disabled value="@Model.PaidAmount.ToString("N0")" />
+                                                <label for="paidAmount">مبلغ پرداختی</label>
                                             </div>
                                         </div>
-
                                         <div class="col-lg-4 col-md-6 col-12">
                                             <div class="form-group form-floating">
                                                 <select id="paymentMethod" name="paymentMethod" class="form-control text-end" disabled>
@@ -191,26 +226,17 @@
                                                     <option value="Cheque">چک</option>
                                                     <option value="Other">سایر</option>
                                                 </select>
-
-                                                <label for="paymentMethod">
-                                                    روش پرداخت
-                                                </label>
+                                                <label for="paymentMethod">روش پرداخت</label>
                                             </div>
                                         </div>
-
                                         <div class="col-lg-4 col-md-6 col-12">
                                             <div class="form-group form-floating">
-                                                <input type="text" id="remainingAmount" name="remainingAmount" value="0" class="form-control text-end" readonly />
-
-                                                <label for="remainingAmount">
-                                                    مانده فاکتور
-                                                </label>
+                                                <input type="text" id="remainingAmount" name="remainingAmount" class="form-control text-end" readonly value="@Model.RemainingAmount.ToString("N0")" />
+                                                <label for="remainingAmount">مانده فاکتور</label>
                                             </div>
                                         </div>
-
                                     </div>
-
-                                    <button id="btnRegInvoice" href="javascript:void(0)" class="btn btn-inline-block float-start mt-3 btn-primary btn-pill">ثبت</button>
+                                    <button id="btnUpdateInvoice" class="btn btn-inline-block float-start mt-3 btn-primary btn-pill">بروزرسانی فاکتور</button>
                                 </div>
                             </div>
                         </div>
@@ -228,6 +254,7 @@ else
         سال مالی انتخاب شده بسته می باشد! شما فقط قادر به مشاهده گزارشات سیستم هستید.
     </div>
 }
+
 @section AdminScripts {
     <script src="~/lib/sweetalert/sweetalert2.min.js"></script>
     <script src="~/lib/sweetalert/sweetalert2.js"></script>
@@ -243,7 +270,6 @@ else
             });
         });
     </script>
-
     <script>
         window.AppContext = {
             apiAddress: '@ViewBag.ApiAddress',
@@ -252,6 +278,5 @@ else
             token: '@ViewBag.Token'
         };
     </script>
-
     <script src="~/js/views/invoice/purchase-invoice.js"></script>
 }

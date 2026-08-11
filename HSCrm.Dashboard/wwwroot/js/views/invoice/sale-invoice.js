@@ -3,7 +3,7 @@
 // ================================
 const ApiAddress = window.AppContext.apiAddress || '';
 const TId = window.AppContext.tenantId || '';
-const UId = window.AppContext.userId || '';
+const UId = window.AppContext.userId || ''; 
 var Token = window.AppContext.token || '';
 
 $(document).ready(function () {

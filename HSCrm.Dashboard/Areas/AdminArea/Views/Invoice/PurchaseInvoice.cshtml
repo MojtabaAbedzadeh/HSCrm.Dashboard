@@ -3,6 +3,12 @@
 @{
     ViewData["Title"] = "فاکتورهای خرید";
     ViewData["selected"] = "invoice_purchase_list";
+
+    // محاسبات خلاصه مالی بالای صفحه
+    var totalPurchase = Model.Sum(x => x.Total);
+    var totalPaid = Model.Sum(x => x.PaidAmount);
+    var totalRemaining = Model.Sum(x => x.RemainingAmount);
+
 }
 
 @section styles {
@@ -34,6 +40,32 @@
         </div>
     }
 </div>
+<div class="row mb-4">
+    <div class="col-xl-4 col-sm-6 p-b-15">
+        <div class="card card-mini bg-primary text-white">
+            <div class="card-body">
+                <h2 class="mb-1">@totalPurchase.ToString("N0") تومان</h2>
+                <p>جمع کل فاکتورها</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-sm-6 p-b-15">
+        <div class="card card-mini bg-success text-white">
+            <div class="card-body">
+                <h2 class="mb-1">@totalPaid.ToString("N0") تومان</h2>
+                <p>جمع کل پرداخت‌شده</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-sm-6 p-b-15">
+        <div class="card card-mini bg-danger text-white">
+            <div class="card-body">
+                <h2 class="mb-1">@totalRemaining.ToString("N0") تومان</h2>
+                <p>جمع کل مانده بدهی</p>
+            </div>
+        </div>
+    </div>
+</div>
 @if (ViewBag.FiscalYearStatus != "0")
 {
     <div class="alert alert-primary col-lg-8" role="alert" style="margin-top:40px; color:#084298;">
@@ -48,22 +80,18 @@
             <div class="card-body">
                 <div class="table-responsive-md">
                     <div id="responsive-data-table_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
-                        <form method="get"
-                              asp-area="AdminArea"
-                              asp-controller="Invoice"
-                              asp-action="PurchaseInvoice"
-                              class="card mb-4">
+                        <form method="get" asp-area="AdminArea" asp-controller="Invoice" asp-action="PurchaseInvoice" class="card mb-4">
                             <div class="card-header">
                                 <h5 class="mb-0">فیلتر فاکتورهای خرید</h5>
                             </div>
                             <div class="card-body">
                                 <div class="row g-3">
                                     <div class="col-md-2">
-                                        <label for="supplierId" class="form-label">
-                                            شناسه تأمین‌کننده
+                                        <label for="supplierFullName" class="form-label">
+                                            نام تأمین‌کننده
                                         </label>
 
-                                        <input type="number" id="supplierId" name="supplierId" class="form-control" value="@Context.Request.Query["supplierId"]" min="1" />
+                                        <input type="text" id="supplierFullName" name="supplierFullName" class="form-control" placeholder="جستجوی نام..." value="@Context.Request.Query["supplierFullName"]" />
                                     </div>
 
                                     <div class="col-md-2">
@@ -143,7 +171,9 @@
                                     <th>تاریخ فاکتور</th>
                                     <th>تامین کننده</th>
                                     <th>جمع فاکتور</th>
-                                    <th>وضعیت فاکتور</th>
+                                    <th>پرداخت شده</th>
+                                    <th>مانده حساب</th>
+                                    <th>وضعیت پرداخت</th>
                                     <th>عملیات</th>
                                 </tr>
                             </thead>
@@ -156,21 +186,22 @@
                                         <td>@item.Number</td>
                                         <td>@item.IssueDate.ToString("yyyy/MM/dd")</td>
                                         <td>@item.Supplier.SupplierFullName</td>
-                                        <td>@item.Total.ToString("N0")</td>
+                                        <td class="text-primary font-weight-bold">@item.Total.ToString("N0")</td>
+                                        <td class="text-success">@item.PaidAmount.ToString("N0")</td>
+                                        <td class="text-danger">@item.RemainingAmount.ToString("N0")</td>
                                         <td>
-                                            @if (remaining <= 0)
+                                            @if (item.RemainingAmount <= 0)
                                             {
-                                                <span class="badge bg-success">تسویه‌شده</span>
+                                                <span class="badge bg-success text-white">تسویه شده</span>
                                             }
                                             else if (item.PaidAmount > 0)
                                             {
-                                                <span class="badge bg-warning text-dark">پرداخت جزئی</span>
+                                                <span class="badge bg-warning text-dark">پرداخت شده (بخشی)</span>
                                             }
                                             else
                                             {
-                                                <span class="badge bg-danger">پرداخت‌نشده</span>
+                                                <span class="badge bg-danger text-white">پرداخت نشده</span>
                                             }
-
                                         </td>
                                         <td>
                                             <div class="btn-group mb-1">
@@ -184,14 +215,16 @@
 
                                                         @if (User.HasPermission(Permissions.PurchaseInvoices.Edit))
                                                         {
-                                                            <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">
+                                                            <a class="dropdown-item" asp-area="AdminArea" asp-controller="Invoice" asp-action="EditPurchaseInvoice" asp-route-id="@item.Id">
+                                                                <i class="mdi mdi-pencil-outline me-1"></i>
                                                                 ویرایش
                                                             </a>
+
                                                         }
 
                                                         @if (User.HasPermission(Permissions.PurchaseInvoices.Delete))
                                                         {
-                                                            <a class="dropdown-item" href="#" onclick="deletePurchaseInvoice(@item.Id)">
+                                                            <a class="dropdown-item text-danger btnRemove" href="#" onclick="deletePurchaseInvoice(@item.Id)">
                                                                 حذف
                                                             </a>
                                                             <hr />
@@ -210,9 +243,10 @@
 
 
 
-                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">
-                                                            ثبت پرداخت
-                                                        </a>
+                                                        @if (item.RemainingAmount > 0 && ViewBag.FiscalYearStatus == "0")
+                                                        {
+                                                            <a class="dropdown-item text-primary" href="javascript:void(0)" onclick="openAddPaymentModal(@item.Id, @item.RemainingAmount)">ثبت پرداخت</a>
+                                                        }
                                                         <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">
                                                             لیست پرداخت‌ها
                                                         </a>
@@ -243,6 +277,8 @@
     </div>
 </div>
 @section AdminScripts {
+    <script src="~/js/site.js"></script>
+    <script src="~/js/views/invoice/purchase-invoice-list.js"></script>
     <script>
         $(document).ready(function () {
             const tableElement = $('#responsive-data-table');
@@ -275,5 +311,4 @@
             });
         });
     </script>
-
 }
