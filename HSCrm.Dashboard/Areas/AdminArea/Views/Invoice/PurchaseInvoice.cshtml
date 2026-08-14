@@ -225,36 +225,46 @@
                                                         @if (User.HasPermission(Permissions.PurchaseInvoices.Delete))
                                                         {
                                                             <a class="dropdown-item text-danger btnRemove" href="#" onclick="deletePurchaseInvoice(@item.Id)">
+                                                                <i class="mdi mdi-delete me-1"></i>
                                                                 حذف
                                                             </a>
                                                             <hr />
                                                         }
 
-                                                        @if (User.HasPermission(Permissions.PurchaseInvoices.ApproveReject))
+                                                        @if (User.HasPermission(Permissions.PurchaseInvoices.Approve))
                                                         {
-                                                            <a class="dropdown-item" href="#" onclick="">
+                                                            <a class="btn-confirm-invoice dropdown-item" href="#" onclick="" data-id="@item.Id">
+                                                                <i class="mdi mdi-check me-1"></i>
                                                                 تائید فاکتور
                                                             </a>
+                                                        }
+                                                        @if (User.HasPermission(Permissions.PurchaseInvoices.Reject))
+                                                        {
                                                             <a class="dropdown-item" href="#" onclick="">
+                                                                <i class="mdi mdi-close me-1"></i>
                                                                 رد فاکتور
                                                             </a>
                                                             <hr />
                                                         }
 
-
-
                                                         @if (item.RemainingAmount > 0 && ViewBag.FiscalYearStatus == "0")
                                                         {
-                                                            <a class="dropdown-item text-primary" href="javascript:void(0)" onclick="openAddPaymentModal(@item.Id, @item.RemainingAmount)">ثبت پرداخت</a>
+                                                            <a class="dropdown-item text-primary" href="javascript:void(0)" onclick="openAddPaymentModal(@item.Id, @item.RemainingAmount)">
+                                                                <i class="mdi mdi-cash-register me-1"></i>
+                                                                ثبت پرداخت
+                                                                </a>
                                                         }
                                                         <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">
+                                                            <i class="mdi mdi-cash-multiple me-1"></i>
                                                             لیست پرداخت‌ها
                                                         </a>
                                                         <hr />
                                                         <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">
+                                                            <i class="mdi mdi-printer me-1"></i>
                                                             چاپ
                                                         </a>
                                                         <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">
+                                                            <i class="mdi mdi-file-pdf me-1"></i>
                                                             خروجی PDF
                                                         </a>
                                                     </div>
