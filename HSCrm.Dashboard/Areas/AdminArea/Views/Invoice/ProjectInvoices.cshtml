@@ -124,17 +124,17 @@
     <script src="~/lib/sweetalert/sweetalert2.js"></script>
     <script>
         function confirmInvoice(invoiceId) {
-            swal({
-                title: "تأیید فاکتور",
-                text: "آیا از تبدیل پیش‌فاکتور به فاکتور نهایی مطمئن هستید؟",
-                type: 'warning',
-                showCancelButton: true,
-                allowOutsideClick: false,
-                confirmButtonColor: "green",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "بله، تأیید شود",
-                cancelButtonText: "انصراف"
-            }).then(function (result) {
+                    swal.fire({
+            title: "تأیید فاکتور",
+            text: "آیا از تبدیل پیش‌فاکتور به فاکتور نهایی مطمئن هستید؟",
+            icon: "warning",
+            showCancelButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            cancelButtonColor: "#d33",
+            confirmButtonText: "بله، تأیید شود",
+            cancelButtonText: "انصراف"
+        }).then(function (result) {
 
                 if (!result.value)
                     return false;
@@ -156,16 +156,17 @@
 
                         if (xhr.statusCode == 200) {
 
-                            swal({
-                                title: "تأیید فاکتور",
-                                text: "فاکتور با موفقیت نهایی شد!",
-                                type: 'success',
-                                showCancelButton: false,
-                                allowOutsideClick: false,
-                                confirmButtonColor: "green",
-                                confirmButtonText: "باشه",
-                                timer: 1500,
-                            });
+                                    swal.fire({
+            title: "تأیید فاکتور",
+            text: "فاکتور با موفقیت نهایی شد!",
+            icon: "success",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
 
                             setTimeout(function () {
                                 window.location.reload();
@@ -174,81 +175,85 @@
 
                         else if (xhr.statusCode == 400) {
 
-                            swal({
-                                title: "خطا",
-                                text: "پارامترهای ارسالی معتبر نیست!",
-                                type: 'error',
-                                showCancelButton: false,
-                                allowOutsideClick: false,
-                                confirmButtonColor: "green",
-                                confirmButtonText: "باشه",
-                                timer: 1500,
-                            });
+                                    swal.fire({
+            title: "خطا",
+            text: "پارامترهای ارسالی معتبر نیست!",
+            icon: "error",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
 
                             return false;
                         }
 
                         else if (xhr.statusCode == 404) {
 
-                            swal({
-                                title: "خطا",
-                                text: "فاکتور مورد نظر یافت نشد!",
-                                type: 'error',
-                                showCancelButton: false,
-                                allowOutsideClick: false,
-                                confirmButtonColor: "green",
-                                confirmButtonText: "باشه",
-                                timer: 1500,
-                            });
+                                    swal.fire({
+            title: "خطا",
+            text: "فاکتور مورد نظر یافت نشد!",
+            icon: "error",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
 
                             return false;
                         }
 
                         else if (xhr.statusCode == 409) {
 
-                            swal({
-                                title: "خطا",
-                                text: "این فاکتور قبلاً نهایی شده است!",
-                                type: 'error',
-                                showCancelButton: false,
-                                allowOutsideClick: false,
-                                confirmButtonColor: "green",
-                                confirmButtonText: "باشه",
-                                timer: 1500,
-                            });
+                                    swal.fire({
+            title: "خطا",
+            text: "این فاکتور قبلاً نهایی شده است!",
+            icon: "error",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
 
                             return false;
                         }
 
                         else if (xhr.statusCode == 500) {
 
-                            swal({
-                                title: "خطا",
-                                text: "خطایی در انجام عملیات رخ داده است!",
-                                type: 'error',
-                                showCancelButton: false,
-                                allowOutsideClick: false,
-                                confirmButtonColor: "green",
-                                confirmButtonText: "باشه",
-                                timer: 1500,
-                            });
+                                   swal.fire({
+            title: "خطا",
+            text: "خطایی در انجام عملیات رخ داده است!",
+            icon: "error",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
 
                             return false;
                         }
                     },
                     error: function (err) {
 
-                        swal({
-                            title: "خطا",
-                            text: err.responseText || "خطایی در ارتباط با سرور رخ داده است!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
-
+                               swal.fire({
+            title: "خطا",
+            text: err.responseText || "خطایی در ارتباط با سرور رخ داده است!",
+            icon: "error",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                     }
                 });
 
@@ -273,17 +278,17 @@
                         const items = xhr.data;
 
                         if (!items || items.length === 0) {
-
-                            swal({
-                                title: "جزئیات فاکتور",
-                                text: "آیتمی برای این فاکتور ثبت نشده است!",
-                                type: 'warning',
-                                showCancelButton: false,
-                                allowOutsideClick: false,
-                                confirmButtonColor: "green",
-                                confirmButtonText: "باشه",
-                                timer: 1500,
-                            });
+                                    swal.fire({
+            title: "جزئیات فاکتور",
+            text: "آیتمی برای این فاکتور ثبت نشده است!",
+            icon: "warning",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
 
                             return false;
                         }
@@ -302,95 +307,93 @@
 
                         });
 
-                        swal({
-                            title: "جزئیات آیتم‌های فاکتور",
-                            html:
-                                "<div class='table-responsive'>" +
-                                "<table class='table table-bordered text-center'>" +
-                                "<thead>" +
-                                "<tr>" +
-                                "<th>شناسه محصول</th>" +
-                                "<th>تعداد</th>" +
-                                "<th>قیمت واحد</th>" +
-                                "<th>جمع</th>" +
-                                "</tr>" +
-                                "</thead>" +
-                                "<tbody>" +
-                                itemsHtml +
-                                "</tbody>" +
-                                "</table>" +
-                                "</div>",
-                            type: 'info',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            width: '700px'
-                        });
+                                swal.fire({
+            title: "جزئیات آیتم‌های فاکتور",
+            html:
+                "<div class='table-responsive'>" +
+                "<table class='table table-bordered text-center'>" +
+                "<thead>" +
+                "<tr>" +
+                "<th>شناسه محصول</th>" +
+                "<th>تعداد</th>" +
+                "<th>قیمت واحد</th>" +
+                "<th>جمع</th>" +
+                "</tr>" +
+                "</thead>" +
+                "<tbody>" +
+                itemsHtml +
+                "</tbody>" +
+                "</table>" +
+                "</div>",
+            icon: "info",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            width: "700px"
+        });
 
                     }
 
                     else if (xhr.statusCode == 400) {
-
-                        swal({
-                            title: "خطا",
-                            text: "پارامترهای ارسالی معتبر نیست!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
-
+                                swal.fire({
+            title: "خطا",
+            text: "پارامترهای ارسالی معتبر نیست!",
+            icon: "error",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                         return false;
                     }
 
                     else if (xhr.statusCode == 404) {
-
-                        swal({
-                            title: "خطا",
-                            text: "جزئیات فاکتور مورد نظر یافت نشد!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "جزئیات فاکتور مورد نظر یافت نشد!",
+            icon: "error",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
 
                         return false;
                     }
 
                     else if (xhr.statusCode == 500) {
-
-                        swal({
-                            title: "خطا",
-                            text: "خطایی در دریافت اطلاعات فاکتور رخ داده است!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
-
+                                swal.fire({
+            title: "خطا",
+            text: "خطایی در دریافت اطلاعات فاکتور رخ داده است!",
+            icon: "error",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                         return false;
                     }
                 },
                 error: function (err) {
-
-                    swal({
-                        title: "خطا",
-                        text: err.responseText || "خطایی در ارتباط با سرور رخ داده است!",
-                        type: 'error',
-                        showCancelButton: false,
-                        allowOutsideClick: false,
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500,
-                    });
-
+                            swal.fire({
+            title: "خطا",
+            text: err.responseText || "خطایی در ارتباط با سرور رخ داده است!",
+            icon: "error",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                 }
             });
         }

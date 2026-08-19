@@ -196,16 +196,17 @@
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
                         // ثبت موفق اطلاعات
-                        swal({
-                            title: "ثبت اطلاعات",
-                            text: "اطلاعات با موفقیت ثبت شد!",
-                            type: 'success',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                                swal.fire({
+            title: "ثبت اطلاعات",
+            text: "اطلاعات با موفقیت ثبت شد!",
+            icon: 'success',
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500,
+        });
                         $('#addWarehouse').modal('hide');
                         $('#Title').val("");
                         $('#IsActive').val("");
@@ -213,41 +214,45 @@
                         window.location.reload();
                     }
                     if (xhr.statusCode == 500) {
-                        swal({
-                            title: "خطا",
-                            text: "خطا در سرور!",
-                            type: 'warning',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "خطا در سرور!",
+            icon: 'warning',
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500,
+        });
+
                         return false;
                     } else if (xhr.statusCode == 400) {
-                       swal({
-                            title: "خطا",
-                            text: "پارامترهای ارسالی معتبر نیست!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                               swal.fire({
+            title: "خطا",
+            text: "پارامترهای ارسالی معتبر نیست!",
+            icon: 'error',
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500,
+        });
                         return false;
                     }
                     else if (xhr.statusCode == 409) {
-                       swal({
-                            title: "خطا",
-                            text: "اطلاعات تکراری می باشد!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                               swal.fire({
+            title: "خطا",
+            text: "اطلاعات تکراری می باشد!",
+            icon: 'error',
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500,
+        });
                         return false;
                     }
                 }
@@ -301,41 +306,44 @@
                 },
                 success: function (xhr) {
                     if (xhr.statusCode == '200') {
-                        swal({
-                            title: "ویرایش انبار",
-                            text: "ویرایش انبار با موفقیت انجام شد!",
-                            type: 'success',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                                swal.fire({
+            title: "ویرایش انبار",
+            text: "ویرایش انبار با موفقیت انجام شد!",
+            icon: 'success',
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500,
+        });
                         window.location.reload();
                     }
                     if (xhr.statusCode == '400') {
-                        swal({
-                            title: "خطا",
-                            text: "پارامترهای ارسالی معتبر نیست!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                               swal.fire({
+            title: "خطا",
+            text: "پارامترهای ارسالی معتبر نیست!",
+            icon: 'error',
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500,
+        });
                         return false;
                     } else if (xhr.statusCode == '409') {
-                        swal({
-                            title: "خطا",
-                            text: "اطلاعات تکراری می‌باشد!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "اطلاعات تکراری می‌باشد!",
+            icon: 'error',
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500,
+        });
                         return false;
                     }
                 }

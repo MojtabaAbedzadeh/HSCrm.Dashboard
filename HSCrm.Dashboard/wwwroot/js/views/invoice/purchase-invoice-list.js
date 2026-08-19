@@ -1,76 +1,248 @@
-﻿(function () {
-    const apiAddress = window.AppContext?.apiAddress || '';
-    const token = window.AppContext?.token || '';
+﻿"use strict";
 
-    window.deletePurchaseInvoice = function (id) {
-        // بررسی وجود کتابخانه swal
-        if (typeof swal === 'undefined') {
-            // fallback در صورت عدم لود کتابخانه
-            if (confirm('آیا از حذف این فاکتور مطمئن هستید؟')) {
-                executeDelete(id);
-            }
-            return;
+const ApiAddress = AppContext.apiAddress;
+
+function getAuthToken() {
+    return (window.AppContext && window.AppContext.token) ? window.AppContext.token : localStorage.getItem("token");
+}
+
+function handleSuccessReload() {
+    if (typeof window.reloadInvoiceTable === "function") {
+        window.reloadInvoiceTable();
+    } else {
+        setTimeout(function () {
+            location.reload();
+        }, 1000);
+    }
+}
+
+function getAjaxHeaders() {
+    var token = getAuthToken();
+    return token ? { "Authorization": "Bearer " + token } : {};
+}
+
+function ajaxPostJson(url, data, onSuccess, onError) {
+    $.ajax({
+        url: url,
+        type: "POST",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        headers: getAjaxHeaders(),
+        data: data !== undefined ? JSON.stringify(data) : null,
+        success: function (res) {
+            if (typeof onSuccess === "function") onSuccess(res);
+        },
+        error: function (xhr) {
+            if (typeof onError === "function") onError(xhr);
         }
+    });
+}
 
-        // نمایش پیغام تاییدیه با sweetalert 1
-        swal({
-            title: "آیا مطمئن هستید؟",
-            text: "این فاکتور برای همیشه حذف خواهد شد و قابل بازیابی نیست!",
-            type: "warning", // در نسخه ۱ از type استفاده می‌شود
-            showCancelButton: true,
-            confirmButtonColor: "#DD6B55",
-            confirmButtonText: "بله، حذف کن!",
-            cancelButtonText: "انصراف",
-            closeOnConfirm: false // باز نگه داشتن تا زمان اتمام درخواست api
-        }, function (isConfirm) {
-            if (isConfirm) {
-                executeDelete(id);
-            }
-        });
-    };
+function showErrorMessage(xhr, fallbackMessage) {
+    var msg = fallbackMessage || "خطا در ارتباط با سرور";
+    try {
+        if (xhr && xhr.responseJSON && (xhr.responseJSON.message || xhr.responseJSON.Message)) {
+            msg = xhr.responseJSON.message || xhr.responseJSON.Message;
+        }
+    } catch (e) { }
 
-    // تابع کمکی برای انجام عملیات حذف
-    async function executeDelete(id) {
-        try {
-            const response = await fetch(`${apiAddress}/PurchaseInvoice/Delete/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                }
-            });
+    Swal.fire({
+        icon: "error",
+        title: "خطا",
+        text: msg,
+        confirmButtonText: "باشه"
+    });
+}
 
-            if (!response.ok) {
-                throw new Error('خطا در ارتباط با سرور');
-            }
+function isSuccessResponse(res) {
+    return res && (res.status === true || res.Status === true);
+}
 
-            const result = await response.json();
+function showLoadingMessage(title, text) {
+    Swal.fire({
+        title: title || "در حال ارسال...",
+        text: text || "لطفاً صبر کنید",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: function () {
+            Swal.showLoading();
+        }
+    });
+}
 
-            if (result.status) {
-                if (typeof swal !== 'undefined') {
-                    // نمایش پیغام موفقیت با sweetalert 1
-                    swal({
-                        title: "موفقیت‌آمیز",
-                        text: "فاکتور با موفقیت حذف شد.",
-                        type: "success"
-                    }, function () {
-                        location.reload();
+// 1) تأیید نهایی فاکتور خرید
+window.confirmPurchaseInvoice = function (id) {
+    Swal.fire({
+        title: "تأیید نهایی فاکتور",
+        text: "آیا از تأیید نهایی این فاکتور اطمینان دارید؟",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#28a745",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "بله، تأیید شود",
+        cancelButtonText: "انصراف",
+        reverseButtons: true,
+        focusCancel: true
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+
+        var apiUrl = ApiAddress + "PurchaseInvoice/ConfirmInvoice/" + id;
+
+        showLoadingMessage("در حال ارسال...", "لطفاً صبر کنید");
+
+        ajaxPostJson(
+            apiUrl,
+            null,
+            function (res) {
+                if (isSuccessResponse(res)) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "موفق",
+                        text: res.message || res.Message || "فاکتور تأیید شد.",
+                        confirmButtonText: "باشه"
+                    }).then(function () {
+                        handleSuccessReload();
                     });
                 } else {
-                    alert('فاکتور با موفقیت حذف شد');
-                    location.reload();
+                    Swal.fire({
+                        icon: "error",
+                        title: "خطا",
+                        text: (res && (res.message || res.Message)) || "عملیات با خطا مواجه شد.",
+                        confirmButtonText: "باشه"
+                    });
                 }
-            } else {
-                throw new Error(result.message || 'خطا در عملیات حذف');
+            },
+            function (xhr) {
+                showErrorMessage(xhr, "خطا در برقراری ارتباط با سرور");
             }
-        } catch (error) {
-            console.error('Error:', error);
-            if (typeof swal !== 'undefined') {
-                // نمایش پیغام خطا با sweetalert 1
-                swal("خطا", error.message, "error");
-            } else {
-                alert(error.message);
+        );
+    });
+};
+
+// 2) ابطال فاکتور خرید
+window.cancelPurchaseInvoice = function (id) {
+    Swal.fire({
+        title: "ابطال فاکتور خرید",
+        input: "text",
+        inputLabel: "لطفاً دلیل ابطال فاکتور را وارد نمایید",
+        inputPlaceholder: "علت ابطال...",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "ابطال فاکتور",
+        cancelButtonText: "انصراف",
+        reverseButtons: true,
+        focusCancel: true,
+        inputAttributes: {
+            autocapitalize: "off",
+            autocorrect: "off"
+        },
+        preConfirm: function (value) {
+            var reason = (value || "").trim();
+            if (!reason) {
+                Swal.showValidationMessage("وارد کردن دلیل ابطال الزامی است!");
+                return false;
             }
+            return reason;
         }
-    }
-})();
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+
+        var reason = result.value;
+        var apiUrl = ApiAddress + "PurchaseInvoice/CancelInvoice/" + id;
+
+        showLoadingMessage("در حال ارسال...", "لطفاً صبر کنید");
+
+        ajaxPostJson(
+            apiUrl,
+            reason,
+            function (res) {
+                if (isSuccessResponse(res)) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "ابطال شد",
+                        text: res.message || res.Message || "فاکتور خرید با موفقیت باطل شد.",
+                        confirmButtonText: "باشه"
+                    }).then(function () {
+                        handleSuccessReload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "خطا",
+                        text: (res && (res.message || res.Message)) || "عملیات ابطال ناموفق بود.",
+                        confirmButtonText: "باشه"
+                    });
+                }
+            },
+            function (xhr) {
+                showErrorMessage(xhr, "خطا در ارتباط با سرور");
+            }
+        );
+    });
+};
+
+// 3) رد فاکتور خرید
+window.rejectPurchaseInvoice = function (id) {
+    Swal.fire({
+        title: "رد فاکتور خرید",
+        input: "text",
+        inputLabel: "لطفاً دلیل رد فاکتور را وارد نمایید",
+        inputPlaceholder: "علت رد...",
+        showCancelButton: true,
+        confirmButtonColor: "#ffc107",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "رد فاکتور",
+        cancelButtonText: "انصراف",
+        reverseButtons: true,
+        focusCancel: true,
+        inputAttributes: {
+            autocapitalize: "off",
+            autocorrect: "off"
+        },
+        preConfirm: function (value) {
+            var reason = (value || "").trim();
+            if (!reason) {
+                Swal.showValidationMessage("وارد کردن دلیل رد الزامی است!");
+                return false;
+            }
+            return reason;
+        }
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+
+        var reason = result.value;
+        var apiUrl = ApiAddress + "PurchaseInvoice/RejectInvoice/" + id;
+        console.log("New APIUrl:" + apiUrl);
+
+        showLoadingMessage("در حال ارسال...", "لطفاً صبر کنید");
+
+        ajaxPostJson(
+            apiUrl,
+            reason,
+            function (res) {
+                if (isSuccessResponse(res)) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "رد شد",
+                        text: res.message || res.Message || "فاکتور خرید رد شد.",
+                        confirmButtonText: "باشه"
+                    }).then(function () {
+                        handleSuccessReload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "خطا",
+                        text: (res && (res.message || res.Message)) || "عملیات رد فاکتور ناموفق بود.",
+                        confirmButtonText: "باشه"
+                    });
+                }
+            },
+            function (xhr) {
+                showErrorMessage(xhr, "خطا در ارتباط با سرور");
+            }
+        );
+    });
+};

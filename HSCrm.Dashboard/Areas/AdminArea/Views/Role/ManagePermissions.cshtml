@@ -177,28 +177,30 @@
                     Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
                 },
                 success: function () {
-                    swal({
-                        title: "ثبت اطلاعات",
-                        text: "اطلاعات با موفقیت ذخیره شد!",
-                        type: 'success',
-                        showCancelButton: false,
-                        allowOutsideClick: false,
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500,
-                    });
+                            swal.fire({
+            title: "ثبت اطلاعات",
+            text: "اطلاعات با موفقیت ذخیره شد!",
+            icon: "success",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                 },
                 error: function () {
-                    swal({
-                        title: "خطا",
-                        text: "مشکلی در ثبت اطلاعات به وجود آمده است!",
-                        type: 'warning',
-                        showCancelButton: false,
-                        allowOutsideClick: false,
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500,
-                    });
+                            swal.fire({
+            title: "خطا",
+            text: "مشکلی در ثبت اطلاعات به وجود آمده است!",
+            icon: "warning",
+            showCancelButton: false,
+            showConfirmButton: true,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                 }
             });
         });

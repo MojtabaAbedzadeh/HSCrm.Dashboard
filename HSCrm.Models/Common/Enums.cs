@@ -38,5 +38,12 @@
             POS = 3,
             BankTransfer = 4
         }
+        public enum InvoiceStatus : byte
+        {
+            Proforma = 0,   // پیش فاکتور
+            Final = 1,      // فاکتور رسمی
+            Cancelled = 2,
+            Rejected = 3
+        }
     }
 }

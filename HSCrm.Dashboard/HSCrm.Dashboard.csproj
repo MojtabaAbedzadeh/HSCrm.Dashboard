@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="wwwroot\lib\sweetalert\**" />
+    <Content Remove="wwwroot\lib\sweetalert\**" />
+    <EmbeddedResource Remove="wwwroot\lib\sweetalert\**" />
+    <None Remove="wwwroot\lib\sweetalert\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\HSCrm.BussinessLogic\HSCrm.BussinessLogic.csproj" />
     <ProjectReference Include="..\HSCrm.Models\HSCrm.Models.csproj" />
   </ItemGroup>

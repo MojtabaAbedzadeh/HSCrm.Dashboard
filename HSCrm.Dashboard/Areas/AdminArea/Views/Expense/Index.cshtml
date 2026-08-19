@@ -133,47 +133,6 @@
                         </div>
                         <div class="col-lg-4">
                             <div class="form-group form-floating">
-                                <select id="PaymentStatus" name="PaymentStatus" class="form-control text-end">
-                                    <option value="0">بدون پرداخت</option>
-                                    <option value="1">پرداخت بخشی</option>
-                                    <option value="2">پرداخت کامل</option>
-                                </select>
-                                <label for="PaymentStatus" style="right:0!important; left:unset!important;">وضعیت پرداخت</label>
-                            </div>
-                        </div>
-                        <div class="col-lg-4">
-                            <div class="form-group form-floating">
-                                <input type="number" class="form-control text-end" id="PaidAmount" name="PaidAmount" placeholder="مبلغ پرداختی" value="0">
-                                <label for="PaidAmount" style="right:0!important; left:unset!important;">مبلغ پرداختی</label>
-                            </div>
-                        </div>
-                        <div class="col-lg-4">
-                            <div class="form-group form-floating">
-                                <select id="PaymentMethod" name="PaymentMethod" class="form-control text-end">
-                                    <option value="">انتخاب روش پرداخت</option>
-                                    <option value="Cash">نقدی</option>
-                                    <option value="Card">کارت به کارت</option>
-                                    <option value="Transfer">انتقال بانکی</option>
-                                    <option value="Cheque">چک</option>
-                                </select>
-                                <label for="PaymentMethod" style="right:0!important; left:unset!important;">روش پرداخت</label>
-                            </div>
-                        </div>
-                        <div class="col-lg-4">
-                            <div class="form-group form-floating">
-                                <input type="text" class="form-control text-end" id="ReferenceNo" name="ReferenceNo" placeholder="شماره پیگیری">
-                                <label for="ReferenceNo" style="right:0!important; left:unset!important;">شماره پیگیری</label>
-                            </div>
-                        </div>
-                        <div class="col-lg-4">
-                            <div class="form-group form-floating">
-                                <input type="text" class="form-control text-end" id="RemainingAmount" readonly placeholder="مانده">
-                                <label for="RemainingAmount" style="right:0!important; left:unset!important;">مانده</label>
-                            </div>
-                        </div>
-
-                        <div class="col-lg-4">
-                            <div class="form-group form-floating">
                                 <select id="ProjectId" name="ProjectId" class="form-control text-end" asp-items="@(new SelectList(lstProject, "DrId", "DrName"))">
                                 </select>
                                 <label for="ProjectId" style="right:0!important; left:unset!important;">پروژه</label>
@@ -240,36 +199,6 @@
                                 <label for="AmountE" style="right:0!important; left:unset!important;">مبلغ</label>
                             </div>
                         </div>
-                        <div class="col-lg-4 form-floating">
-                            <select id="PaymentStatusE" name="PaymentStatusE" class="form-control text-end">
-                                <option value="0">بدون پرداخت</option>
-                                <option value="1">پرداخت بخشی</option>
-                                <option value="2">پرداخت کامل</option>
-                            </select>
-                            <label for="PaymentStatusE" style="right:0!important; left:unset!important;">وضعیت پرداخت</label>
-                        </div>
-
-                        <div class="col-lg-4 form-floating">
-                            <input type="number" class="form-control text-end" id="PaidAmountE" name="PaidAmountE" placeholder="مبلغ پرداختی">
-                            <label for="PaidAmountE" style="right:0!important; left:unset!important;">مبلغ پرداختی</label>
-                        </div>
-
-                        <div class="col-lg-4 form-floating">
-                            <select id="PaymentMethodE" name="PaymentMethodE" class="form-control text-end">
-                                <option value="">انتخاب روش پرداخت</option>
-                                <option value="Cash">نقدی</option>
-                                <option value="Card">کارت به کارت</option>
-                                <option value="Transfer">انتقال بانکی</option>
-                                <option value="Cheque">چک</option>
-                            </select>
-                            <label for="PaymentMethodE" style="right:0!important; left:unset!important;">روش پرداخت</label>
-                        </div>
-
-                        <div class="col-lg-4 form-floating">
-                            <input type="text" class="form-control text-end" id="ReferenceNoE" name="ReferenceNoE" placeholder="شماره پیگیری">
-                            <label for="ReferenceNoE" style="right:0!important; left:unset!important;">شماره پیگیری</label>
-                        </div>
-
                         <div class="col-lg-4 form-floating">
                             <select id="ProjectIdE" name="ProjectIdE" class="form-control text-end" asp-items="@(new SelectList(lstProject, "DrId", "DrName"))">
                             </select>
@@ -346,55 +275,55 @@
                 },
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
-                        swal({
-                            title: "ثبت اطلاعات",
-                            text: "ثبت اطلاعات با موفقیت انجام شد!",
-                            type: 'success',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                                swal.fire({
+            title: "ثبت اطلاعات",
+            text: "ثبت اطلاعات با موفقیت انجام شد!",
+            icon: "success",
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                         $('#addExpense').modal('hide');
                         window.location.reload();
                     }
                     if (xhr.statusCode == 500) {
-                         swal({
-                            title: "خطا",
-                            text: "خطا در سرور!",
-                            type: 'warning',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                                 swal.fire({
+            title: "خطا",
+            text: "خطا در سرور!",
+            icon: "warning",
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                         return false;
                     } else if (xhr.statusCode == 400) {
-                        swal({
-                            title: "خطا",
-                            text: "پارامترهای ارسالی معتبر نیست!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "پارامترهای ارسالی معتبر نیست!",
+            icon: "error",
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                         return false;
                     }
                     else if (xhr.statusCode == 409) {
-                        swal({
-                            title: "خطا",
-                            text: "اطلاعات تکراری می‌باشد!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "اطلاعات تکراری می‌باشد!",
+            icon: "error",
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                         return false;
                     }
                 }
@@ -464,41 +393,41 @@
                 },
                 success: function (xhr) {
                     if (xhr.statusCode == '200') {
-                        swal({
-                            title: "ویرایش اطلاعات",
-                            text: "ویرایش هزینه با موفقیت انجام شد!",
-                            type: 'success',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                                swal.fire({
+            title: "ویرایش اطلاعات",
+            text: "ویرایش هزینه با موفقیت انجام شد!",
+            icon: "success",
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                         window.location.reload();
                     }
                     if (xhr.statusCode == '400') {
-                        swal({
-                            title: "خطا",
-                            text: "پارامترهای ارسالی معتبر!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "پارامترهای ارسالی معتبر!",
+            icon: "error",
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                         return false;
                     } else if (xhr.statusCode == '409') {
-                        swal({
-                            title: "خطا",
-                            text: "اطلاعات تکراری می‌باشد!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه",
-                            timer: 1500,
-                        });
+                               swal.fire({
+            title: "خطا",
+            text: "اطلاعات تکراری می‌باشد!",
+            icon: "error",
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500
+        });
                         return false;
                     }
                 }

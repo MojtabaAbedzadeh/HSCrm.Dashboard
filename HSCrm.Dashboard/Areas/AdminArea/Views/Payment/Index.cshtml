@@ -523,35 +523,38 @@
             ].filter(value => value !== null);
 
             if (selectedReferences.length !== 1) {
-                swal({
-                    title: "مرجع پرداخت",
-                    text: "لطفاً دقیقاً یکی از مراجع پرداخت را انتخاب کنید!",
-                    type: 'warning',
-                    confirmButtonText: "متوجه شدم",
-                });
+                        swal.fire({
+            title: "مرجع پرداخت",
+            text: "لطفاً دقیقاً یکی از مراجع پرداخت را انتخاب کنید!",
+            icon: "warning",
+            showConfirmButton: true,
+            confirmButtonText: "متوجه شدم"
+        });
                 return;
             }
 
             if (!paymentDate) {
-                swal({
-                    title: "تاریخ پرداخت",
-                    text: "تاریخ پرداخت را وارد کنید!",
-                    type: 'warning',
-                    confirmButtonText: "متوجه شدم",
-                });
+                        swal.fire({
+            title: "تاریخ پرداخت",
+            text: "تاریخ پرداخت را وارد کنید!",
+            icon: "warning",
+            showConfirmButton: true,
+            confirmButtonText: "متوجه شدم"
+        });
 
                 return;
             }
 
             if (!Number.isFinite(amount) || amount <= 0) {
-                swal({
-                    title: "مبلغ پرداخت",
-                    text: "مبلغ پرداخت باید بزرگ‌تر از صفر باشد!",
-                    type: 'warning',
-                    confirmButtonText: "متوجه شدم",
-                });                
+                        swal.fire({
+            title: "مبلغ پرداخت",
+            text: "مبلغ پرداخت باید بزرگ‌تر از صفر باشد!",
+            icon: "warning",
+            showConfirmButton: true,
+            confirmButtonText: "متوجه شدم"
+        });
 
-                amountElement.focus();
+                        amountElement.focus();
                 return;
             }
 
@@ -631,12 +634,13 @@
                     );
                 }
 
-                await swal({
-                    title: "ثبت موفق",
-                    text: "پرداخت با موفقیت ثبت شد!",
-                    type: 'success',
-                    confirmButtonText: "باشه",
-                });
+                        await swal.fire({
+            title: "ثبت موفق",
+            text: "پرداخت با موفقیت ثبت شد!",
+            icon: "success",
+            showConfirmButton: true,
+            confirmButtonText: "باشه"
+        });
 
                 // بستن modal با Bootstrap 5
                 const modalElement =
@@ -666,12 +670,13 @@
                 window.location.reload();
             } catch (error) {
                 console.error("Save payment error:", error);
-                swal({
-                    title: "خطا",
-                    text: error.message || "خطایی هنگام ثبت پرداخت رخ داد.",
-                    type: 'error',
-                    confirmButtonText: "باشه",
-                });
+                        swal.fire({
+            title: "خطا",
+            text: error.message || "خطایی هنگام ثبت پرداخت رخ داد.",
+            icon: "error",
+            showConfirmButton: true,
+            confirmButtonText: "باشه"
+        });
             } finally {
                 if (saveButton) {
                     saveButton.disabled = false;

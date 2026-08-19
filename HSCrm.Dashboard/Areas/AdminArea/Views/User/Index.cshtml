@@ -339,104 +339,104 @@
                 },
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
-                        swal({
-                            title: "ثبت اطلاعات",
-                            text: "ثبت اطلاعات با موفقیت انجام شد!",
-                            type: 'success',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            timer: 1500
-                        });
+                               swal.fire({
+            title: "ثبت اطلاعات",
+            text: "ثبت اطلاعات با موفقیت انجام شد!",
+            icon: 'success',
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            timer: 1500
+        });
                         $('#addUser').modal('hide');                        
                         window.location.reload();
                     } 
                     else if (xhr.statusCode == 500) {
-                        swal({
-                            title: "خطا",
-                            text: "خطا در سرور!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "خطا در سرور!",
+            icon: 'error',
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+        });
                         return false;
                     } 
                     else if (xhr.statusCode == 400) {
-                         swal({
-                            title: "اطلاعات نامعتبر",
-                            text: "پارامترهای ارسالی معتبر نیست!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
+                                 swal.fire({
+            title: "اطلاعات نامعتبر",
+            text: "پارامترهای ارسالی معتبر نیست!",
+            icon: 'error',
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+        });
                         return false;
                     }
                     else if (xhr.statusCode == 409) {
-                        swal({
-                            title: "اطلاعات تکراری",
-                            text: "اطلاعات وارد شده تکراری می‌باشد!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
+                                swal.fire({
+            title: "اطلاعات تکراری",
+            text: "اطلاعات وارد شده تکراری می‌باشد!",
+            icon: 'error',
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+        });
                         return false;
                     }
                     else if (xhr.status === 401) {
-                        swal({
-                            title: "مجوز دسترسی",
-                            text: "شما برای انجام این عملیات دسترسی لازم را ندارید!",
-                            type: 'warning',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
+                                swal.fire({
+            title: "مجوز دسترسی",
+            text: "شما برای انجام این عملیات دسترسی لازم را ندارید!",
+            icon: 'warning',
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+        });
                     }
                 },
                 error: function (xhr) {
                     if (xhr.statusCode == 500) {
-                        swal({
-                            title: "خطا",
-                            text: "خطا در سرور!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "خطا در سرور!",
+            icon: 'error',
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+        });
                         return false;
                     } else if (xhr.statusCode == 400) {
-                         swal({
-                            title: "اطلاعات نامعتبر",
-                            text: "پارامترهای ارسالی معتبر نیست!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
+                                swal.fire({
+            title: "اطلاعات نامعتبر",
+            text: "پارامترهای ارسالی معتبر نیست!",
+            icon: 'error',
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+        });
                         return false;
                     }
                     else if (xhr.statusCode == 409) {
-                        swal({
-                            title: "اطلاعات تکراری",
-                            text: "اطلاعات تکراری می‌باشد!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
+                                swal.fire({
+            title: "اطلاعات تکراری",
+            text: "اطلاعات تکراری می‌باشد!",
+            icon: 'error',
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+        });
                         return false;
                     }
                     else if (xhr.status === 401) {
-                        swal({
-                            title: "مجوز دسترسی",
-                            text: "شما برای انجام این عملیات دسترسی لازم را ندارید!",
-                            type: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
+                                swal.fire({
+            title: "مجوز دسترسی",
+            text: "شما برای انجام این عملیات دسترسی لازم را ندارید!",
+            icon: 'error',
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+        });
                     }
                 }
             });
@@ -462,11 +462,11 @@
             var roleId = $("#roleSelect").val();
 
             if (roleId == "") {
-                swal({
-                    title: "خطا",
-                    text: "لطفا یک نقش انتخاب کنید",
-                    type: "warning"
-                });
+                        swal.fire({
+            title: "خطا",
+            text: "لطفا یک نقش انتخاب کنید",
+            icon: "warning"
+        });
                 return;
             }
             $.ajax({
@@ -477,20 +477,20 @@
                     roleId: roleId
                 },
                 success: function () {
-                    swal({
-                        title: "موفق",
-                        text: "نقش کاربر ثبت شد",
-                        type: "success",
-                        timer: 1500
-                    });
+                            swal.fire({
+            title: "موفق",
+            text: "نقش کاربر ثبت شد",
+            icon: "success",
+            timer: 1500
+        });
                     $("#roleModal").modal('hide');
                 },
                 error: function () {
-                    swal({
-                        title: "خطا",
-                        text: "ثبت نقش انجام نشد",
-                        type: "error"
-                    });
+                            swal.fire({
+            title: "خطا",
+            text: "ثبت نقش انجام نشد",
+            icon: "error"
+        });
                 }
             });
         }
@@ -551,22 +551,22 @@
                 },
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
-                        swal({
-                        title: "ویرایش اطلاعات",
-                        text: "اطلاعات با موفقیت ویرایش شد!",
-                        type: 'success',
-                        showCancelButton: false,
-                        allowOutsideClick: false,
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500,
-                    });
+                                swal.fire({
+            title: "ویرایش اطلاعات",
+            text: "اطلاعات با موفقیت ویرایش شد!",
+            icon: 'success',
+            showCancelButton: false,
+            allowOutsideClick: false,
+            confirmButtonColor: "green",
+            confirmButtonText: "باشه",
+            timer: 1500,
+        });
                         location.reload();
                     } else {
-                        Swal({
-                            icon: "error",
-                            title: xhr.message
-                        });
+                                swal.fire({
+            icon: "error",
+            title: xhr.message
+        });
                     }
                 }
             });

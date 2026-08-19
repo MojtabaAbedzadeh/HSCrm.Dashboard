@@ -14,6 +14,7 @@ namespace HSCrm.Models.ModelDto
 
         public DateTime IssueDate { get; set; }
         public byte PayStatus { get; set; }
+        public InvoiceStatus Status { get; set; }
         public decimal PaidAmount { get; set; }
         public decimal RemainingAmount { get; set; }
         public decimal Subtotal { get; set; }

@@ -132,6 +132,13 @@ namespace HSCrm.Dashboard.Services
                             Url = "/AdminArea/Product/Index",
                             PermissionKey = Permissions.Products.View
                         },
+                         new SidebarMenuItem
+                        {
+                            Key = "product_kardex",
+                            Title = "کاردکس محصول",
+                            Url = "/AdminArea/Inventory/KardexReport",
+                            PermissionKey = Permissions.Products.View
+                        },
                         new SidebarMenuItem
                         {
                             Key = "product_prices",

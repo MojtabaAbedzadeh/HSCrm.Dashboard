@@ -1,0 +1,358 @@
+﻿@using HSCrm.Dashboard.Costants
+@{
+    ViewData["AdminTitle"] = "کاردکس محصول";
+    ViewData["selected"] = "product-kardex";
+
+    string ApiAddress = ViewBag.ApiAddress;
+
+}
+
+@section styles {
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/css/select2.min.css" rel="stylesheet" />
+}
+
+<style>
+    .select2-selection {
+        height: 40px !important;
+    }
+
+    #select2-filterProductId-container,
+    #select2-filterWarehouseId-container {
+        margin-top: 5px;
+    }
+</style>
+
+<div class="breadcrumb-wrapper breadcrumb-contacts">
+    <div>
+        <h1>کاردکس محصول</h1>
+        <p class="breadcrumbs">
+            <span>
+                <a href="index.html">خانه</a>
+            </span>
+            <span>
+                <i class="mdi mdi-chevron-left"></i>
+            </span>کاردکس محصول
+        </p>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <div class="ec-vendor-list card card-default">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fa fa-exchange-alt me-2"></i>گزارش کاردکس ریالی / تعدادی کالا</h5>
+                </div>
+                <div class="card-body">
+                    <!-- فرم فیلتر گزارش -->
+                    <form id="kardexFilterForm" class="row g-3 align-items-end mb-4">
+                        <div class="col-md-4">
+                            <label for="filterProductId" class="form-label fw-bold">انتخاب کالا <span class="text-danger">*</span></label>
+                            <select id="filterProductId" class="form-select select2" required>
+                                <option value="">-- انتخاب کالا --</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="filterWarehouseId" class="form-label fw-bold">انبار</label>
+                            <select id="filterWarehouseId" class="form-select select2">
+                                <option value="">همه انبارها</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-1">
+                            <label for="filterFromDate" class="form-label fw-bold">از تاریخ</label>
+                            <input type="text" id="filterFromDate" class="form-control persian-date-picker" placeholder="1403/01/01" autocomplete="off" />
+                        </div>
+
+                        <div class="col-md-1">
+                            <label for="filterToDate" class="form-label fw-bold">تا تاریخ</label>
+                            <input type="text" id="filterToDate" class="form-control persian-date-picker" placeholder="1403/12/29" autocomplete="off" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <button type="submit" id="btnFilter" class="btn btn-success">
+                                <i class="fa fa-search me-1"></i> مشاهده
+                            </button>
+                            <button type="button" id="btnReset" class="btn btn-secondary">
+                                <i class="fa fa-undo"></i> پاکسازی فرم
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr />
+                    <!-- جدول کاردکس -->
+                    <table id="tblKardex" class="table no-footer" aria-describedby="responsive-data-table_info" aria-describedby="responsive-data-table_info">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 50px;">ردیف</th>
+                                <th style="width: 100px;">تاریخ</th>
+                                <th style="width: 130px;">نوع عملیات</th>
+                                <th>مرجع</th>
+                                <th style="width: 100px;">شماره پیگیری</th>
+                                <th style="width: 200px;">انبار</th>
+                                <th class="table-success text-dark">ورودی (+)</th>
+                                <th class="table-danger text-dark">خروجی (-)</th>
+                                <th class="table-info text-dark">مانده</th>
+                                <th>توضیحات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- داده‌ها از طریق AJAX پر می‌شوند -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section AdminScripts {
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            const apiBaseUrl = '@ApiAddress';
+
+            if ($.fn.select2) {
+                $('.select2').select2({
+                    dir: 'rtl',
+                    width: '100%'
+                });
+            }
+
+            loadDropdowns();
+
+            var table = $('#tblKardex').DataTable({
+                responsive: true,
+                searching: true,
+                ordering: false,
+                paging: true,
+                pageLength: 25,
+                columns: [
+                    {
+                        data: null,
+                        render: function (data, type, row, meta) {
+                            return meta.row + 1;
+                        }
+                    },
+                    {
+                        data: 'transactionDate',
+                        render: function (data) {
+                            if (!data) return '-';
+                            return new Date(data).toLocaleDateString('fa-IR');
+                        }
+                    },
+                    { data: 'transactionTypeTitle', defaultContent: '-' },
+                    { data: 'referenceTypeTitle', defaultContent: '-' },
+                    { data: 'referenceId', defaultContent: '-' },
+                    {
+                        data: 'WarehouseTitle',
+                        render: function (data, type, row) {
+                            return row.warehouseTitle ?? data ?? '-';
+                        }
+                    },
+                    {
+                        data: 'inputQuantity',
+                        render: function (data) {
+                            var val = parseFloat(data) || 0;
+                            return val > 0
+                                ? `<span class="badge bg-success font-monospace">+${val.toLocaleString()}</span>`
+                                : '-';
+                        }
+                    },
+                    {
+                        data: 'outputQuantity',
+                        render: function (data) {
+                            var val = parseFloat(data) || 0;
+                            return val > 0
+                                ? `<span class="badge bg-danger font-monospace">-${val.toLocaleString()}</span>`
+                                : '-';
+                        }
+                    },
+                    {
+                        data: 'runningBalance',
+                        render: function (data) {
+                            var val = parseFloat(data) || 0;
+                            var cls = val < 0 ? 'text-danger' : 'text-primary';
+                            return `<strong class="${cls} font-monospace">${val.toLocaleString()}</strong>`;
+                        }
+                    },
+                    { data: 'description', defaultContent: '-' }
+                ]
+            });
+
+            $('#kardexFilterForm').on('submit', function (e) {
+                e.preventDefault();
+
+                var productId = $('#filterProductId').val();
+                if (!productId) {
+                    swal.fire({
+                        icon: 'warning',
+                        title: 'هشدار',
+                        text: 'لطفاً ابتدا یک کالا را انتخاب کنید.'
+                    });
+                    return;
+                }
+
+                var filterData = {
+                    productId: parseInt(productId),
+                    warehouseId: $('#filterWarehouseId').val() ? parseInt($('#filterWarehouseId').val()) : null,
+                    fromDate: $('#filterFromDate').val() || null,
+                    toDate: $('#filterToDate').val() || null
+                };
+
+                swal.fire({
+                    title: 'در حال دریافت اطلاعات...',
+                    text: 'لطفاً شکیبا باشید',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: `${apiBaseUrl}Inventory/kardex`,
+                    type: 'POST',
+                    contentType: 'application/json; charset=utf-8',
+                    headers: {
+                        Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                    },
+                    data: JSON.stringify(filterData),
+                    success: function (response) {
+                        swal.close();
+
+                        // بررسی فیلد status و استخراج داده از additionalData یا data (سازگار با هر دو حالت)
+                        if (response && (response.status === true || response.isSuccess === true)) {
+                            var listData = response.additionalData || response.data || [];
+
+                            table.clear();
+                            table.rows.add(listData);
+                            table.draw();
+
+                            if (listData.length === 0) {
+                                swal.fire({
+                                    icon: 'info',
+                                    title: 'اطلاع',
+                                    text: 'هیچ تراکنشی برای کالای انتخابی در این بازه یافت نشد.'
+                                });
+                            }
+                        } else {
+                            swal.fire({
+                                icon: 'error',
+                                title: 'خطا',
+                                text: response?.message || 'خطا در دریافت اطلاعات کاردکس.'
+                            });
+                        }
+                    },
+                    error: function (xhr) {
+                        swal.close();
+
+                        let msg = 'خطای سرور در برقراری ارتباط.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            msg = xhr.responseJSON.message;
+                        }
+
+                        swal.fire({
+                            icon: 'error',
+                            title: 'خطا',
+                            text: msg
+                        });
+                    }
+                });
+            });
+
+            $('#btnReset').on('click', function () {
+                $('#kardexFilterForm')[0].reset();
+
+                if ($.fn.select2) {
+                    $('#filterProductId').val('').trigger('change');
+                    $('#filterWarehouseId').val('').trigger('change');
+                }
+
+                table.clear().draw();
+            });
+
+            function loadDropdowns() {
+                loadProducts();
+                loadWarehouses();
+            }
+            function loadProducts() {
+            $.ajax({
+                url: `${apiBaseUrl}Product/ProductDropdownList`,
+                type: 'GET',
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
+                success: function (res) {
+                    console.log("Product Data:", res);
+
+                    if (res && res.status && res.data) {
+                        let options = '<option value="">-- انتخاب کالا --</option>';
+
+                        $.each(res.data, function (i, item) {
+                            const id = item.drId ?? item.DrId ?? item.id;
+                            const text = item.drName ?? item.DrName ?? item.title ?? item.name;
+
+                            options += `<option value="${id}">${text}</option>`;
+                        });
+
+                        $('#filterProductId').html(options).trigger('change');
+                    } else {
+                        swal.fire({
+                            icon: 'warning',
+                            title: 'هشدار',
+                            text: res?.message || 'دریافت لیست کالاها با مشکل مواجه شد.'
+                        });
+                    }
+                },
+                error: function () {
+                    swal.fire({
+                        icon: 'error',
+                        title: 'خطا',
+                        text: 'خطا در دریافت لیست کالاها.'
+                    });
+                }
+            });
+        }
+            function loadWarehouses() {
+            $.ajax({
+                url: `${apiBaseUrl}Warehouse/WarehouseDropdownList`,
+                type: 'GET',
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
+                success: function (res) {
+                    console.log("Warehouse Data:", res);
+
+                    if (res && res.status && res.data) {
+                        let options = '<option value="">همه انبارها</option>';
+
+                        $.each(res.data, function (i, item) {
+                            const id = item.drId ?? item.DrId ?? item.id;
+                            const text = item.drName ?? item.DrName ?? item.title ?? item.name;
+
+                            options += `<option value="${id}">${text}</option>`;
+                        });
+
+                        $('#filterWarehouseId').html(options).trigger('change');
+                    } else {
+                        swal.fire({
+                            icon: 'warning',
+                            title: 'هشدار',
+                            text: res?.message || 'دریافت لیست انبارها با مشکل مواجه شد.'
+                        });
+                    }
+                },
+                error: function () {
+                    swal.fire({
+                        icon: 'error',
+                        title: 'خطا',
+                        text: 'خطا در دریافت لیست انبارها.'
+                    });
+                }
+            });
+        }
+        });
+    </script>
+}

@@ -265,46 +265,47 @@
                 success: function (xhr) {
                     if (xhr.statusCode == 200) {
                         // ثبت موفق اطلاعات
-                        swal({
-                            title: "ثبت اطلاعات",
-                            text: "ثبت اطلاعات با موفقیت انجام شد!",
-                            type: 'success',
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
+                                swal.fire({
+            title: "ثبت اطلاعات",
+            text: "ثبت اطلاعات با موفقیت انجام شد!",
+            icon: "success",
+            position: "center",
+            showConfirmButton: false,
+            timer: 1500
+        });
                         $('#addSupplier').modal('hide');
                         window.location.reload();
                     }
                     if (xhr.statusCode == 500) {
-                        swal({
-                            title: "خطا",
-                            text: "در سرور خطایی رخ داده است!",
-                            type: 'error',
-                            position: "center",
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "در سرور خطایی رخ داده است!",
+            icon: "error",
+            position: "center",
+            showConfirmButton: false,
+            timer: 1500
+        });
                         return false;
                     } else if (xhr.statusCode == 400) {
-                        swal({
-                             title: "خطا",
-                             text: "پارامترهای ارسالی معتبر نیست!",
-                             type: 'error',
-                             position: "center",
-                             showConfirmButton: false,
-                             timer: 1500
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "پارامترهای ارسالی معتبر نیست!",
+            icon: "error",
+            position: "center",
+            showConfirmButton: false,
+            timer: 1500
+        });
                         return false;
                     }
                     else if (xhr.statusCode == 409) {
-                        swal({
-                            title: "خطا",
-                            text: "اطلاعات تکراری می‌باشد!",
-                            type: 'error',
-                            position: "center",
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "اطلاعات تکراری می‌باشد!",
+            icon: "error",
+            position: "center",
+            showConfirmButton: false,
+            timer: 1500
+        });
                         return false;
                     }
                 }
@@ -382,25 +383,25 @@
                             // باز کردن مودال
                             $('#financialModal').modal('show');
                         } else {
-                            swal({
-                                title: "خطا",
-                                text: "خطایی رخ داده است!",
-                                type: 'error',
-                                position: "center",
-                                showConfirmButton: false,
-                                timer: 1500
-                            });
+                                   swal.fire({
+            title: "خطا",
+            text: "خطایی رخ داده است!",
+            icon: "error",
+            position: "center",
+            showConfirmButton: false,
+            timer: 1500
+        });
                         }
                     },
                     error: function () {
-                        swal({
-                            title: "خطا",
-                            text: "خطای ارتباط با سرور!",
-                            type: 'error',
-                            position: "center",
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "خطای ارتباط با سرور!",
+            icon: "error",
+            position: "center",
+            showConfirmButton: false,
+            timer: 1500
+        });
                     }
                 });
             });
@@ -457,36 +458,36 @@
                 },
                 success: function (xhr) {
                     if (xhr.statusCode == '200') {
-                        swal({
-                            title: "ویرایش اطلاعات",
-                            text: "ویرایش اطلاعات با موفقیت انجام شد!",
-                            type: 'success',
-                            position: "center",
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
+                                swal.fire({
+            title: "ویرایش اطلاعات",
+            text: "ویرایش اطلاعات با موفقیت انجام شد!",
+            icon: "success",
+            position: "center",
+            showConfirmButton: false,
+            timer: 1500
+        });
                          $('#editSupplier').modal('hide');
                         window.location.reload();
                     }
                     if (xhr.statusCode == '400') {
-                        swal({
-                             title: "خطا",
-                             text: "پارامترهای ارسالی معتبر نیست!",
-                             type: 'error',
-                             position: "center",
-                             showConfirmButton: false,
-                             timer: 1500
-                        });
+                                swal.fire({
+            title: "خطا",
+            text: "پارامترهای ارسالی معتبر نیست!",
+            icon: "error",
+            position: "center",
+            showConfirmButton: false,
+            timer: 1500
+        });
                         return false;
                     } else if (xhr.statusCode == '409') {
-                        swal({
-                            title: "خطا",
-                            text: "اطلاعات تکراری می‌باشد!",
-                            type: 'error',
-                            position: "center",
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
+                               swal.fire({
+            title: "خطا",
+            text: "اطلاعات تکراری می‌باشد!",
+            icon: "error",
+            position: "center",
+            showConfirmButton: false,
+            timer: 1500
+        });
                         return false;
                     }
                 }
