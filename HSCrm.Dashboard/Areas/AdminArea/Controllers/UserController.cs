@@ -5,7 +5,6 @@ using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.Security.Claims;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
@@ -20,23 +19,38 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         {
             _getListApi = getListApi;
         }
+        //public async Task<IActionResult> Index()
+        //{
+        //    string apiUrl = "User/GetUsers";
+
+        //    var json = await _getListApi.GetApiList(apiUrl);
+
+        //    var result = JsonConvert.DeserializeObject<ApiResponse<List<UserModel>>>(json);
+        //    var model = result.Data;
+
+        //    string roleUrl = "Role/GetRoles";
+        //    var roles = await _getListApi.GetApiList(roleUrl);
+
+        //    var roleResult = JsonConvert.DeserializeObject<ApiResponse<List<RoleModel>>>(roles);
+
+        //    ViewBag.Roles = roleResult.Data;
+      
+        //    return View(model);
+        //}
+
         public async Task<IActionResult> Index()
         {
-            string apiUrl = "User/GetUsers";
+            var usersTask = _getListApi.GetApiList("User/GetUsers");
+            var rolesTask = _getListApi.GetApiList("Role/GetRoles");
 
-            var json = await _getListApi.GetApiList(apiUrl);
+            await Task.WhenAll(usersTask, rolesTask);
 
-            var result = JsonConvert.DeserializeObject<ApiResponse<List<UserModel>>>(json);
-            var model = result.Data;
+            var userResult = JsonConvert.DeserializeObject<ApiResponse<List<UserModel>>>(await usersTask);
+            var roleResult = JsonConvert.DeserializeObject<ApiResponse<List<RoleModel>>>(await rolesTask);
 
-            string roleUrl = "Role/GetRoles";
-            var roles = await _getListApi.GetApiList(roleUrl);
+            ViewBag.Roles = roleResult?.Data;
 
-            var roleResult = JsonConvert.DeserializeObject<ApiResponse<List<RoleModel>>>(roles);
-
-            ViewBag.Roles = roleResult.Data;
-      
-            return View(model);
+            return View(userResult?.Data);
         }
 
         [HttpPost]

@@ -52,12 +52,13 @@
                                         <td>@item.SupplierAddress</td>
                                         <td>
                                             <div class="btn-group mb-1">
-                                                <button type="button" class="btn btn-outline-success">اطلاعات</button> <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static"><span class="sr-only">اطلاعات</span></button>
+                                                <button type="button" class="btn btn-outline-success btn-show-financial" data-id="@item.Id">وضعیت مالی</button>
+                                                <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static">
+                                                    <span class="sr-only">وضعیت مالی</span>
+                                                </button>
                                                 <div class="dropdown-menu">
                                                     <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
                                                     <a class="dropdown-item" href="#" onclick="">حذف</a>
-                                                    <hr />
-                                                    <a style="cursor:pointer;" class="dropdown-item btn-show-financial" data-id="@item.Id">وضعیت مالی</a>
                                                 </div>
                                             </div>
                                         </td>

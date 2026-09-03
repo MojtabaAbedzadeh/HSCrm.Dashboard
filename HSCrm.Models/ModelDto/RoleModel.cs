@@ -6,6 +6,7 @@ namespace HSCrm.Models.ModelDto
     {
         public required string Id { get; set; }
         public required string Name { get; set; }
+        public string FaName { get; set; }
         public int TenantId { get; set; }
     }
 

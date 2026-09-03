@@ -116,8 +116,7 @@
     <script src="~/lib/sweetalert/sweetalert2.min.js"></script>
     <script>
         function confirmInvoice(invoiceId) {
-
-                    swal.fire({
+        swal.fire({
             title: "تأیید فاکتور",
             text: "آیا از تبدیل پیش‌فاکتور به فاکتور نهایی مطمئن هستید؟",
             icon: "warning",
@@ -148,95 +147,88 @@
                     success: function (xhr) {
 
                         if (xhr.statusCode == 200) {
-                                    swal.fire({
-            title: "تأیید فاکتور",
-            text: "فاکتور با موفقیت نهایی شد!",
-            icon: "success",
-            showCancelButton: false,
-            showConfirmButton: true,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
+                            swal.fire({
+                                title: "تأیید فاکتور",
+                                text: "فاکتور با موفقیت نهایی شد!",
+                                icon: "success",
+                                showCancelButton: false,
+                                showConfirmButton: true,
+                                allowOutsideClick: false,
+                                confirmButtonColor: "green",
+                                confirmButtonText: "باشه"                            
+                            });
                             setTimeout(function () {
                                 window.location.reload();
                             }, 1500);
                         }
 
                         else if (xhr.statusCode == 400) {
-                                    swal.fire({
-            title: "خطا",
-            text: "پارامترهای ارسالی معتبر نیست!",
-            icon: "error",
-            showCancelButton: false,
-            showConfirmButton: true,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
+                            swal.fire({
+                                title: "خطا",
+                                text: "پارامترهای ارسالی معتبر نیست!",
+                                icon: "error",
+                                showCancelButton: false,
+                                showConfirmButton: true,
+                                allowOutsideClick: false,
+                                confirmButtonColor: "green",
+                                confirmButtonText: "باشه"
+                            });
                             return false;
                         }
 
                         else if (xhr.statusCode == 404) {
-                                    swal.fire({
-            title: "خطا",
-            text: "فاکتور مورد نظر یافت نشد!",
-            icon: "error",
-            showCancelButton: false,
-            showConfirmButton: true,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
+                            swal.fire({
+                                title: "خطا",
+                                text: "فاکتور مورد نظر یافت نشد!",
+                                icon: "error",
+                                showCancelButton: false,
+                                showConfirmButton: true,
+                                allowOutsideClick: false,
+                                confirmButtonColor: "green",
+                                confirmButtonText: "باشه",
+                                timer: 1500
+                            });
                             return false;
                         }
-
                         else if (xhr.statusCode == 409) {
-                                    swal.fire({
-            title: "خطا",
-            text: "این فاکتور قبلاً نهایی شده است!",
-            icon: "error",
-            showCancelButton: false,
-            showConfirmButton: true,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
+                            swal.fire({
+                                title: "خطا",
+                                text: "این فاکتور قبلاً نهایی شده است!",
+                                icon: "error",
+                                showCancelButton: false,
+                                showConfirmButton: true,
+                                allowOutsideClick: false,
+                                confirmButtonColor: "green",
+                                confirmButtonText: "باشه"                            
+                            });
                             return false;
                         }
-
                         else if (xhr.statusCode == 500) {
-                                    swal.fire({
-            title: "خطا",
-            text: "خطایی در انجام عملیات رخ داده است!",
-            icon: "error",
-            showCancelButton: false,
-            showConfirmButton: true,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
+                            swal.fire({
+                                title: "خطا",
+                                text: "خطایی در انجام عملیات رخ داده است!",
+                                icon: "error",
+                                showCancelButton: false,
+                                showConfirmButton: true,
+                                allowOutsideClick: false,
+                                confirmButtonColor: "green",
+                                confirmButtonText: "باشه"                            
+                            });
 
                             return false;
                         }
                     },
                     error: function (err) {
-                                swal.fire({
-            title: "خطا",
-            text: err.responseText || "خطایی در ارتباط با سرور رخ داده است!",
-            icon: "error",
-            showCancelButton: false,
-            showConfirmButton: true,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
+                        swal.fire({
+                            title: "خطا",
+                            text: err.responseText || "خطایی در ارتباط با سرور رخ داده است!",
+                            icon: "error",
+                            showCancelButton: false,
+                            showConfirmButton: true,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه"
+                        });
                     }
                 });
 

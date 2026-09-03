@@ -26,16 +26,17 @@
     <div class="row">
         <!-- شناسه مخفی فاکتور برای استفاده در آپدیت -->
         <input type="hidden" id="InvoiceId" value="@Model.Id" />
+        <input type="hidden" id="InvoiceStaus" value="@Model.Status" />
 
         <div class="col-12" style="margin-top:20px;">
             <div class="ec-vendor-list card card-default">
                 <div class="card-body" style="justify-content: end;">
                     <div class="table-responsive row">
                         <div class="col-lg-2 col-md-4 form-floating">
-                            <select id="InvoiceStatus" class="form-control text-end">
+                            <select id="InvoiceType" class="form-control text-end">
                                 <option value="1">فاکتور خرید</option>
                             </select>
-                            <label for="InvoiceStatus" style="right:0!important; left:unset!important;">نوع سند</label>
+                            <label for="InvoiceType" style="right:0!important; left:unset!important;">نوع سند</label>
                         </div>
                         <div class="col-lg-2 col-md-4 form-floating">
                             <select id="SupplierId" name="SupplierId" class="form-control text-end" asp-items="@(new SelectList(lstSupplier, "DrId", "DrName", Model.SupplierId.ToString()))">
@@ -80,7 +81,7 @@
                             </div>
                             <div class="col-lg-6" style="margin-bottom:8px;">
                                 <div class="form-group form-floating" style="margin:auto;">
-                                    <input type="number" value="1" style="font-size:13px;" class="form-control text-end" id="productCount" name="productCount" placeholder="تعداد">
+                                    <input type="number" style="font-size:13px;" class="form-control text-end" id="productCount" name="productCount" placeholder="تعداد">
                                     <label for="productCount" style="right:0!important; left:unset!important;">تعداد</label>
                                 </div>
                             </div>

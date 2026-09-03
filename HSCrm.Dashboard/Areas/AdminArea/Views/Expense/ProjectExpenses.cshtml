@@ -65,7 +65,7 @@
                                             <td>@item.ExpenseTitle</td>
                                             <td>@item.Amount</td>
                                             <td>@ConvertDate.ConvertMiladiToShamsi(item.ExpenseDate, "yyyy/MM/dd")</td>
-                                            <td>@item.UserId</td>
+                                            <td>@item.CreatedBy.UserFirstName @item.CreatedBy.UserLastName</td>
                                             <td>@item.Description</td>
                                             <td>
                                                 <div class="btn-group mb-1">

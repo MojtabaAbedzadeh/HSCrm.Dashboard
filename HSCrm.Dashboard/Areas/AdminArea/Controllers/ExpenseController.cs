@@ -18,6 +18,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         {
             _getListApi = getListApi;
         }
+
         public async Task<IActionResult> Index()
         {
             string apiUrl = "Expense/GetExpense";
@@ -32,6 +33,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
             return View(model);
         }
+
         [HttpGet]
         private async Task<List<ProjetcsDropDown>> GetProjectList(string tenantId)
         {
@@ -44,6 +46,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
                 result["data"]?.ToString() ?? "[]"
             );
         }
+
         [HttpGet]
         public async Task<IActionResult> ProjectExpenses(int projectId)
         {

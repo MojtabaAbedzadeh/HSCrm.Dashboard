@@ -4,14 +4,13 @@ using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.Security.Claims;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
     public class CustomerController : BaseController
     {
-        private readonly GetListApi _getListApi; // اضافه کردن فیلد برای GetListApi
+        private readonly GetListApi _getListApi; 
 
         public CustomerController(IConfiguration config, GetListApi getListApi) : base(config)
         {
@@ -36,7 +35,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
             var json = await _getListApi.GetApiList(apiUrl);
 
-            var result = JsonConvert.DeserializeObject<ApiResponse<CustomerDetailViewModel>>(json);
+            var result = JsonConvert.DeserializeObject<ApiResponse<CustomerProfileViewModel>>(json);
             var model = result?.Data;
 
             return View(model);

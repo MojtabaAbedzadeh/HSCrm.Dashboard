@@ -126,13 +126,15 @@ $(document).ready(function () {
         const qty = parseFloat($('#productCount').val()) || 0;
 
         if (!productId || qty <= 0) {
-            swal({
+            swal.fire({
                 title: "خطا",
                 text: "محصول و تعداد را وارد کنید",
-                type: "error",
+                icon: "error",
                 confirmButtonColor: "green",
                 confirmButtonText: "باشه",
-                timer: 1500
+                showConfirmButton: true,
+                timer: 1500,
+                allowOutsideClick: false
             });
             return;
         }
@@ -180,6 +182,7 @@ $(document).ready(function () {
         clearProductForm();
         calculateInvoiceSum();
     });
+
     // ================================
     // Edit / Remove Row
     // ================================
@@ -197,10 +200,12 @@ $(document).ready(function () {
         row.remove();
         calculateInvoiceSum();
     });
+
     $(document).on('click', '.btnRemove', function () {
         $(this).closest('tr').remove();
         calculateInvoiceSum();
     });
+
     // ================================
     // Invoice Total (Front - Display Only)
     // ================================
@@ -218,6 +223,7 @@ $(document).ready(function () {
 
         $('#invoiceSumPrice').val(formatPrice(total));
     }
+
     $('#invoiceDiscount, #invoiceTax').on('keyup change', calculateInvoiceSum);
 
     // ================================
@@ -268,90 +274,113 @@ $(document).ready(function () {
             headers: { 'Authorization': 'Bearer ' + Token },
             success: function (status) {
                 if (status.status === true) {
-                    swal({
+                    swal.fire({
                         title: "موفق",
                         text: "فاکتور با موفقیت ثبت شد",
-                        type: "success",
+                        icon: "success",
                         confirmButtonColor: "green",
                         confirmButtonText: "باشه",
-                        timer: 1500
+                        showConfirmButton: true,
+                        timer: 1500,
+                        allowOutsideClick: false
                     });
                     return;
                 }
 
-                swal({
+                swal.fire({
                     title: "خطا",
                     text: status.message || "ثبت فاکتور انجام نشد",
-                    type: "error",
+                    icon: "error",
                     confirmButtonColor: "green",
                     confirmButtonText: "باشه",
-                    timer: 1500
+                    showConfirmButton: true,
+                    timer: 1500,
+                    allowOutsideClick: false
                 });
             },
             error: function () {
-                swal({
+                swal.fire({
                     title: "خطای ارتباط با سرور",
                     text: "امکان ارتباط با سرور وجود ندارد، لطفاً مجدداً تلاش کنید",
-                    type: "error",
-                    timer: 1500
+                    icon: "error",
+                    confirmButtonColor: "green",
+                    showConfirmButton: true,
+                    timer: 1500,
+                    allowOutsideClick: false
                 });
             }
         });
 
     });
+
     function validateInvoiceForm() {
 
         // نوع فاکتور
         if (!$('#InvoiceStatus').val()) {
-            swal({
+            swal.fire({
                 title: "خطا",
                 text: "نوع فاکتور را انتخاب کنید",
-                type: "error",
-                timer: 1500
+                icon: "error",
+                confirmButtonColor: "green",
+                showConfirmButton: true,
+                timer: 1500,
+                allowOutsideClick: false
             });
             return false;
         }
 
         // انبار
         if (!$('#WarehouseId').val() || parseInt($('#WarehouseId').val()) === 0) {
-            swal({
+            swal.fire({
                 title: "خطا",
                 text: "انبار را انتخاب کنید",
-                type: "error",
-                timer: 1500
+                icon: "error",
+                confirmButtonColor: "green",
+                showConfirmButton: true,
+                timer: 1500,
+                allowOutsideClick: false
             });
             return false;
         }
 
         // شماره فاکتور
         if (!$('#invoiceNumber').val().trim()) {
-            swal({
+            swal.fire({
                 title: "خطا",
                 text: "شماره فاکتور را وارد کنید",
-                type: "error",
-                timer: 1500
+                icon: "error",
+                confirmButtonColor: "green",
+                showConfirmButton: true,
+                timer: 1500,
+                allowOutsideClick: false
             });
             return false;
         }
 
         // تاریخ فاکتور
         if (!$('#invoiceDate').val()) {
-            swal({
+            swal.fire({
                 title: "خطا",
                 text: "تاریخ فاکتور را انتخاب کنید",
-                type: "error",
-                timer: 1500
+                icon: "error",
+                confirmButtonColor: "green",
+                showConfirmButton: true,
+                timer: 1500,
+                allowOutsideClick: false
             });
             return false;
         }
 
         // حداقل یک آیتم
         if ($('#tblBody tr').length === 0) {
-            swal({
+            swal.fire({
                 title: "خطا",
                 text: "حداقل یک کالا باید به فاکتور اضافه شود",
-                type: "error",
-                timer: 1500
+                icon: "error",
+                confirmButtonColor: "green",
+                showConfirmButton: true,
+                timer: 1500,
+                allowOutsideClick: false
             });
             return false;
         }
@@ -360,7 +389,6 @@ $(document).ready(function () {
     }
 
     "use strict";
-
 
     /*
     |--------------------------------------------------------------------------
@@ -405,6 +433,7 @@ $(document).ready(function () {
             maximumFractionDigits: 2
         });
     }
+
     /*
     |--------------------------------------------------------------------------
     | اعتبارسنجی پرداخت
@@ -439,10 +468,14 @@ $(document).ready(function () {
             paidAmount = getPaidAmount();
 
             if (invoiceTotal <= 0) {
-                swal({
+                swal.fire({
                     title: "مبلغ فاکتور",
                     text: "مبلغ کل فاکتور باید بیشتر از صفر باشد",
-                    type: "warning",
+                    icon: "warning",
+                    confirmButtonColor: "green",
+                    showConfirmButton: true,
+                    timer: 1500,
+                    allowOutsideClick: false
                 });
 
                 return {
@@ -451,10 +484,14 @@ $(document).ready(function () {
             }
 
             if (paidAmount <= 0) {
-                swal({
+                swal.fire({
                     title: "مبلغ پرداختی",
                     text: "برای پرداخت بخشی، مبلغ پرداختی را وارد کنید",
-                    type: "warning",
+                    icon: "warning",
+                    confirmButtonColor: "green",
+                    showConfirmButton: true,
+                    timer: 1500,
+                    allowOutsideClick: false
                 });
 
                 return {
@@ -463,10 +500,14 @@ $(document).ready(function () {
             }
 
             if (paidAmount >= invoiceTotal) {
-                swal({
+                swal.fire({
                     title: "مبلغ پرداختی",
                     text: "در حالت پرداخت بخشی، مبلغ باید کمتر از مبلغ کل فاکتور باشد",
-                    type: "warning",
+                    icon: "warning",
+                    confirmButtonColor: "green",
+                    showConfirmButton: true,
+                    timer: 1500,
+                    allowOutsideClick: false
                 });
 
                 return {
@@ -482,10 +523,14 @@ $(document).ready(function () {
             };
         }
 
-        swal({
+        swal.fire({
             title: "وضعیت پرداخت",
             text: "وضعیت پرداخت انتخاب‌شده معتبر نیست",
-            type: "warning",
+            icon: "warning",
+            confirmButtonColor: "green",
+            showConfirmButton: true,
+            timer: 1500,
+            allowOutsideClick: false
         });
 
         return {
@@ -517,10 +562,14 @@ $(document).ready(function () {
 
             $(this).val(formatPrice(paidAmount));
 
-            swal({
+            swal.fire({
                 title: "مبلغ نامعتبر",
                 text: "مبلغ پرداختی نمی‌تواند بیشتر از مبلغ فاکتور باشد",
-                type: "warning",
+                icon: "warning",
+                confirmButtonColor: "green",
+                showConfirmButton: true,
+                timer: 1500,
+                allowOutsideClick: false
             });
         }
 
@@ -550,3 +599,4 @@ $(document).ready(function () {
             }
         );
     });
+});

@@ -27,10 +27,10 @@
                 <div class="card-body" style="justify-content: end;">
                     <div class="table-responsive row">
                         <div class="col-lg-2 col-md-4 form-floating">
-                            <select id="InvoiceStatus" class="form-control text-end">
+                            <select id="InvoiceType" class="form-control text-end">
                                 <option value="1">فاکتور خرید</option>
                             </select>
-                            <label for="InvoiceTypeId" style="right:0!important; left:unset!important;">نوع سند</label>
+                            <label for="InvoiceType" style="right:0!important; left:unset!important;">نوع سند</label>
                         </div>
                         <div class="col-lg-2 col-md-4 form-floating">
                             <select id="SupplierId" name="SupplierId" class="form-control text-end" asp-items="@(new SelectList(lstSupplier, "DrId", "DrName"))">
