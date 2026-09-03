@@ -352,7 +352,7 @@ $('#btnRegInvoice').on('click', function () {
         TenantId: TId,
         InvoiceNumber: $('#invoiceNumber').val(),
         IssueDate: $('#invoiceDate').val(),
-        Status: parseInt($('#InvoiceStatus').val(), 10),
+        Status: 1,
         InvoiceDiscount: unFormatPrice($('#invoiceDiscount').val()) || 0,
         InvoiceTax: unFormatPrice($('#invoiceTax').val()) || 0,
         PurchaserId: UId,
@@ -361,8 +361,6 @@ $('#btnRegInvoice').on('click', function () {
         PaymentReferenceNo: $('#paymentReferenceNo').val() || null,
         Items: items
     };
-
-    console.log('payload', model);
 
     $.ajax({
         url: ApiAddress + 'PurchaseInvoice/CreateInvoice',

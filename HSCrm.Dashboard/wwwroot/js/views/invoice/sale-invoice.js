@@ -50,49 +50,171 @@ function clearProductForm() {
 // ================================
 // Product Search (Autocomplete)
 // ================================
-$('#ProductTitle').on('keyup', function () {
-    const text = $(this).val().trim();
+
+let productSearchRequest = null;
+let productSearchSequence = 0;
+
+function getApiValue(object, camelCaseName, pascalCaseName) {
+    return object?.[camelCaseName] ?? object?.[pascalCaseName];
+}
+
+$('#ProductTitle').on('input', function () {
+    const $input = $(this);
+    const text = $input.val().trim();
+
+    $('#ProductId').val('');
 
     if (text.length < 2) {
-        $('#productAutoComplete').hide();
+        $('#productAutoComplete')
+            .empty()
+            .hide();
+
+        if (productSearchRequest) {
+            productSearchRequest.abort();
+            productSearchRequest = null;
+        }
+
         return;
     }
 
-    $.ajax({
-        url: window.AppContext.apiAddress + 'Product/Search',
-        type: 'GET',
-        data: { term: text },
-        headers: {
-            'Authorization': 'Bearer ' + Token
-        },
-        success: function (res) {
-            let html = '';
+    const requestSequence = ++productSearchSequence;
 
-            res.forEach(p => {
-                html += `
-                    <li class="list-group-item product-item"
-                        data-id="${p.id}"
-                        data-title="${p.productTitle}"
-                        data-sell="${p.sellPrice}">
-                        ${p.productTitle} - ${formatPrice(p.sellPrice)}
-                    </li>`;
+    if (productSearchRequest) {
+        productSearchRequest.abort();
+    }
+
+    productSearchRequest = $.ajax({
+        url: ApiAddress + 'Product/Search',
+        type: 'GET',
+        dataType: 'json',
+        data: {
+            term: text
+        },
+        headers: {
+            Authorization: 'Bearer ' + Token
+        }
+    })
+        .done(function (res) {
+            // جلوگیری از نمایش نتیجه قدیمی‌تر
+            if (requestSequence !== productSearchSequence) {
+                return;
+            }
+
+            const status =
+                getApiValue(res, 'status', 'Status');
+
+            const products =
+                getApiValue(res, 'data', 'Data');
+
+            if (status === false) {
+                $('#productAutoComplete')
+                    .empty()
+                    .hide();
+
+                console.error(
+                    getApiValue(res, 'message', 'Message') ||
+                    'خطا در دریافت محصولات'
+                );
+
+                return;
+            }
+
+            if (!Array.isArray(products)) {
+                $('#productAutoComplete')
+                    .empty()
+                    .hide();
+
+                console.error(
+                    'ساختار پاسخ محصولات معتبر نیست:',
+                    res
+                );
+
+                return;
+            }
+
+            const $list = $('<ul>', {
+                class: 'list-group'
             });
 
-            $('#productAutoComplete').html(html).show();
-        },
-        error: function (xhr) {
-            console.error("خطا در سرچ محصول:", xhr.status, xhr.responseText);
-        }
-    });
+            products.forEach(function (product) {
+                const productId = getApiValue(
+                    product,
+                    'id',
+                    'Id'
+                );
+
+                const productTitle = getApiValue(
+                    product,
+                    'productTitle',
+                    'ProductTitle'
+                ) || '';
+
+                const sellPrice = getApiValue(
+                    product,
+                    'sellPrice',
+                    'SellPrice'
+                ) || 0;
+
+                const $item = $('<li>', {
+                    class: 'list-group-item product-item',
+                    text: productTitle + ' - ' + formatPrice(sellPrice)
+                });
+
+                // استفاده از data() از تزریق HTML جلوگیری می‌کند
+                $item.data({
+                    id: productId,
+                    title: productTitle,
+                    sell: sellPrice
+                });
+
+                $list.append($item);
+            });
+
+            $('#productAutoComplete')
+                .empty()
+                .append($list)
+                .toggle(products.length > 0);
+        })
+        .fail(function (xhr, textStatus) {
+            if (textStatus === 'abort') {
+                return;
+            }
+
+            $('#productAutoComplete')
+                .empty()
+                .hide();
+
+            console.error(
+                'خطا در سرچ محصول:',
+                xhr.status,
+                xhr.responseText
+            );
+        })
+        .always(function () {
+            productSearchRequest = null;
+        });
 });
 
 $(document).on('click', '.product-item', function () {
-    $('#ProductTitle').val($(this).data('title'));
-    $('#ProductId').val($(this).data('id'));
-    $('#sellPrice').val(formatPrice($(this).data('sell')));
-    $('#productAutoComplete').hide();
-    $('#productCount').focus();
-    $('#productCount').select();
+    const $item = $(this);
+
+    const productId = $item.data('id');
+    const productTitle = $item.data('title');
+    const sellPrice = $item.data('sell');
+
+    $('#ProductTitle').val(productTitle);
+    $('#ProductId').val(productId);
+    $('#sellPrice').val(formatPrice(sellPrice));
+
+    $('#productAutoComplete')
+        .empty()
+        .hide();
+
+    $('#productCount')
+        .focus()
+        .select();
+
+    calculateRowSum();
 });
 
 // ================================
