@@ -3,6 +3,8 @@
 @{
     ViewData["Title"] = "مدیریت نقش‌ها";
     ViewData["selected"] = "role_list";
+
+    string ApiAddress = ViewBag.ApiAddress;
 }
 
 <div class="breadcrumb-wrapper breadcrumb-contacts">
@@ -18,7 +20,7 @@
         </p>
     </div>
     <div>
-        <a asp-area="AdminArea" asp-controller="Role" asp-action="Create" class="btn btn-primary">اضافه کردن نقش</a>
+        <a onclick="showInsertRoleModel()" class="btn btn-primary">اضافه کردن نقش</a>
     </div>
 </div>
 <div class="row">
@@ -46,9 +48,12 @@
                                                     <span class="sr-only">اطلاعات</span>
                                                 </button>
                                                 <div class="dropdown-menu">
-                                                    <a asp-area="AdminArea" asp-controller="Role" asp-action="Edit" asp-route-id="@item.Id" class="dropdown-item">ویرایش</a>
-                                                    <a asp-area="AdminArea" asp-controller="Role" asp-action="ManagePermissions" asp-route-id="@item.Id" class="dropdown-item">دسترسی‌ها</a>
-                                                    <a class="dropdown-item" href="#">حذف</a>
+                                                    @if (item.Name != "Owner")
+                                                    {
+                                                        <a asp-area="AdminArea" asp-controller="Role" asp-action="Edit" asp-route-id="@item.Id" class="dropdown-item">ویرایش</a>
+                                                        <a asp-area="AdminArea" asp-controller="Role" asp-action="ManagePermissions" asp-route-id="@item.Id" class="dropdown-item">دسترسی‌ها</a>
+                                                        <a class="dropdown-item" href="#">حذف</a>
+                                                    }
                                                 </div>
                                             </div>
                                         </td>
@@ -62,3 +67,149 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade modal-add-contact" id="addRoleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content">
+            <form id="frmRole">
+                <div class="modal-header px-4">
+                    <h5 class="modal-title" id="exampleModalCenterTitle">تعریف نقش جدید</h5>
+                </div>
+                <div class="modal-body px-4">
+                    <div class="row mb-2">
+                        <div class="col-lg-6">
+                            <div class="form-group form-floating">
+                                <input class="form-control text-end" id="RoleName" name="RoleName" placeholder="عنوان لاتین نقش">
+                                <label for="RoleName" style="right:0!important; left:unset!important; color:#d2d2d2;">عنوان انگلیسی مثال: Employe</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="form-group form-floating">
+                                <input class="form-control text-end" id="RoleFaName" name="RoleFaName" placeholder="عنوان فارسی نقش">
+                                <label for="RoleFaName" style="right:0!important; left:unset!important; color:#d2d2d2;">عنوان فارسی مثال: کارمند</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-12 alert" style="color:red">
+                            <span class="text-danger" id="spnValidate"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer px-4">
+                    <button type="button" class="btn btn-secondary btn-pill" data-bs-dismiss="modal">
+                        لغو
+                    </button>
+                    <button id="btnRoleSubmit" type="button" class="btn btn-primary btn-pill">ذخیره </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section AdminScripts {
+    <script>
+        function showInsertRoleModel() {
+            $("#addRoleModal").modal('show');
+        }
+
+        $("#btnRoleSubmit").on('click', function (e) {
+            e.preventDefault();
+
+            var Name = $("#RoleName").val();
+            var FaName = $("#RoleFaName").val();
+
+            if (!Name || Name.trim() === "") {
+                swal.fire({
+                    title: "خطا",
+                    text: "عنوان لاتین نقش را وارد نمایید!",
+                    icon: "error",
+                    showCancelButton: false,
+                    allowOutsideClick: false,
+                    confirmButtonColor: "green",
+                    confirmButtonText: "باشه"
+                });
+                return false;
+            }
+
+            if (!FaName || FaName.trim() === "") {
+                swal.fire({
+                    title: "خطا",
+                    text: "عنوان فارسی نقش را وارد نمایید!",
+                    icon: "error",
+                    showCancelButton: false,
+                    allowOutsideClick: false,
+                    confirmButtonColor: "green",
+                    confirmButtonText: "باشه"
+                });
+                return false;
+            }
+
+            var model = {
+                name: $("#RoleName").val(),
+                faName: $("#RoleFaName").val()
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: '@ApiAddress' + 'Role/CreateRole',
+                dataType: 'Json',
+                contentType: 'application/json',
+                processData: false,
+                data: JSON.stringify(model),
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
+                success: function (xhr) {
+                    if (xhr.statusCode == 200) {
+                        swal.fire({
+                            title: "ثبت اطلاعات",
+                            text: "ثبت نقش با موفقیت انجام شد!",
+                            icon: "success",
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه"
+                        });
+                        $('#addRoleModal').modal('hide');
+                        $('#RolaName').val("");
+                        window.location.reload();
+                    }
+                    if (xhr.statusCode == 500) {
+                        swal.fire({
+                            title: "خطا",
+                            text: "خطایی در انجام عملیات رخ داده است!",
+                            icon: "error",
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه"
+                        });
+                        return false;
+
+                    } else if (xhr.statusCode == 400) {
+                        swal.fire({
+                            title: "خطا",
+                            text: "لطفا اطلاعات نقش را کامل وارد نمایید!",
+                            icon: "error",
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه"
+                        });
+                        return false;
+                    } else if (xhr.statusCode == 409) {
+                        swal.fire({
+                            title: "خطا",
+                            text: "عنوان نقش وارد شده در بانک اطلاعاتی موجود می باشد!",
+                            icon: "error",
+                            showCancelButton: false,
+                            allowOutsideClick: false,
+                            confirmButtonColor: "green",
+                            confirmButtonText: "باشه"
+                        });
+                        return false;
+                    }
+                }
+            });
+        });
+    </script>
+}
