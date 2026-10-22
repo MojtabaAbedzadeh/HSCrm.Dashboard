@@ -1,4 +1,4 @@
-﻿using HSCrm.BussinessLogic.PublicMethod;
+using HSCrm.BussinessLogic.PublicMethod;
 using HSCrm.Dashboard.Controllers;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
@@ -24,14 +24,34 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
         public async Task<IActionResult> Index()
         {
-            string apiUrl = _config["ApiAddress"] + "Warehouse/GetWarehouses";
+            // فراخوانی با روت نسبی سازگار با ApiClient BaseAddress
+            string apiUrl = "Warehouse/GetWarehouses";
             string token = User.FindFirstValue("Token");
 
-            var json = await _getListApi.GetApiList(apiUrl);
-            var result = JsonConvert.DeserializeObject<ApiResponse<List<WarehousesModel>>>(json);
-            var model = result.Data;
+            try
+            {
+                var json = await _getListApi.GetApiList(apiUrl);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    ViewBag.ErrorMessage = "هیچ پاسخی از سرویس انبارها دریافت نشد یا دسترسی مجاز نیست.";
+                    return View(new List<WarehousesModel>());
+                }
 
-            return View(model);
+                var result = JsonConvert.DeserializeObject<ApiResponse<List<WarehousesModel>>>(json);
+                if (result == null || !result.Status)
+                {
+                    ViewBag.ErrorMessage = result?.Message ?? "خطا در دریافت لیست انبارها از سرور.";
+                    return View(new List<WarehousesModel>());
+                }
+
+                var model = result.Data ?? new List<WarehousesModel>();
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                ViewBag.ErrorMessage = "خطای غیرمنتظره در ارتباط با سرور: " + ex.Message;
+                return View(new List<WarehousesModel>());
+            }
         }
     }
 }
