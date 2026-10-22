@@ -10,7 +10,6 @@ namespace HSCrm.Dashboard.Services
         public List<SidebarMenuItem> GetMenus(ClaimsPrincipal user)
         {
             var allMenus = BuildMenus();
-
             return FilterMenusByPermission(allMenus, user);
         }
 
@@ -22,25 +21,20 @@ namespace HSCrm.Dashboard.Services
 
             foreach (var menu in menus)
             {
-                // Check permission for parent item
                 bool hasPermission = string.IsNullOrEmpty(menu.PermissionKey)
                                      || user.HasClaim("Permission", menu.PermissionKey);
 
-                // Process children
                 if (menu.Children != null && menu.Children.Any())
                 {
                     var visibleChildren = FilterMenusByPermission(menu.Children, user);
-
                     if (visibleChildren.Any())
                     {
-                        // Keep parent, but only visible children
                         menu.Children = visibleChildren;
                         filtered.Add(menu);
                         continue;
                     }
                 }
 
-                // If no children, permission must pass
                 if (hasPermission)
                     filtered.Add(menu);
             }
@@ -59,7 +53,6 @@ namespace HSCrm.Dashboard.Services
                     Icon = "mdi mdi-view-dashboard",
                     Url = "/AdminArea/Home/Index",
                 },
-
                 new SidebarMenuItem
                 {
                     Key = "customers",
@@ -76,7 +69,6 @@ namespace HSCrm.Dashboard.Services
                         }
                     }
                 },
-
                 new SidebarMenuItem
                 {
                     Key = "suppliers",
@@ -93,7 +85,6 @@ namespace HSCrm.Dashboard.Services
                         }
                     }
                 },
-
                 new SidebarMenuItem
                 {
                     Key = "users",
@@ -117,7 +108,6 @@ namespace HSCrm.Dashboard.Services
                         }
                     }
                 },
-
                 new SidebarMenuItem
                 {
                     Key = "products",
@@ -132,7 +122,7 @@ namespace HSCrm.Dashboard.Services
                             Url = "/AdminArea/Product/Index",
                             PermissionKey = Permissions.Products.View
                         },
-                         new SidebarMenuItem
+                        new SidebarMenuItem
                         {
                             Key = "product_kardex",
                             Title = "کاردکس محصول",
@@ -148,7 +138,6 @@ namespace HSCrm.Dashboard.Services
                         }
                     }
                 },
-
                 new SidebarMenuItem
                 {
                     Key = "inventories",
@@ -165,7 +154,6 @@ namespace HSCrm.Dashboard.Services
                         }
                     }
                 },
-
                 new SidebarMenuItem
                 {
                     Key = "projects",
@@ -182,11 +170,10 @@ namespace HSCrm.Dashboard.Services
                         }
                     }
                 },
-
                 new SidebarMenuItem
                 {
                     Key = "invoices",
-                    Title = "فاکتورها",
+                    Title = "فاکتورها و برگشتی‌ها",
                     Icon = "mdi mdi-receipt",
                     Children = new List<SidebarMenuItem>
                     {
@@ -203,10 +190,97 @@ namespace HSCrm.Dashboard.Services
                             Title = "فاکتورهای خرید",
                             Url = "/AdminArea/Invoice/PurchaseInvoice",
                             PermissionKey = Permissions.PurchaseInvoices.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "sales_return_invoices",
+                            Title = "برگشت از فروش (فاز ۵)",
+                            Url = "/AdminArea/ReturnInvoice/SalesReturn",
+                            PermissionKey = Permissions.SalesInvoices.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "purchase_return_invoices",
+                            Title = "برگشت از خرید (فاز ۵)",
+                            Url = "/AdminArea/ReturnInvoice/PurchaseReturn",
+                            PermissionKey = Permissions.PurchaseInvoices.View
                         }
                     }
                 },
-
+                new SidebarMenuItem
+                {
+                    Key = "treasury",
+                    Title = "خزانه‌داری، بانک و چک",
+                    Icon = "mdi mdi-bank",
+                    Children = new List<SidebarMenuItem>
+                    {
+                        new SidebarMenuItem
+                        {
+                            Key = "bank_accounts",
+                            Title = "حساب‌های بانکی و صندوق",
+                            Url = "/AdminArea/BankAccount/Index",
+                            PermissionKey = Permissions.Payments.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "receipts_list",
+                            Title = "دریافت‌ها و واریزی‌ها",
+                            Url = "/AdminArea/Receipt/Index",
+                            PermissionKey = Permissions.Payments.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "payments",
+                            Title = "پرداخت‌ها",
+                            Url = "/AdminArea/Payment/Index",
+                            PermissionKey = Permissions.Payments.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "cheques_list",
+                            Title = "چک‌های صیادی و رأس‌گیری",
+                            Url = "/AdminArea/Cheque/Index",
+                            PermissionKey = Permissions.Payments.View
+                        }
+                    }
+                },
+                new SidebarMenuItem
+                {
+                    Key = "accounting",
+                    Title = "حسابداری و گزارشات مالی",
+                    Icon = "mdi mdi-calculator-variant",
+                    Children = new List<SidebarMenuItem>
+                    {
+                        new SidebarMenuItem
+                        {
+                            Key = "accounting_accounts",
+                            Title = "درختواره و کدینگ حساب‌ها",
+                            Url = "/AdminArea/Accounting/Accounts",
+                            PermissionKey = Permissions.Payments.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "accounting_vouchers",
+                            Title = "اسناد حسابداری (دفتر روزنامه)",
+                            Url = "/AdminArea/Accounting/Vouchers",
+                            PermissionKey = Permissions.Payments.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "accounting_reports",
+                            Title = "تراز آزمایشی، معین و سود/زیان",
+                            Url = "/AdminArea/Accounting/Reports",
+                            PermissionKey = Permissions.Payments.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "accounting_aging",
+                            Title = "صورت‌حساب ۳۶۰ و تحلیل سنی",
+                            Url = "/AdminArea/Accounting/AgingAndStatements",
+                            PermissionKey = Permissions.Payments.View
+                        }
+                    }
+                },
                 new SidebarMenuItem
                 {
                     Key = "expenses",
@@ -215,24 +289,14 @@ namespace HSCrm.Dashboard.Services
                     Url = "/AdminArea/Expense/Index",
                     PermissionKey = Permissions.Expenses.View
                 },
-
-                new SidebarMenuItem
-                {
-                    Key = "payments",
-                    Title = "پرداخت‌ها",
-                    Icon = "mdi mdi-currency-usd",
-                    Url = "/AdminArea/Payment/Index",
-                    PermissionKey = Permissions.Payments.View
-                },
-
                 new SidebarMenuItem
                 {
                     Key = "fiscal_years",
-                    Title = "سال مالی",
-                    Icon = "mdi mdi-calendar",
+                    Title = "سال مالی و بستن حساب‌ها",
+                    Icon = "mdi mdi-calendar-check",
                     Url = "/AdminArea/FiscalYear/Index",
                     PermissionKey = Permissions.FiscalYears.View
-                },
+                }
             };
         }
     }

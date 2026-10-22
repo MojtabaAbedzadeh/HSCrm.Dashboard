@@ -60,6 +60,7 @@
                                                     <span class="sr-only">پروفایل</span>
                                                 </button>
                                                 <div class="dropdown-menu">
+                                                    <a class="dropdown-item text-primary fw-bold" href="/AdminArea/Accounting/AgingAndStatements?partyType=1&partyId=@item.Id">صورت‌حساب جامع ۳۶۰ درجه</a>
                                                     @if (User.HasPermission(Permissions.Customers.Edit))
                                                     {
                                                         <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>

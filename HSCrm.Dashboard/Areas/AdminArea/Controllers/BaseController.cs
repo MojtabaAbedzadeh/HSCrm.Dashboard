@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Security.Claims;
+
 namespace HSCrm.Dashboard.Controllers
 {
     public class BaseController : Controller
@@ -14,7 +15,7 @@ namespace HSCrm.Dashboard.Controllers
 
         /// <summary>
         /// این متد به عنوان یک فیلتر، قبل از اجرای هر اکشنی به صورت خودکار اجرا می‌شود
-        /// و ViewBagها را برای تمام لایه‌ها و ویوها پر می‌کند.
+        /// و ViewBagها (از جمله سال مالی فعال، وضعیت سال مالی، توکن و شناسه تننت) را برای تمام لایه‌ها و ویوها پر می‌کند.
         /// </summary>
         public override void OnActionExecuting(ActionExecutingContext context)
         {
@@ -23,15 +24,17 @@ namespace HSCrm.Dashboard.Controllers
             if (User != null)
             {
                 ViewBag.ApiAddress = _config["ApiAddress"];
-                ViewBag.UserId = User.FindFirstValue("UserId");
+                ViewBag.UserId = User.FindFirstValue("UserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
                 ViewBag.Token = User.FindFirstValue("Token");
-                ViewBag.FirstName = User.FindFirstValue("FirstName");
-                ViewBag.LastName = User.FindFirstValue("LastName");
+                ViewBag.FirstName = User.FindFirstValue("UserFirstName") ?? User.FindFirstValue("FirstName");
+                ViewBag.LastName = User.FindFirstValue("UserLastName") ?? User.FindFirstValue("LastName");
                 ViewBag.TenantId = User.FindFirstValue("TenantId");
                 ViewBag.UserImageUrl = User.FindFirstValue("UserImageUrl");
-                ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus");
-                ViewBag.Email = User.FindFirstValue("Email");
-                ViewBag.Mobile = User.FindFirstValue("MobilePhone");
+                ViewBag.FiscalYearId = User.FindFirstValue("FiscalYearId") ?? Request.Cookies["ActiveFiscalYearId"] ?? "0";
+                ViewBag.FiscalYearTitle = User.FindFirstValue("FiscalYearTitle") ?? "سال مالی جاری";
+                ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus") ?? "0";
+                ViewBag.Email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("Email");
+                ViewBag.Mobile = User.FindFirstValue(ClaimTypes.MobilePhone) ?? User.FindFirstValue("MobilePhone");
             }
         }
     }

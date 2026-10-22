@@ -57,7 +57,7 @@
     @if (ViewBag.FiscalYearStatus == "0")
     {
         <div>
-            @if (User.HasPermission(Permissions.Products.Create))
+            @if (User.HasPermission(Permissions.Payments.Create))
             {
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPayment"> ثبت پرداخت جدید </button>
             }
@@ -483,6 +483,19 @@
             }
     </script>
     <script>
+        
+        document.addEventListener("DOMContentLoaded", async function () {
+            try {
+                const bankRes = await fetch(`${window.apiRoot}/BankAccount/GetAll`, { headers: getAuthHeaders() });
+                const bankJson = await bankRes.json();
+                const banks = bankJson.data || [];
+                const bankSel = document.getElementById("BankAccountId");
+                if (bankSel && banks.length > 0) {
+                    bankSel.innerHTML = banks.map(b => `<option value="${b.id}" ${b.isDefault ? 'selected' : ''}>${b.title}</option>`).join('');
+                }
+            } catch (e) { console.error(e); }
+        });
+
         async function savePayment() {
             const purchaseInvoiceIdElement = document.getElementById("PurchaseInvoiceId");
 
@@ -558,10 +571,13 @@
                 return;
             }
 
+            const bankAccountEl = document.getElementById("BankAccountId");
+            const bankAccountId = bankAccountEl && bankAccountEl.value ? Number.parseInt(bankAccountEl.value, 10) : null;
             const payload = {
                 salesInvoiceId: null,
                 purchaseInvoiceId: purchaseInvoiceId,
                 expenseId: expenseId,
+                bankAccountId: bankAccountId,
                 paymentDate: paymentDate,
                 amount: amount,
                 method: method,

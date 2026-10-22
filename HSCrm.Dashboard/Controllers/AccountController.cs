@@ -166,6 +166,50 @@ namespace Automation.Dashboard.Controllers
             });
         }
 
+
+        [HttpPost]
+        public async Task<IActionResult> SwitchFiscalYear(int fiscalYearId, int fiscalYearStatus = 0, string? fiscalYearTitle = null)
+        {
+            if (HttpContext.User.Identity is not ClaimsIdentity currentIdentity || !currentIdentity.IsAuthenticated)
+            {
+                return Unauthorized(new { status = false, message = "کاربر احراز هویت نشده است." });
+            }
+
+            var claims = currentIdentity.Claims
+                .Where(c => c.Type != "FiscalYearId" && c.Type != "FiscalYearStatus" && c.Type != "FiscalYearTitle")
+                .ToList();
+
+            claims.Add(new Claim("FiscalYearId", fiscalYearId.ToString()));
+            claims.Add(new Claim("FiscalYearStatus", fiscalYearStatus.ToString()));
+            if (!string.IsNullOrWhiteSpace(fiscalYearTitle))
+            {
+                claims.Add(new Claim("FiscalYearTitle", fiscalYearTitle));
+            }
+
+            Response.Cookies.Append("ActiveFiscalYearId", fiscalYearId.ToString(), new CookieOptions
+            {
+                HttpOnly = false,
+                IsEssential = true,
+                Expires = DateTimeOffset.UtcNow.AddDays(30)
+            });
+
+            var newIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var newPrincipal = new ClaimsPrincipal(newIdentity);
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                newPrincipal,
+                new AuthenticationProperties { IsPersistent = true });
+
+            return Json(new
+            {
+                status = true,
+                message = $"سال مالی فعال به «{fiscalYearTitle ?? fiscalYearId.ToString()}» تغییر یافت.",
+                fiscalYearId,
+                fiscalYearStatus,
+                fiscalYearTitle
+            });
+        }
+
         public IActionResult AccessDenied()
         {
             return View();

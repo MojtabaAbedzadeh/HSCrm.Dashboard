@@ -1,4 +1,5 @@
-﻿@using HSCrm.Dashboard.Costants
+﻿@using HSCrm.BussinessLagic.Tools
+@using HSCrm.Dashboard.Costants
 @model IEnumerable<SalesInvoiceModel>
 
 @{
@@ -94,6 +95,26 @@
                                                                 تبدیل به فاکتور نهایی
                                                             </a>
                                                         }
+                                                        else
+                                                        {
+                                                            <div class="dropdown-divider"></div>
+                                                            <a class="dropdown-item text-success" href="/AdminArea/Receipt/Index?invoiceId=@item.Id">
+                                                                <i class="mdi mdi-cash-plus me-1"></i>
+                                                                ثبت دریافت وجه / چک
+                                                            </a>
+                                                            <a class="dropdown-item text-warning" href="/AdminArea/ReturnInvoice/SalesReturn?invoiceId=@item.Id">
+                                                                <i class="mdi mdi-keyboard-return me-1"></i>
+                                                                ثبت برگشت از فروش
+                                                            </a>
+                                                            <a class="dropdown-item text-info" href="/AdminArea/Accounting/Vouchers?refType=1&refId=@item.Id">
+                                                                <i class="mdi mdi-book-open-page-variant me-1"></i>
+                                                                مشاهده سند حسابداری
+                                                            </a>
+                                                            <a class="dropdown-item text-dark" href="javascript:void(0)" onclick="openSalesInvoicePrintModal('@item.Id', '@item.Number', '@ConvertDate.ConvertMiladiToShamsi(item.IssueDate, "yyyy/MM/dd")', '@item.Project.ProjectTitle', '@item.Project.ProjectTitle', '@item.Total')">
+                                                                <i class="mdi mdi-printer me-1"></i>
+                                                                نمایش ریز اقلام و چاپ رسمی (A4)
+                                                            </a>
+                                                        }
                                                     </div>
                                                 }
                                                 else
@@ -112,6 +133,113 @@
         </div>
     </div>
 </div>
+
+<!-- مودال مشاهده ریز اقلام و چاپ رسمی فاکتور فروش (A4) -->
+<div class="modal fade" id="printOfficialSalesInvoiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="modal-title"><i class="mdi mdi-printer me-1"></i>نمایش جزئیات و چاپ رسمی فاکتور فروش</h5>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-warning fw-bold" onclick="window.print()">
+                        <i class="mdi mdi-printer me-1"></i>چاپ فاکتور رسمی (A4)
+                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+            </div>
+            <div class="modal-body p-4" id="officialInvoicePrintArea">
+                <div class="border border-2 border-dark p-4 rounded">
+                    <div class="d-flex justify-content-between align-items-center border-bottom border-dark pb-3 mb-3">
+                        <div>
+                            <h4 class="fw-bold mb-1">صورت‌حساب فروش کالا و خدمات</h4>
+                            <div class="text-muted small">سامانه جامع مالی و حسابداری HSCrm</div>
+                        </div>
+                        <div class="text-end font-monospace">
+                            <div><strong>شماره فاکتور:</strong> <span id="prInvNumber">-</span></div>
+                            <div><strong>تاریخ صدور:</strong> <span id="prInvDate">-</span></div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3 p-2 bg-light border rounded small">
+                        <div class="col-md-6"><strong>خریدار / طرف‌حساب:</strong> <span id="prInvCustomer">-</span></div>
+                        <div class="col-md-6"><strong>پروژه مرتبط:</strong> <span id="prInvProject">-</span></div>
+                    </div>
+                    <table class="table table-bordered border-dark align-middle text-center small mb-3">
+                        <thead class="table-secondary border-dark">
+                            <tr>
+                                <th>ردیف</th>
+                                <th>شرح کالا / خدمات</th>
+                                <th>تعداد</th>
+                                <th>مبلغ واحد (ریال)</th>
+                                <th>تخفیف</th>
+                                <th>مالیات و عوارض</th>
+                                <th>مبلغ کل پس از تخفیف و مالیات (ریال)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prInvItemsBody"></tbody>
+                        <tfoot>
+                            <tr class="table-light fw-bold">
+                                <td colspan="6" class="text-end">جمع کل قابل پرداخت (ریال):</td>
+                                <td class="font-monospace fs-6 text-primary" id="prInvTotal">0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="row mt-5 pt-4 text-center small">
+                        <div class="col-4"><div class="border-top border-dark pt-2">مهر و امضای فروشنده</div></div>
+                        <div class="col-4"><div class="border-top border-dark pt-2">تایید واحد مالی و حسابداری</div></div>
+                        <div class="col-4"><div class="border-top border-dark pt-2">مهر و امضای خریدار</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function openSalesInvoicePrintModal(id, number, dateStr, customer, project, total) {
+        document.getElementById('prInvNumber').textContent = number || id;
+        document.getElementById('prInvDate').textContent = dateStr || '-';
+        document.getElementById('prInvCustomer').textContent = customer || '-';
+        document.getElementById('prInvProject').textContent = project || '-';
+        document.getElementById('prInvTotal').textContent = Number(total || 0).toLocaleString('fa-IR');
+
+        const tbody = document.getElementById('prInvItemsBody');
+        tbody.innerHTML = '<tr><td colspan="7" class="py-3 text-muted">در حال دریافت ریز اقلام فاکتور از سرور...</td></tr>';
+        new bootstrap.Modal(document.getElementById('printOfficialSalesInvoiceModal')).show();
+
+        fetch('@ApiAddress' + 'SalesInvoice/GetById?id=' + id, {
+            headers: { 'Authorization': 'Bearer ' + '@User.FindFirstValue("Token")' }
+        })
+        .then(r => r.json())
+        .then(res => {
+            const inv = res.data || res || {};
+            const items = inv.items || inv.salesInvoiceItems || [];
+            if (!Array.isArray(items) || items.length === 0) {
+                tbody.innerHTML = `<tr>
+                    <td>1</td>
+                    <td>فروش کالا / خدمات طبق فاکتور شماره ${number || id}</td>
+                    <td>1</td>
+                    <td class="font-monospace">${Number(total || 0).toLocaleString('fa-IR')}</td>
+                    <td>0</td>
+                    <td>0</td>
+                    <td class="font-monospace fw-bold">${Number(total || 0).toLocaleString('fa-IR')}</td>
+                </tr>`;
+            } else {
+                tbody.innerHTML = items.map((it, idx) => `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${it.productTitle || it.productName || ('کالای #' + it.productId)}</td>
+                        <td class="font-monospace">${it.quantity || it.count || 1}</td>
+                        <td class="font-monospace">${Number(it.unitPrice || it.price || 0).toLocaleString('fa-IR')}</td>
+                        <td class="font-monospace">${Number(it.discount || 0).toLocaleString('fa-IR')}</td>
+                        <td class="font-monospace">${Number(it.tax || it.vatAmount || 0).toLocaleString('fa-IR')}</td>
+                        <td class="font-monospace fw-bold">${Number(it.totalPrice || it.rowSum || total || 0).toLocaleString('fa-IR')}</td>
+                    </tr>
+                `).join('');
+            }
+        })
+        .catch(() => {});
+    }
+</script>
+
 @section AdminScripts {
     <script src="~/lib/sweetalert/sweetalert2.min.js"></script>
     <script>

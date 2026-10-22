@@ -271,6 +271,22 @@
                                                             <a class="dropdown-item" href="#" onclick="draftPurchaseInvoice(@item.Id)">
                                                                 <i class="mdi mdi-refresh me-1"></i> بازگشت به پیش‌نویس
                                                             </a>
+                                                            @if (item.Status == InvoiceStatus.Final)
+                                                            {
+                                                                <hr />
+                                                                <a class="dropdown-item text-primary" href="/AdminArea/Payment/Index?invoiceId=@item.Id">
+                                                                    <i class="mdi mdi-cash-minus me-1"></i> ثبت پرداخت به تأمین‌کننده
+                                                                </a>
+                                                                <a class="dropdown-item text-warning" href="/AdminArea/ReturnInvoice/PurchaseReturn?invoiceId=@item.Id">
+                                                                    <i class="mdi mdi-keyboard-return me-1"></i> ثبت برگشت از خرید
+                                                                </a>
+                                                                <a class="dropdown-item text-info" href="/AdminArea/Accounting/Vouchers?refType=2&refId=@item.Id">
+                                                                    <i class="mdi mdi-book-open-page-variant me-1"></i> مشاهده سند حسابداری
+                                                                </a>
+                                                                <a class="dropdown-item text-dark" href="javascript:void(0)" onclick="window.print()">
+                                                                    <i class="mdi mdi-printer me-1"></i> چاپ رسمی فاکتور خرید (A4)
+                                                                </a>
+                                                            }
                                                         }                                                      
                                                        
                                                     </div>

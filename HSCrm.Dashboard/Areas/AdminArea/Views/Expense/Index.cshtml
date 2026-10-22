@@ -91,6 +91,10 @@
                                                                 حذف
                                                             </a>
                                                         }
+                                                        <div class="dropdown-divider"></div>
+                                                        <a class="dropdown-item text-info" href="/AdminArea/Accounting/Vouchers?refType=5&refId=@item.Id">
+                                                            <i class="mdi mdi-book-open-page-variant me-1"></i> مشاهده سند حسابداری
+                                                        </a>
                                                     </div>
                                                 }
                                                 else
@@ -152,6 +156,41 @@
                         <div class="col-lg-4 form-floating">
                             <input autocomplete="off" id="ExpenseDate" name="ExpenseDate" class="form-control persian-date text-end" placeholder="تاریخ" />
                             <label for="ExpenseDate" style="right:0!important; left:unset!important;">تاریخ</label>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
+                                <select id="PaymentMethod" name="PaymentMethod" class="form-control text-end">
+                                    <option value="1">نقد (صندوق/تنخواه)</option>
+                                    <option value="2">کارت به کارت / بانکی</option>
+                                    <option value="3">پایا</option>
+                                    <option value="4">ساتنا</option>
+                                    <option value="5">چک پرداختی</option>
+                                    <option value="6">نسیه (بستانکاری تأمین‌کننده)</option>
+                                </select>
+                                <label for="PaymentMethod" style="right:0!important; left:unset!important;">روش پرداخت (صدور سند خودکار)</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mt-2">
+                            <div class="form-group form-floating">
+                                <select id="BankAccountId" name="BankAccountId" class="form-control text-end">
+                                    <option value="">-- انتخاب حساب بانکی / صندوق --</option>
+                                </select>
+                                <label for="BankAccountId" style="right:0!important; left:unset!important;">حساب بانکی / صندوق پرداخت‌کننده</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mt-2">
+                            <div class="form-group form-floating">
+                                <select id="SupplierId" name="SupplierId" class="form-control text-end">
+                                    <option value="">-- بدون تأمین‌کننده (اختیاری) --</option>
+                                </select>
+                                <label for="SupplierId" style="right:0!important; left:unset!important;">طرف‌حساب / تأمین‌کننده (در صورت نسیه)</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mt-2">
+                            <div class="form-group form-floating">
+                                <input class="form-control text-end" id="ReferenceNo" name="ReferenceNo" placeholder="شماره پیگیری / فیش">
+                                <label for="ReferenceNo" style="right:0!important; left:unset!important;">شماره پیگیری / فیش</label>
+                            </div>
                         </div>
                         <div class="col-lg-12 mt-3">
                             <div class="form-group form-floating">
@@ -248,6 +287,32 @@
 
     <script>
         $(document).ready(function () {
+            // بارگذاری حساب‌های بانکی و تأمین‌کنندگان برای اتصال خودکار هزینه به سند حسابداری (فاز ۳)
+            $.ajax({
+                type: 'GET',
+                url: '@ApiAddress' + 'BankAccount/GetAll?tenantId=@ViewBag.TenantId',
+                headers: { "Authorization": "Bearer " + "@User.FindFirstValue("Token")" },
+                success: function (res) {
+                    var list = res.data || res || [];
+                    list.forEach(function (b) {
+                        var title = (b.bankName || b.title || 'حساب') + (b.accountNumber ? ' - ' + b.accountNumber : '');
+                        $('#BankAccountId').append('<option value="' + b.id + '">' + title + '</option>');
+                    });
+                }
+            });
+            $.ajax({
+                type: 'GET',
+                url: '@ApiAddress' + 'Supplier/GetByTenant?tenantId=@ViewBag.TenantId',
+                headers: { "Authorization": "Bearer " + "@User.FindFirstValue("Token")" },
+                success: function (res) {
+                    var list = res.data || res || [];
+                    list.forEach(function (s) {
+                        var name = s.supplierFullName || s.name || ('تأمین‌کننده #' + s.id);
+                        $('#SupplierId').append('<option value="' + s.id + '">' + name + '</option>');
+                    });
+                }
+            });
+
             $('.persian-date').persianDatepicker({
                 format: 'YYYY/MM/DD',
                 autoClose: true,
