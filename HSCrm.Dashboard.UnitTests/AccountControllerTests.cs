@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace HSCrm.Dashboard.UnitTests
@@ -81,8 +83,12 @@ namespace HSCrm.Dashboard.UnitTests
 
             // Assert
             var jsonResult = Assert.IsType<JsonResult>(result);
-            dynamic data = jsonResult.Value;
-            Assert.False((bool)data.success);
+            Assert.NotNull(jsonResult.Value);
+
+            var json = JsonConvert.SerializeObject(jsonResult.Value);
+            var jObj = JObject.Parse(json);
+            Assert.False((bool)jObj["success"]);
+            Assert.Equal("نام کاربری یا رمز عبور اشتباه است.", (string)jObj["message"]);
         }
     }
 }
