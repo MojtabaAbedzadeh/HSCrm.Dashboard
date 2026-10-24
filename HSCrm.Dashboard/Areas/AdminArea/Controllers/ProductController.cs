@@ -1,11 +1,9 @@
-﻿using HSCrm.BussinessLogic.PublicMethod;
+using HSCrm.BussinessLogic.PublicMethod;
 using HSCrm.Dashboard.Controllers;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.Security.Claims;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
@@ -17,18 +15,37 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
         public ProductController(IConfiguration config, GetListApi getListApi) : base(config) 
         {
+            _config = config;
             _getListApi = getListApi;
         }
+
         public async Task<IActionResult> Index()
         {
             string apiUrl = "Product/GetProducts";
-            string token = User.FindFirstValue("Token");
+            try
+            {
+                var json = await _getListApi.GetApiList(apiUrl);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    ViewBag.ErrorMessage = "پاسخی از سرویس محصولات دریافت نشد.";
+                    return View(new List<ProductModel>());
+                }
 
-            var json = await _getListApi.GetApiList(apiUrl);
-            var result = JsonConvert.DeserializeObject<ApiResponse<List<ProductModel>>>(json);
-            var model = result.Data;
+                var result = JsonConvert.DeserializeObject<ApiResponse<List<ProductModel>>>(json);
+                if (result == null || !result.Status)
+                {
+                    ViewBag.ErrorMessage = result?.Message ?? "خطا در بازیابی لیست محصولات.";
+                    return View(new List<ProductModel>());
+                }
 
-            return View(model);
+                var model = result.Data ?? new List<ProductModel>();
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                ViewBag.ErrorMessage = "خطا در ارتباط با سرور: " + ex.Message;
+                return View(new List<ProductModel>());
+            }
         }
     }
 }

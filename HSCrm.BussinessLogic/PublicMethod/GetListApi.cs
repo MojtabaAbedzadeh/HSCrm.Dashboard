@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System.Net;
 using System.Text;
 
@@ -24,11 +24,16 @@ namespace HSCrm.BussinessLogic.PublicMethod
             _httpClientFactory = httpClientFactory;
         }
 
-        public async Task<string> GetApiList(string apiUrl)
+        public virtual async Task<string> GetApiList(string apiUrl)
         {
             var client = _httpClientFactory.CreateClient("ApiClient");
-
             HttpResponseMessage response = await client.GetAsync(apiUrl);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+                throw new UnauthorizedException();
+
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+                throw new AccessDeniedException();
 
             if (response.IsSuccessStatusCode)
             {
@@ -37,14 +42,12 @@ namespace HSCrm.BussinessLogic.PublicMethod
 
             return string.Empty;
         }
-    
-        public async Task<string> PostApi(string endpoint, object model)
+
+        public virtual async Task<string> PostApi(string endpoint, object model)
         {
             var client = _httpClientFactory.CreateClient("ApiClient");
-
             var json = JsonConvert.SerializeObject(model);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-
             HttpResponseMessage response = await client.PostAsync(endpoint, content);
 
             if (response.StatusCode == HttpStatusCode.Forbidden) throw new AccessDeniedException();

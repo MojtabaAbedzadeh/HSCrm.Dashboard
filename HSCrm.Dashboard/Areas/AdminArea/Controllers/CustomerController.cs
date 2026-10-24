@@ -1,4 +1,4 @@
-﻿using HSCrm.BussinessLogic.PublicMethod;
+using HSCrm.BussinessLogic.PublicMethod;
 using HSCrm.Dashboard.Controllers;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
@@ -20,25 +20,50 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         public async Task<IActionResult> Index()
         {
             string apiUrl = "Customer/GetCustomer";
+            try
+            {
+                var json = await _getListApi.GetApiList(apiUrl);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    ViewBag.ErrorMessage = "پاسخی از سرور مشتریان دریافت نشد.";
+                    return View(new List<CustomerModel>());
+                }
 
-            var json = await _getListApi.GetApiList(apiUrl);
-
-            var result = JsonConvert.DeserializeObject<ApiResponse<List<CustomerModel>>>(json);
-            var model = result?.Data;
-
-            return View(model);
+                var result = JsonConvert.DeserializeObject<ApiResponse<List<CustomerModel>>>(json);
+                var model = result?.Data ?? new List<CustomerModel>();
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                ViewBag.ErrorMessage = "خطا در بازیابی لیست مشتریان: " + ex.Message;
+                return View(new List<CustomerModel>());
+            }
         }
 
         public async Task<IActionResult> CustomerProfile(int customerId)
         {
             string apiUrl = $"Customer/GetCustomerById?customerId={customerId}";
+            try
+            {
+                var json = await _getListApi.GetApiList(apiUrl);
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return RedirectToAction(nameof(Index));
+                }
 
-            var json = await _getListApi.GetApiList(apiUrl);
+                var result = JsonConvert.DeserializeObject<ApiResponse<CustomerProfileViewModel>>(json);
+                var model = result?.Data;
+                if (model == null)
+                {
+                    return RedirectToAction(nameof(Index));
+                }
 
-            var result = JsonConvert.DeserializeObject<ApiResponse<CustomerProfileViewModel>>(json);
-            var model = result?.Data;
-
-            return View(model);
+                return View(model);
+            }
+            catch
+            {
+                return RedirectToAction(nameof(Index));
+            }
         }
     }
 }
