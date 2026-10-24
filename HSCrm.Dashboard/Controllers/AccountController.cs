@@ -163,7 +163,7 @@ namespace Automation.Dashboard.Controllers
             return Json(new
             {
                 success = true,
-                fiscalYears = result.FiscalYears ?? new List<FiscalYearDropDown>(),
+                fiscalYears = result.FiscalYears ?? new List<FiscalYearDropDownDto>(),
                 tenantId = result.TenantId,
                 userId = result.UserId
             });
