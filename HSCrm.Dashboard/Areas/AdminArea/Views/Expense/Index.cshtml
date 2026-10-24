@@ -280,14 +280,10 @@
     </div>
 </div>
 @section AdminScripts {
-    <script src="~/lib/sweetalert/sweetalert2.min.js"></script>
-    <script src="~/lib/sweetalert/sweetalert2.js"></script>
     <script src="~/lib/persiandate/persian-date.js"></script>
     <script src="~/lib/persiandate/persian-datepicker.js"></script>
-
     <script>
         $(document).ready(function () {
-            // بارگذاری حساب‌های بانکی و تأمین‌کنندگان برای اتصال خودکار هزینه به سند حسابداری (فاز ۳)
             $.ajax({
                 type: 'GET',
                 url: '@ApiAddress' + 'BankAccount/GetAll?tenantId=@ViewBag.TenantId',
@@ -312,7 +308,6 @@
                     });
                 }
             });
-
             $('.persian-date').persianDatepicker({
                 format: 'YYYY/MM/DD',
                 autoClose: true,
@@ -321,12 +316,21 @@
                     "format": "MMMM"
                 },
             });
-        })
+        });
     </script>
-
     <script>
         $("#btnExpenseSubmit").on('click', function (e) {
             e.preventDefault();
+            var title = $("#ExpenseTitle").val();
+            var amount = $("#Amount").val();
+            if (!title || title.trim() === "") {
+                SwalHelper.warning("لطفاً عنوان هزینه را وارد نمایید!");
+                return false;
+            }
+            if (!amount || Number(amount) <= 0) {
+                SwalHelper.warning("لطفاً مبلغ معتبر برای هزینه وارد نمایید!");
+                return false;
+            }
             var formData = new FormData($("#frmExpense")[0]);
             $.ajax({
                 type: 'POST',
@@ -339,63 +343,18 @@
                     "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
                 },
                 success: function (xhr) {
-                    if (xhr.statusCode == 200) {
-                                swal.fire({
-            title: "ثبت اطلاعات",
-            text: "ثبت اطلاعات با موفقیت انجام شد!",
-            icon: "success",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
+                    SwalHelper.handleResponse(xhr, "ثبت هزینه با موفقیت انجام شد!", function () {
                         $('#addExpense').modal('hide');
                         window.location.reload();
-                    }
-                    if (xhr.statusCode == 500) {
-                                 swal.fire({
-            title: "خطا",
-            text: "خطا در سرور!",
-            icon: "warning",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-                    } else if (xhr.statusCode == 400) {
-                                swal.fire({
-            title: "خطا",
-            text: "پارامترهای ارسالی معتبر نیست!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-                    }
-                    else if (xhr.statusCode == 409) {
-                                swal.fire({
-            title: "خطا",
-            text: "اطلاعات تکراری می‌باشد!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-                    }
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ثبت هزینه";
+                    SwalHelper.error(msg);
                 }
             });
         });
     </script>
-
     <script>
         function showUpdateModal(expenseId) {
             $.ajax({
@@ -406,30 +365,37 @@
                     "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
                 },
                 success: function (xhr) {
-                    const expense = xhr.data[0];
-
-                    $("#expenseId").val(expense.expenseId);
-                    $("#ExpenseTitleE").val(expense.expenseTitle);
-                    $("#ProjectIdE").val(expense.projectId);
-                    $("#TypeE").val(expense.type);
-                    $("#AmountE").val(expense.amount);
-                    $("#DescriptionE").val(expense.description);
-                    $("#TenantIdE").val(expense.tenantId);
-                    $("#ExpenseDateE").val(expense.expenseDate);
-                    $("#PaymentStatusE").val(expense.paymentStatus);
-                    $("#PaidAmountE").val(expense.paidAmount);
-                    $("#PaymentMethodE").val(expense.paymentMethod);
-                    $("#ReferenceNoE").val(expense.referenceNo);
-
-
-                    $("#editExpense").modal('show');
+                    if (xhr && xhr.data && xhr.data.length > 0) {
+                        const expense = xhr.data[0];
+                        $("#expenseId").val(expense.expenseId);
+                        $("#ExpenseTitleE").val(expense.expenseTitle);
+                        $("#ProjectIdE").val(expense.projectId);
+                        $("#TypeE").val(expense.type);
+                        $("#AmountE").val(expense.amount);
+                        $("#DescriptionE").val(expense.description);
+                        $("#TenantIdE").val(expense.tenantId);
+                        $("#ExpenseDateE").val(expense.expenseDate);
+                        $("#PaymentStatusE").val(expense.paymentStatus);
+                        $("#PaidAmountE").val(expense.paidAmount);
+                        $("#PaymentMethodE").val(expense.paymentMethod);
+                        $("#ReferenceNoE").val(expense.referenceNo);
+                        $("#editExpense").modal('show');
+                    } else {
+                        SwalHelper.error("اطلاعات هزینه یافت نشد.");
+                    }
+                },
+                error: function () {
+                    SwalHelper.error("خطا در بازیابی اطلاعات هزینه.");
                 }
             });
         }
-
         $("#btnExpenseUpdate").on('click', function (e) {
             e.preventDefault();
-
+            var title = $("#ExpenseTitleE").val();
+            if (!title || title.trim() === "") {
+                SwalHelper.warning("لطفاً عنوان هزینه را وارد نمایید!");
+                return false;
+            }
             var model = {
                 expenseId: $("#expenseId").val(),
                 expenseTitle: $("#ExpenseTitleE").val(),
@@ -444,12 +410,11 @@
                 paymentMethod: $("#PaymentMethodE").val(),
                 referenceNo: $("#ReferenceNoE").val(),
                 modifiedById: $("#ModifiedByIdE").val()
-            }
-
+            };
             $.ajax({
                 type: 'PUT',
                 url: '@ApiAddress' + 'Expense/UpdateExpense',
-                dataType: 'Json',
+                dataType: 'json',
                 contentType: 'application/json',
                 processData: false,
                 data: JSON.stringify(model),
@@ -457,92 +422,49 @@
                     "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
                 },
                 success: function (xhr) {
-                    if (xhr.statusCode == '200') {
-                                swal.fire({
-            title: "ویرایش اطلاعات",
-            text: "ویرایش هزینه با موفقیت انجام شد!",
-            icon: "success",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
+                    SwalHelper.handleResponse(xhr, "ویرایش هزینه با موفقیت انجام شد!", function () {
+                        $('#editExpense').modal('hide');
                         window.location.reload();
-                    }
-                    if (xhr.statusCode == '400') {
-                                swal.fire({
-            title: "خطا",
-            text: "پارامترهای ارسالی معتبر!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-                    } else if (xhr.statusCode == '409') {
-                               swal.fire({
-            title: "خطا",
-            text: "اطلاعات تکراری می‌باشد!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-                    }
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ویرایش هزینه";
+                    SwalHelper.error(msg);
                 }
             });
-        })
-    </script>
-
-    <script>
-                function calcExpenseRemaining() {
+        });
+        function calcExpenseRemaining() {
             var amount = parseFloat($("#Amount").val() || 0);
             var paidAmount = parseFloat($("#PaidAmount").val() || 0);
-
             if ($("#PaymentStatus").val() == "0") {
                 $("#PaidAmount").val(0);
                 $("#PaymentMethod").val("");
                 $("#ReferenceNo").val("");
                 paidAmount = 0;
             }
-
             if ($("#PaymentStatus").val() == "2") {
                 $("#PaidAmount").val(amount);
                 paidAmount = amount;
             }
-
             if (paidAmount > amount) {
                 $("#PaidAmount").val(amount);
                 paidAmount = amount;
             }
-
             $("#RemainingAmount").val(amount - paidAmount);
         }
-
         $("#Amount, #PaidAmount, #PaymentStatus").on("input change", function () {
             calcExpenseRemaining();
         });
-
         $("#PaymentStatus").on("change", function () {
             var status = $(this).val();
-
             if (status == "0") {
                 $("#PaidAmount").val(0);
                 $("#PaymentMethod").val("");
                 $("#ReferenceNo").val("");
-            }
-            else if (status == "2") {
+            } else if (status == "2") {
                 $("#PaidAmount").val($("#Amount").val() || 0);
             }
-
             calcExpenseRemaining();
         });
-
     </script>
 }

@@ -393,104 +393,19 @@ $('#btnRegInvoice').on('click', function () {
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(model),
-
         success: function (status) {
-            if (status.status === true) {
-                swal.fire({
-                    title: "موفق",
-                    text: "فاکتور با موفقیت ثبت شد",
-                    icon: "success",
-                    confirmButtonColor: "green",
-                    confirmButtonText: "باشه",
-                    showConfirmButton: true,
-                    timer: 1500,
-                    allowOutsideClick: false
-                });
-
+            SwalHelper.handleResponse(status, "فاکتور فروش با موفقیت ثبت شد", function () {
                 window.location.href = '/AdminArea/Invoice/SalesInvoice';
-
-                return;
-            }
-
-            switch (status.statusCode) {
-                case 204:
-                    swal.fire({
-                        title: "اطلاعات ناقص",
-                        text: "آیتمی برای ثبت وجود ندارد",
-                        icon: "warning",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        showConfirmButton: true,
-                        timer: 1500,
-                        allowOutsideClick: false
-                    });
-                    break;
-
-                case 400:
-                    swal.fire({
-                        title: "درخواست نامعتبر",
-                        text: "اطلاعات ارسالی صحیح نیست",
-                        icon: "warning",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        showConfirmButton: true,
-                        timer: 1500,
-                        allowOutsideClick: false
-                    });
-                    break;
-
-                case 403:
-                    swal.fire({
-                        title: "عدم دسترسی",
-                        text: "شما مجاز به انجام این عملیات نیستید",
-                        icon: "error",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        showConfirmButton: true,
-                        timer: 1500,
-                        allowOutsideClick: false
-                    });
-                    break;
-
-                case 404:
-                    swal.fire({
-                        title: "یافت نشد",
-                        text: "رکورد مورد نظر یافت نشد",
-                        icon: "error",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        showConfirmButton: true,
-                        timer: 1500,
-                        allowOutsideClick: false
-                    });
-                    break;
-
-                case 406:
-                    swal.fire({
-                        title: "کمبود موجودی",
-                        text: "موجودی محصول کافی نمی‌باشد!",
-                        icon: "warning",
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        showConfirmButton: true,
-                        timer: 1500,
-                        allowOutsideClick: false
-                    });
-                    break;
-            }
-        },
-
-        error: function () {
-            swal.fire({
-                title: "خطای ارتباط با سرور",
-                text: "امکان ارتباط با سرور وجود ندارد، لطفاً مجدداً تلاش کنید",
-                icon: "error",
-                confirmButtonColor: "green",
-                confirmButtonText: "باشه",
-                showConfirmButton: true,
-                timer: 1500,
-                allowOutsideClick: false
             });
+        },
+        error: function (xhr) {
+            let errorMsg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : "امکان ارتباط با سرور وجود ندارد، لطفاً مجدداً تلاش کنید";
+            if (xhr.status === 409) {
+                errorMsg = (xhr.responseJSON && xhr.responseJSON.message) || "شماره فاکتور تکراری است!";
+            } else if (xhr.status === 406) {
+                errorMsg = (xhr.responseJSON && xhr.responseJSON.message) || "موجودی کالا در انبار کافی نیست!";
+            }
+            SwalHelper.error(errorMsg, "خطا در ثبت فاکتور");
         }
     });
 });

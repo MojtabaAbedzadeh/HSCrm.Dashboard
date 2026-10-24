@@ -50,44 +50,57 @@
 
 <script>
     function checkUser() {
-        const user = document.getElementById("UserName").value;
-        const pass = document.getElementById("Password").value;
-
+        const user = (document.getElementById("UserName").value || "").trim();
+        const pass = (document.getElementById("Password").value || "").trim();
         if (!user || !pass) {
-            showError("لطفا نام کاربری و رمز عبور را وارد کنید.");
+            showError("لطفاً نام کاربری و رمز عبور را وارد کنید.");
+            if (window.SwalHelper) {
+                SwalHelper.warning("لطفاً نام کاربری و رمز عبور را وارد نمایید.", "اطلاعات ناقص");
+            }
             return;
         }
-
-        // ارسال درخواست برای چک کردن کاربر و گرفتن سال‌های مالی
-        fetch(`/Account/CheckUserAndGetFiscals?userName=${user}&password=${pass}`, { method: 'POST' })
-            .then(res => res.json())
+        fetch(`/Account/CheckUserAndGetFiscals?userName=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`, { method: 'POST' })
+            .then(res => {
+                if (!res.ok) throw new Error("خطای ارتباط با سرور");
+                return res.json();
+            })
             .then(data => {
-                if (data.success) {
-                    // پر کردن Dropdown سال مالی
+                if (data && data.success) {
                     const select = document.getElementById("FiscalYearId");
                     select.innerHTML = "";
-                    data.fiscalYears.forEach(item => {
+                    (data.fiscalYears || []).forEach(item => {
                         let opt = document.createElement('option');
                         opt.value = item.drId;
                         opt.innerHTML = item.drName;
                         select.appendChild(opt);
                     });
-
-                    console.log(data.fiscalYears);
-
-                    // جابجایی بین مراحل
                     document.getElementById("step1").style.display = "none";
                     document.getElementById("step2").style.display = "block";
                     document.getElementById("errorMsg").style.display = "none";
+                    if (window.SwalHelper) {
+                        SwalHelper.toast("کاربر تأیید شد. لطفاً سال مالی را انتخاب نمایید.", "success");
+                    }
                 } else {
-                    showError(data.message);
+                    const msg = (data && data.message) || "نام کاربری یا رمز عبور اشتباه است.";
+                    showError(msg);
+                    if (window.SwalHelper) {
+                        SwalHelper.error(msg, "عدم ورود");
+                    }
+                }
+            })
+            .catch(err => {
+                const msg = err.message || "خطا در برقراری ارتباط با سرور.";
+                showError(msg);
+                if (window.SwalHelper) {
+                    SwalHelper.error(msg, "خطای ارتباط");
                 }
             });
     }
-
     function showError(msg) {
         const err = document.getElementById("errorMsg");
-        err.innerHTML = msg;
-        err.style.display = "block";
+        if (err) {
+            err.innerHTML = msg;
+            err.style.display = "block";
+        }
     }
 </script>

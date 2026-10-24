@@ -121,7 +121,7 @@
     </div>
 </div>
 @section AdminScripts {
-    <script src="~/lib/sweetalert/sweetalert2.js"></script>
+    
     <script>
         function confirmInvoice(invoiceId) {
                     swal.fire({
@@ -141,7 +141,7 @@
 
                 var formData = new FormData();
                 formData.append("invoiceId", invoiceId);
-                console.log(onformdata);
+                console.log("Submitting confirmation:", invoiceId);
                 $.ajax({
                     type: 'POST',
                     url: '@ApiAddress' + 'SalesInvoice/ConfirmInvoice',

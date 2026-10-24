@@ -369,41 +369,16 @@ $('#btnRegInvoice').on('click', function () {
         data: JSON.stringify(model),
         headers: { 'Authorization': 'Bearer ' + Token },
         success: function (status) {
-            if (status.status === true) {
-                swal.fire({
-                    title: "موفق",
-                    text: "فاکتور با موفقیت ثبت شد",
-                    icon: "success",
-                    confirmButtonColor: "green",
-                    confirmButtonText: "باشه",
-                    showConfirmButton: true,
-                    timer: 1500,
-                    allowOutsideClick: false
-                });
-                return;
-            }
-
-            swal.fire({
-                title: "خطا",
-                text: status.message || "ثبت فاکتور انجام نشد",
-                icon: "error",
-                confirmButtonColor: "green",
-                confirmButtonText: "باشه",
-                showConfirmButton: true,
-                timer: 1500,
-                allowOutsideClick: false
+            SwalHelper.handleResponse(status, "فاکتور خرید با موفقیت ثبت شد", function () {
+                window.location.href = '/AdminArea/Invoice/PurchaseInvoice';
             });
         },
-        error: function () {
-            swal.fire({
-                title: "خطای ارتباط با سرور",
-                text: "امکان ارتباط با سرور وجود ندارد، لطفاً مجدداً تلاش کنید",
-                icon: "error",
-                confirmButtonColor: "green",
-                showConfirmButton: true,
-                timer: 1500,
-                allowOutsideClick: false
-            });
+        error: function (xhr) {
+            let errorMsg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : "امکان ارتباط با سرور وجود ندارد، لطفاً مجدداً تلاش کنید";
+            if (xhr.status === 409) {
+                errorMsg = (xhr.responseJSON && xhr.responseJSON.message) || "شماره فاکتور تکراری است!";
+            }
+            SwalHelper.error(errorMsg, "خطا در ثبت فاکتور خرید");
         }
     });
 

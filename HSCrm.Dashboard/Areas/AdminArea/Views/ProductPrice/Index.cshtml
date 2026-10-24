@@ -231,25 +231,70 @@
     </div>
 }
 @section AdminScripts {
-    <script src="~/lib/sweetalert/sweetalert2.min.js"></script>
-    <script src="~/lib/sweetalert/sweetalert2.js"></script>
-    <!--Show add price modal-->
+    <script src="~/lib/persiandate/persian-date.js"></script>
+    <script src="~/lib/persiandate/persian-datepicker.js"></script>
     <script>
+        $(document).ready(function () {
+            $('.persian-date').persianDatepicker({
+                format: 'YYYY/MM/DD',
+                autoClose: true,
+                calendarSwitch: {
+                    "enabled": false,
+                    "format": "MMMM"
+                },
+            });
+        });
         function showInsertPriceModel(productId, productTitle) {
             $("#ProductId").val(productId);
             $("#productTitle").text('درج قیمت برای ' + productTitle);
-
             $("#addNewPriceModal").modal('show');
         }
-    </script>
-
-    <script>
+        $("#btnPriceSubmit").on('click', function (e) {
+            e.preventDefault();
+            var buyPrice = $("#BuyPrice").val();
+            var sellPrice = $("#SellPrice").val();
+            var actionDate = $("#ActionDate").val();
+            if (!buyPrice || !sellPrice || !actionDate) {
+                SwalHelper.warning("لطفاً قیمت خرید، قیمت فروش و تاریخ اعمال را به صورت کامل وارد نمایید!");
+                return false;
+            }
+            var formData = new FormData($("#frmPrice")[0]);
+            $.ajax({
+                type: 'POST',
+                url: '@ApiAddress' + 'ProductPrice/CreatePrice',
+                processData: false,
+                contentType: false,
+                dataType: "json",
+                data: formData,
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
+                success: function (xhr) {
+                    SwalHelper.handleResponse(xhr, "قیمت جدید با موفقیت ثبت شد!", function () {
+                        $('#addNewPriceModal').modal('hide');
+                        window.location.reload();
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ثبت قیمت جدید";
+                    SwalHelper.error(msg);
+                }
+            });
+        });
         $("#btnProductSubmit").on('click', function (e) {
             e.preventDefault();
+            var title = $("#ProductTitle").val();
+            var unit = $("#ProductUnit").val();
+            if (!title || title.trim() === "") {
+                SwalHelper.warning("لطفاً عنوان محصول را وارد نمایید!");
+                return false;
+            }
+            if (!unit || unit.trim() === "") {
+                SwalHelper.warning("لطفاً واحد محصول را وارد نمایید!");
+                return false;
+            }
             var formData = new FormData($("#frmProduct")[0]);
-
             formData.set("IsActive", $("#IsActive").is(":checked"));
-
             $.ajax({
                 type: 'POST',
                 url: '@ApiAddress' + 'Product/CreateProduct',
@@ -257,97 +302,80 @@
                 contentType: false,
                 dataType: "json",
                 data: formData,
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
-                    if (xhr.statusCode == 200) {
-                        // ثبت موفق اطلاعات
-                        window.location.reload();
+                    SwalHelper.handleResponse(xhr, "محصول با موفقیت ثبت شد!", function () {
                         $('#addProduct').modal('hide');
-                        $('#ProductTitle').val("");
-                        $('#ProductUnit').val("");
-                        $('#chkActive').val("");
-                    }
-                    if (xhr.statusCode == 500) {
-                        $("#spnValidate").text("خطایی در انجام عملیات رخ داده است!");
-                        return false;
-                    } else if (xhr.statusCode == 400) {
-                        $("#spnValidate").text("لطفا اطلاعات را کامل وارد نمائید!");
-                        return false;
-                    }
+                        window.location.reload();
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ثبت محصول";
+                    SwalHelper.error(msg);
                 }
             });
         });
-
-    </script>
-
-    <script>
         function showUpdateModal(productId) {
             $.ajax({
                 type: 'GET',
                 url: '@ApiAddress' + 'Product/GetById?productId=' + productId,
                 dataType: 'json',
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
-                    $("#ProductId").val(xhr.data.id);
-                    $("#ProductTitleU").val(xhr.data.productTitle);
-                    $("#ProductUnitU").val(xhr.data.productUnit);
-                    $("#IsActiveU").prop("checked", xhr.data.isActive);
-
-                    $("#editProduct").modal('show');
+                    if (xhr && xhr.data) {
+                        $("#ProductId").val(xhr.data.id);
+                        $("#ProductTitleU").val(xhr.data.productTitle);
+                        $("#ProductUnitU").val(xhr.data.productUnit);
+                        $("#IsActiveU").prop("checked", xhr.data.isActive);
+                        $("#editProduct").modal('show');
+                    } else {
+                        SwalHelper.error("اطلاعات محصول یافت نشد.");
+                    }
+                },
+                error: function () {
+                    SwalHelper.error("خطا در بازیابی اطلاعات محصول.");
                 }
             });
         }
-
         $("#btnProductUpdate").on('click', function (e) {
             e.preventDefault();
-
+            var title = $("#ProductTitleU").val();
+            if (!title || title.trim() === "") {
+                SwalHelper.warning("عنوان محصول را وارد نمایید!");
+                return false;
+            }
             var model = {
                 productId: $("#ProductId").val(),
                 productTitle: $("#ProductTitleU").val(),
                 productUnit: $("#ProductUnitU").val(),
                 isActive: $("#IsActiveU").is(":checked"),
                 modifiedById: '@valUserId'
-            }
-
-            console.log($("#IsActiveU").is(":checked"));
-
+            };
             $.ajax({
                 type: 'PUT',
                 url: '@ApiAddress' + 'Product/UpdateProduct',
-                dataType: 'Json',
+                dataType: 'json',
                 contentType: 'application/json',
                 processData: false,
                 data: JSON.stringify(model),
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
                 success: function (xhr) {
-                    if (xhr.statusCode == '200') {
-                        Swal.fire({
-                            position: "center",
-                            icon: "success",
-                            title: "ویرایش محصول با موفقیت انجام شد",
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
+                    SwalHelper.handleResponse(xhr, "ویرایش محصول با موفقیت انجام شد!", function () {
+                        $('#editProduct').modal('hide');
                         window.location.reload();
-                    }
-                    if (xhr.statusCode == '400') {
-                        Swal.fire({
-                            position: "center",
-                            icon: "error",
-                            title: "پارامترهای ارسالی معتبر نیست!",
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
-                        return false;
-                    } else if (xhr.statusCode == '409') {
-                        Swal.fire({
-                            position: "center",
-                            icon: "error",
-                            title: "اطلاعات تکراری می‌باشد!",
-                            showConfirmButton: false,
-                            timer: 1500
-                        });
-                        return false;
-                    }
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ویرایش محصول";
+                    SwalHelper.error(msg);
                 }
             });
-        })
+        });
     </script>
 }

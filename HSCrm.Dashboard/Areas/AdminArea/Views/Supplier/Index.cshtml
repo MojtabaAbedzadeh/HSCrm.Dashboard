@@ -249,10 +249,14 @@
 </div>
 
 @section AdminScripts {
-    <script src="~/lib/sweetalert/sweetalert2.js"></script>
     <script>
         $("#btnSupplierSubmit").on('click', function (e) {
             e.preventDefault();
+            var fullName = $("#SupplierFullName").val();
+            if (!fullName || fullName.trim() === "") {
+                SwalHelper.warning("لطفاً نام تأمین‌کننده را وارد نمایید.");
+                return false;
+            }
             var formData = new FormData($("#frmSupplier")[0]);
             $.ajax({
                 type: 'POST',
@@ -265,80 +269,35 @@
                     Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
                 },
                 success: function (xhr) {
-                    if (xhr.statusCode == 200) {
-                        // ثبت موفق اطلاعات
-                                swal.fire({
-            title: "ثبت اطلاعات",
-            text: "ثبت اطلاعات با موفقیت انجام شد!",
-            icon: "success",
-            position: "center",
-            showConfirmButton: false,
-            timer: 1500
-        });
+                    SwalHelper.handleResponse(xhr, "ثبت اطلاعات با موفقیت انجام شد!", function () {
                         $('#addSupplier').modal('hide');
                         window.location.reload();
-                    }
-                    if (xhr.statusCode == 500) {
-                                swal.fire({
-            title: "خطا",
-            text: "در سرور خطایی رخ داده است!",
-            icon: "error",
-            position: "center",
-            showConfirmButton: false,
-            timer: 1500
-        });
-                        return false;
-                    } else if (xhr.statusCode == 400) {
-                                swal.fire({
-            title: "خطا",
-            text: "پارامترهای ارسالی معتبر نیست!",
-            icon: "error",
-            position: "center",
-            showConfirmButton: false,
-            timer: 1500
-        });
-                        return false;
-                    }
-                    else if (xhr.statusCode == 409) {
-                                swal.fire({
-            title: "خطا",
-            text: "اطلاعات تکراری می‌باشد!",
-            icon: "error",
-            position: "center",
-            showConfirmButton: false,
-            timer: 1500
-        });
-                        return false;
-                    }
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ثبت اطلاعات تأمین‌کننده";
+                    SwalHelper.error(msg);
                 }
             });
         });
-
     </script>
-
     <script>
         $(document).ready(function () {
             $('.btn-show-financial').on('click', function () {
                 var supplierId = $(this).data('id');
-
-                // نمایش لودینگ یا شروع درخواست Ajax
                 $.ajax({
-                    url: '@ApiAddress' + 'Supplier/GetFinancialProfile/' + supplierId, // آدرس کنترلر خودت
+                    url: '@ApiAddress' + 'Supplier/GetFinancialProfile/' + supplierId,
                     type: 'GET',
-                     headers: {
+                    headers: {
                         Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
                     },
                     success: function (response) {
                         if (response.status) {
                             var data = response.data;
-
-                            // پر کردن هدر و خلاصه‌ها
                             $('#lblSupplierName').text(data.supplierName);
                             $('#lblTotalInvoices').text(formatCurrency(data.totalInvoices));
                             $('#lblTotalPayments').text(formatCurrency(data.totalPayments));
                             $('#lblBalanceDue').text(formatCurrency(Math.abs(data.balanceDue)));
-
-                            // تغییر رنگ وضعیت مانده بدهی بر اساس مثبت یا منفی بودن بدهی
                             if (data.balanceDue > 0) {
                                 $('#cardBalanceDue').removeClass('bg-light bg-success text-white').addClass('bg-danger text-white');
                                 $('#lblBalanceDue').append(' (بدهکار)');
@@ -349,14 +308,12 @@
                                 $('#cardBalanceDue').removeClass('bg-danger bg-success text-white').addClass('bg-light text-dark');
                                 $('#lblBalanceDue').append(' (تسویه)');
                             }
-
-                            // پر کردن جدول فاکتورها
                             var invoiceRows = '';
-                            if (data.invoices.length > 0) {
+                            if (data.invoices && data.invoices.length > 0) {
                                 $.each(data.invoices, function (i, item) {
                                     invoiceRows += `<tr>
                                         <td>${item.invoiceNumber}</td>
-                                        <td>${item.invoiceDate}</td> <!-- در صورت نیاز مبدل تاریخ شمسی اضافه شود -->
+                                        <td>${item.invoiceDate}</td>
                                         <td>${formatCurrency(item.totalAmount)} ریال</td>
                                         <td>${item.description || '-'}</td>
                                     </tr>`;
@@ -365,10 +322,8 @@
                                 invoiceRows = '<tr><td colspan="4" class="text-center">هیچ فاکتوری یافت نشد.</td></tr>';
                             }
                             $('#tblInvoices tbody').html(invoiceRows);
-
-                            // پر کردن جدول پرداخت‌ها
                             var paymentRows = '';
-                            if (data.payments.length > 0) {
+                            if (data.payments && data.payments.length > 0) {
                                 $.each(data.payments, function (i, item) {
                                     paymentRows += `<tr>
                                         <td>${formatCurrency(item.amount)} ریال</td>
@@ -381,44 +336,24 @@
                                 paymentRows = '<tr><td colspan="4" class="text-center">هیچ پرداختی یافت نشد.</td></tr>';
                             }
                             $('#tblPayments tbody').html(paymentRows);
-
-                            // باز کردن مودال
                             $('#financialModal').modal('show');
                         } else {
-                                   swal.fire({
-            title: "خطا",
-            text: "خطایی رخ داده است!",
-            icon: "error",
-            position: "center",
-            showConfirmButton: false,
-            timer: 1500
-        });
+                            SwalHelper.error(response.message || "خطایی در دریافت اطلاعات رخ داده است!");
                         }
                     },
-                    error: function () {
-                                swal.fire({
-            title: "خطا",
-            text: "خطای ارتباط با سرور!",
-            icon: "error",
-            position: "center",
-            showConfirmButton: false,
-            timer: 1500
-        });
+                    error: function (xhr) {
+                        var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطای ارتباط با سرور!";
+                        SwalHelper.error(msg);
                     }
                 });
             });
-
-            // تابع کمکی فرمت‌دهی به اعداد ریالی/تومانی
             function formatCurrency(amount) {
                 return new Intl.NumberFormat('fa-IR').format(amount);
             }
         });
-
     </script>
-
     <script>
         function showUpdateModal(supplierId) {
-
             $.ajax({
                 type: 'GET',
                 url: '@ApiAddress' + 'Supplier/GetById?supplierId=' + supplierId,
@@ -427,31 +362,39 @@
                     Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
                 },
                 success: function (xhr) {
-                    $("#supplierId").val(xhr.data.id);
-                    $("#SupplierFullNameU").val(xhr.data.supplierFullName);
-                    $("#SupplierAddressU").val(xhr.data.supplierAddress);
-                    $("#SupplierPhoneU").val(xhr.data.supplierPhone);
-
-                    $("#editSupplier").modal('show');
+                    if (xhr && xhr.data) {
+                        $("#supplierId").val(xhr.data.id);
+                        $("#SupplierFullNameU").val(xhr.data.supplierFullName);
+                        $("#SupplierAddressU").val(xhr.data.supplierAddress);
+                        $("#SupplierPhoneU").val(xhr.data.supplierPhone);
+                        $("#editSupplier").modal('show');
+                    } else {
+                        SwalHelper.error("اطلاعات تأمین‌کننده یافت نشد.");
+                    }
+                },
+                error: function () {
+                    SwalHelper.error("خطا در بازیابی اطلاعات تأمین‌کننده از سرور.");
                 }
             });
         }
-
         $("#btnSupplierUpdate").on('click', function (e) {
             e.preventDefault();
-
+            var fullName = $("#SupplierFullNameU").val();
+            if (!fullName || fullName.trim() === "") {
+                SwalHelper.warning("لطفاً نام تأمین‌کننده را وارد نمایید.");
+                return false;
+            }
             var model = {
                 SupplierId: $("#supplierId").val(),
                 SupplierFullName: $("#SupplierFullNameU").val(),
                 SupplierAddress: $("#SupplierAddressU").val(),
                 SupplierPhone: $("#SupplierPhoneU").val(),
                 ModifiedById: $("#ModifiedByIdU").val(),
-            }
-
+            };
             $.ajax({
                 type: 'PUT',
                 url: '@ApiAddress' + 'Supplier/UpdateSupplier',
-                dataType: 'Json',
+                dataType: 'json',
                 contentType: 'application/json',
                 processData: false,
                 data: JSON.stringify(model),
@@ -459,41 +402,16 @@
                     Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
                 },
                 success: function (xhr) {
-                    if (xhr.statusCode == '200') {
-                                swal.fire({
-            title: "ویرایش اطلاعات",
-            text: "ویرایش اطلاعات با موفقیت انجام شد!",
-            icon: "success",
-            position: "center",
-            showConfirmButton: false,
-            timer: 1500
-        });
-                         $('#editSupplier').modal('hide');
+                    SwalHelper.handleResponse(xhr, "ویرایش اطلاعات با موفقیت انجام شد!", function () {
+                        $('#editSupplier').modal('hide');
                         window.location.reload();
-                    }
-                    if (xhr.statusCode == '400') {
-                                swal.fire({
-            title: "خطا",
-            text: "پارامترهای ارسالی معتبر نیست!",
-            icon: "error",
-            position: "center",
-            showConfirmButton: false,
-            timer: 1500
-        });
-                        return false;
-                    } else if (xhr.statusCode == '409') {
-                               swal.fire({
-            title: "خطا",
-            text: "اطلاعات تکراری می‌باشد!",
-            icon: "error",
-            position: "center",
-            showConfirmButton: false,
-            timer: 1500
-        });
-                        return false;
-                    }
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ویرایش اطلاعات تأمین‌کننده";
+                    SwalHelper.error(msg);
                 }
             });
-        })
+        });
     </script>
 }

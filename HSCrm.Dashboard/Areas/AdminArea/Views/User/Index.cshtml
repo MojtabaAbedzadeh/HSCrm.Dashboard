@@ -326,6 +326,14 @@
     <script>
         $("#btnUserSubmit").on('click', function (e) {
             e.preventDefault();
+            var firstName = $("#UserFirstName").val();
+            var lastName = $("#UserLastName").val();
+            var userName = $("#UserName").val();
+            var password = $("#Password").val();
+            if (!firstName || !lastName || !userName || !password) {
+                SwalHelper.warning("لطفاً نام، نام خانوادگی، نام کاربری و کلمه عبور را تکمیل نمایید!");
+                return false;
+            }
             var formData = new FormData($("#frmUser")[0]);
             $.ajax({
                 type: 'POST',
@@ -338,117 +346,20 @@
                     "Authorization": "Bearer " + "@token"
                 },
                 success: function (xhr) {
-                    if (xhr.statusCode == 200) {
-                        swal.fire({
-                            title: "ثبت اطلاعات",
-                            text: "ثبت اطلاعات با موفقیت انجام شد!",
-                            icon: 'success',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            timer: 1500
-                        });
+                    SwalHelper.handleResponse(xhr, "کاربر با موفقیت ثبت شد!", function () {
                         $('#addUser').modal('hide');
                         window.location.reload();
-                    }
-                    else if (xhr.statusCode == 500) {
-                        swal.fire({
-                            title: "خطا",
-                            text: "خطا در سرور!",
-                            icon: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
-                        return false;
-                    }
-                    else if (xhr.statusCode == 400) {
-                        swal.fire({
-                            title: "اطلاعات نامعتبر",
-                            text: "پارامترهای ارسالی معتبر نیست!",
-                            icon: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
-                        return false;
-                    }
-                    else if (xhr.statusCode == 409) {
-                        swal.fire({
-                            title: "اطلاعات تکراری",
-                            text: "اطلاعات وارد شده تکراری می‌باشد!",
-                            icon: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
-                        return false;
-                    }
-                    else if (xhr.status === 401) {
-                        swal.fire({
-                            title: "مجوز دسترسی",
-                            text: "شما برای انجام این عملیات دسترسی لازم را ندارید!",
-                            icon: 'warning',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
-                    }
+                    });
                 },
                 error: function (xhr) {
-                    if (xhr.statusCode == 500) {
-                        swal.fire({
-                            title: "خطا",
-                            text: "خطا در سرور!",
-                            icon: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
-                        return false;
-                    } else if (xhr.statusCode == 400) {
-                        swal.fire({
-                            title: "اطلاعات نامعتبر",
-                            text: "پارامترهای ارسالی معتبر نیست!",
-                            icon: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
-                        return false;
-                    }
-                    else if (xhr.statusCode == 409) {
-                        swal.fire({
-                            title: "اطلاعات تکراری",
-                            text: "اطلاعات تکراری می‌باشد!",
-                            icon: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
-                        return false;
-                    }
-                    else if (xhr.status === 401) {
-                        swal.fire({
-                            title: "مجوز دسترسی",
-                            text: "شما برای انجام این عملیات دسترسی لازم را ندارید!",
-                            icon: 'error',
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                        });
-                    }
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ثبت کاربر";
+                    SwalHelper.error(msg);
                 }
             });
         });
-
-    </script>
-    <script>
         function openRoleModal(userId, firstName, lastName) {
-
             $("#roleUserId").val(userId);
             $("#roleUserName").val(firstName + " " + lastName);
-
             $.ajax({
                 type: 'GET',
                 url: '@ApiAddress' + 'Role/GetUserRole?userId=' + userId,
@@ -457,61 +368,50 @@
                     "Authorization": "Bearer " + "@token"
                 },
                 success: function (xhr) {
-                    $("#roleSelect").val(xhr.data.roleId);
+                    if (xhr && xhr.data) {
+                        $("#roleSelect").val(xhr.data.roleId);
+                    }
                     var modal = new bootstrap.Modal(document.getElementById('roleModal'));
                     modal.show();
+                },
+                error: function () {
+                    SwalHelper.error("خطا در بارگذاری نقش‌های کاربر.");
                 }
             });
         }
         function saveUserRole() {
             var roleId = $("#roleSelect").val();
-
-            if (roleId == "") {
-                swal.fire({
-                    title: "خطا",
-                    text: "لطفا یک نقش انتخاب کنید",
-                    icon: "warning"
-                });
+            if (!roleId) {
+                SwalHelper.warning("لطفاً یک نقش انتخاب کنید");
                 return;
             }
-
             var model = {
                 userId: $("#roleUserId").val(),
                 roleId: $("#roleSelect").val()
-            }
-
+            };
             $.ajax({
                 type: "POST",
                 url: '@ApiAddress' + 'User/AssignRole',
-                dataType: 'Json',
+                dataType: 'json',
                 contentType: 'application/json',
                 processData: false,
                 data: JSON.stringify(model),
                 headers: {
                     "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
                 },
-                success: function () {
-                    swal.fire({
-                        title: "موفق",
-                        text: "نقش کاربر ثبت شد",
-                        icon: "success",
-                        timer: 1500
+                success: function (res) {
+                    SwalHelper.success(res.message || "نقش کاربر با موفقیت ثبت شد.", "موفق", 1800, function () {
+                        var modalEl = document.getElementById('roleModal');
+                        bootstrap.Modal.getInstance(modalEl)?.hide();
                     });
-                    $("#roleModal").modal('hide');
                 },
-                error: function () {
-                    swal.fire({
-                        title: "خطا",
-                        text: "ثبت نقش انجام نشد",
-                        icon: "error"
-                    });
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "ثبت نقش انجام نشد";
+                    SwalHelper.error(msg);
                 }
             });
         }
-    </script>
-    <script>
         function showUpdateModal(userId) {
-
             $.ajax({
                 type: 'GET',
                 url: '@ApiAddress' + 'User/GetUserById?userId=' + userId,
@@ -520,30 +420,32 @@
                     "Authorization": "Bearer " + "@token"
                 },
                 success: function (xhr) {
-
-                    $("#UserId").val(xhr.data.id);
-                    $("#UserFirstName").val(xhr.data.userFirstName);
-                    $("#UserLastName").val(xhr.data.userLastName);
-                    $("#PhoneNumber").val(xhr.data.phoneNumber);
-                    $("#Email").val(xhr.data.email);
-                    $("#UserImageUrl").val(xhr.data.userImageUrl);
-
-                    $("#imgUser").attr("src", xhr.data.userImageUrl);
-
-                    if (xhr.data.userGender) {
-                        $("#editUser input[name='UserGender'][value='true']").prop("checked", true);
+                    if (xhr && xhr.data) {
+                        $("#UserId").val(xhr.data.id);
+                        $("#UserFirstName").val(xhr.data.userFirstName);
+                        $("#UserLastName").val(xhr.data.userLastName);
+                        $("#PhoneNumber").val(xhr.data.phoneNumber);
+                        $("#Email").val(xhr.data.email);
+                        $("#UserImageUrl").val(xhr.data.userImageUrl);
+                        $("#imgUser").attr("src", xhr.data.userImageUrl || '');
+                        if (xhr.data.userGender) {
+                            $("#editUser input[name='UserGender'][value='true']").prop("checked", true);
+                        } else {
+                            $("#editUser input[name='UserGender'][value='false']").prop("checked", true);
+                        }
+                        var modal = new bootstrap.Modal(document.getElementById('editUser'));
+                        modal.show();
                     } else {
-                        $("#editUser input[name='UserGender'][value='false']").prop("checked", true);
+                        SwalHelper.error("اطلاعات کاربر یافت نشد.");
                     }
-
-                    var modal = new bootstrap.Modal(document.getElementById('editUser'));
-                    modal.show();
+                },
+                error: function () {
+                    SwalHelper.error("خطا در بازیابی اطلاعات کاربر.");
                 }
             });
         }
         $("#btnUserUpdate").on('click', function (e) {
             e.preventDefault();
-
             var model = {
                 UserId: $("#UserId").val(),
                 UserFirstName: $("#UserFirstName").val(),
@@ -554,7 +456,6 @@
                 UserImageUrl: $("#UserImageUrl").val(),
                 UserGender: $("input[name='UserGender']:checked").val() === "true"
             };
-
             $.ajax({
                 type: 'PUT',
                 url: '@ApiAddress' + 'User/UpdateUser',
@@ -564,42 +465,28 @@
                     "Authorization": "Bearer " + "@token"
                 },
                 success: function (xhr) {
-                    if (xhr.statusCode == 200) {
-                                swal.fire({
-            title: "ویرایش اطلاعات",
-            text: "اطلاعات با موفقیت ویرایش شد!",
-            icon: 'success',
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500,
-        });
-                        location.reload();
-                    } else {
-                                swal.fire({
-            icon: "error",
-            title: xhr.message
-        });
-                    }
+                    SwalHelper.handleResponse(xhr, "اطلاعات کاربر با موفقیت ویرایش شد!", function () {
+                        var modalEl = document.getElementById('editUser');
+                        bootstrap.Modal.getInstance(modalEl)?.hide();
+                        window.location.reload();
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ویرایش اطلاعات کاربر";
+                    SwalHelper.error(msg);
                 }
             });
         });
-    </script>
-
-    <!--User Image Upload (Insert)-->
-    <script>
         $("#UserImagesC").change(function () {
-            var data = new FormData;
+            var data = new FormData();
             var file = $("#UserImagesC").get(0);
             var files = file.files;
-
+            if (files.length === 0) return;
             for (var i = 0; i < files.length; i++) {
                 data.append('imagearray', files[i]);
             }
-
             $.ajax({
-                type: 'Post',
+                type: 'POST',
                 url: '@ApiAddress' + 'FileUpload/UserImageUpload',
                 data: data,
                 headers: {
@@ -610,34 +497,25 @@
             }).done(function (xhr) {
                 if (xhr.statusCode == '200') {
                     $("#imgUserC").attr('src', xhr.message);
-                    $("#divMessage").removeClass('hidden');
-                    $("#divMessage").css("color", "green");
-                    $("#divMessage").html("آپلود انجام شد.");
                     $("#UserImageUrlC").val(xhr.message);
+                    SwalHelper.toast("تصویر با موفقیت بارگذاری شد.", "success");
+                } else {
+                    SwalHelper.error(xhr.message || "در حین آپلود تصویر مشکلی رخ داد.");
                 }
-                else if (xhr.statusCode != '200') {
-                    $("#divMessage").removeClass('hidden');
-                    $("#divMessage").css("color", "red");
-                    $("#divMessage").html("در حین آپلود مشکلی رخ داد.");
-
-                }
+            }).fail(function () {
+                SwalHelper.error("خطا در ارتباط با سرور هنگام آپلود تصویر.");
             });
         });
-    </script>
-
-    <!--User Image Upload (Update)-->
-    <script>
         $("#UserImages").change(function () {
-            var data = new FormData;
+            var data = new FormData();
             var file = $("#UserImages").get(0);
             var files = file.files;
-
+            if (files.length === 0) return;
             for (var i = 0; i < files.length; i++) {
                 data.append('imagearray', files[i]);
             }
-
             $.ajax({
-                type: 'Post',
+                type: 'POST',
                 url: '@ApiAddress' + 'FileUpload/UserImageUpload',
                 data: data,
                 headers: {
@@ -648,17 +526,13 @@
             }).done(function (xhr) {
                 if (xhr.statusCode == '200') {
                     $("#imgUser").attr('src', xhr.message);
-                    $("#divMessage").removeClass('hidden');
-                    $("#divMessage").css("color", "green");
-                    $("#divMessage").html("آپلود انجام شد.");
                     $("#UserImageUrl").val(xhr.message);
+                    SwalHelper.toast("تصویر جدید با موفقیت بارگذاری شد.", "success");
+                } else {
+                    SwalHelper.error(xhr.message || "در حین آپلود مشکلی رخ داد.");
                 }
-            }).fail(function (data, textStatus, xhr) {
-                if (xhr.status != '200') {
-                    $("#divMessage").removeClass('hidden');
-                    $("#divMessage").css("color", "red");
-                    $("#divMessage").html("در حین آپلود مشکلی رخ داد.");
-                }
+            }).fail(function () {
+                SwalHelper.error("خطا در ارتباط با سرور هنگام آپلود تصویر.");
             });
         });
     </script>

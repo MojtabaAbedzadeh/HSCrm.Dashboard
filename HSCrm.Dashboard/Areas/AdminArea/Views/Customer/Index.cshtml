@@ -234,29 +234,20 @@
     </div>
 </div>
 @section AdminScripts {
-    <script src="~/lib/sweetalert/sweetalert2.js"></script>
-
     <script>
         $("#btnCustomerSubmit").on('click', function (e) {
             e.preventDefault();
-
-            var password = $("#Password").val();
-
-            if (!password || password.length < 6) {
-                        swal.fire({
-            title: "خطا",
-            text: "رمز عبور باید حداقل ۶ کاراکتر باشد",
-            icon: "error",
-            showConfirmButton: false,
-            timer: 2000
-        });
+            var name = $("#Name").val();
+            if (!name || name.trim() === "") {
+                SwalHelper.warning("لطفاً نام مشتری را وارد نمایید.");
                 return false;
             }
-
+            var password = $("#Password").val();
+            if (!password || password.length < 6) {
+                SwalHelper.warning("رمز عبور باید حداقل ۶ کاراکتر باشد.");
+                return false;
+            }
             var formData = new FormData($("#frmCustomer")[0]);
-
-            console.log(formData);
-
             $.ajax({
                 type: 'POST',
                 url: '@ApiAddress' + 'Customer/CreateCustomer',
@@ -268,75 +259,21 @@
                     "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
                 },
                 success: function (response) {
-                    for (var pair of formData.entries()) {
-                        console.log(pair[0] + ': ' + pair[1]);
-                    }
-                    if (response.status || response.statusCode == 200) {
-                                swal.fire({
-            title: "موفقیت",
-            text: "اطلاعات مشتری با موفقیت ثبت شد!",
-            icon: "success",
-            confirmButtonText: "تایید",
-            confirmButtonColor: "#28a745",
-            timer: 1500
-        });
-                            $('#addCustomer').modal('hide');
-                            window.location.reload();
-                    } else if (response.statusCode == 401) {
-                               swal.fire({
-            title: "عدم احراز هویت",
-            text: "نشست شما منقضی شده، لطفاً دوباره وارد شوید!",
-            icon: "error",
-            confirmButtonText: "تایید",
-            confirmButtonColor: "#28a745",
-            timer: 1500
-        });
-                    } else if (response.statusCode == 403) {
-                                swal.fire({
-            title: "عدم دسترسی",
-            text: "شما مجوز انجام این عملیات را ندارید!",
-            icon: "error",
-            confirmButtonText: "تایید",
-            confirmButtonColor: "#28a745",
-            timer: 1500
-        });
-                    } else if (response.statusCode == 400) {
-                                swal.fire({
-            title: "خطا",
-            text: "اطلاعات ارسالی معتبر نیست!",
-            icon: "error",
-            confirmButtonText: "تایید",
-            confirmButtonColor: "#28a745",
-            timer: 1500
-        });
-                    } else if (response.statusCode == 409) {
-                                swal.fire({
-            title: "خطا",
-            text: "این اطلاعات قبلاً در سیستم ثبت شده است!",
-            icon: "error",
-            confirmButtonText: "تایید",
-            confirmButtonColor: "#28a745",
-            timer: 1500
-        });
-                    }else if (response.statusCode == 500) {
-                        swal.fire({
-                            title: "خطا",
-                            text: "سمت سرور خطایی رخ داده است!",
-                            icon: "error",
-                            confirmButtonText: "تایید",
-                            confirmButtonColor: "#28a745",
-                            timer: 1500
-                        });
-                    }
+                    SwalHelper.handleResponse(response, "اطلاعات مشتری با موفقیت ثبت شد!", function () {
+                        $('#addCustomer').modal('hide');
+                        window.location.reload();
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ثبت اطلاعات مشتری";
+                    SwalHelper.error(msg);
                 }
             });
         });
     </script>
-
     <script>
         function showUpdateModal(customerId) {
             $("#customerModalCenterTitle").text("ویرایش اطلاعات");
-
             $.ajax({
                 type: 'GET',
                 url: '@ApiAddress' + 'Customer/GetById?customerId=' + customerId,
@@ -345,23 +282,31 @@
                     "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
                 },
                 success: function (xhr) {
-                    $("#customerId").val(xhr.data.id);
-                    $("#NameU").val(xhr.data.name);
-                    $("#PhoneU").val(xhr.data.phone);
-                    $("#EmailU").val(xhr.data.email);
-                    $("#AddressU").val(xhr.data.address);
-                    $("#TenantIdU").val(xhr.data.tenantId);
-
-                    $("#ModifiedByIdU").val("@UserId");
-
-                    $("#editCustomer").modal('show');
+                    if (xhr && xhr.data) {
+                        $("#customerId").val(xhr.data.id);
+                        $("#NameU").val(xhr.data.name);
+                        $("#PhoneU").val(xhr.data.phone);
+                        $("#EmailU").val(xhr.data.email);
+                        $("#AddressU").val(xhr.data.address);
+                        $("#TenantIdU").val(xhr.data.tenantId);
+                        $("#ModifiedByIdU").val("@UserId");
+                        $("#editCustomer").modal('show');
+                    } else {
+                        SwalHelper.error("اطلاعات مشتری یافت نشد.");
+                    }
+                },
+                error: function () {
+                    SwalHelper.error("خطا در بازیابی اطلاعات مشتری از سرور.");
                 }
             });
         }
-
         $("#btnCustomerUpdate").on('click', function (e) {
             e.preventDefault();
-
+            var name = $("#NameU").val();
+            if (!name || name.trim() === "") {
+                SwalHelper.warning("لطفاً نام مشتری را وارد نمایید.");
+                return false;
+            }
             var model = {
                 customerId: $("#customerId").val(),
                 name: $("#NameU").val(),
@@ -370,12 +315,11 @@
                 address: $("#AddressU").val(),
                 modifiedById: $("#ModifiedByIdU").val(),
                 tenantId: $("#TenantIdU").val(),
-            }
-
+            };
             $.ajax({
                 type: 'PUT',
                 url: '@ApiAddress' + 'Customer/UpdateCustomer',
-                dataType: 'Json',
+                dataType: 'json',
                 headers: {
                     "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
                 },
@@ -383,37 +327,16 @@
                 processData: false,
                 data: JSON.stringify(model),
                 success: function (xhr) {
-                    if (xhr.statusCode == '200') {
-                                swal.fire({
-            title: "ویرایش اطلاعات",
-            text: "ویرایش حساب با موفقیت انجام شد!",
-            icon: "success",
-            showConfirmButton: false,
-            timer: 1500
-        });
+                    SwalHelper.handleResponse(xhr, "ویرایش اطلاعات مشتری با موفقیت انجام شد!", function () {
+                        $('#editCustomer').modal('hide');
                         window.location.reload();
-                    }
-                    if (xhr.statusCode == '400') {
-                                swal.fire({
-            title: "خطا",
-            text: "پارامترهای ارسالی معتبر نیست!",
-            icon: "error",
-            showConfirmButton: false,
-            timer: 1500
-        });
-                        return false;
-                    } else if (xhr.statusCode == '409') {
-                                swal.fire({
-            title: "خطا",
-            text: "اطلاعات تکراری می‌باشد!",
-            icon: "error",
-            showConfirmButton: false,
-            timer: 1500
-        });
-                        return false;
-                    }
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ویرایش اطلاعات مشتری";
+                    SwalHelper.error(msg);
                 }
             });
-        })
+        });
     </script>
 }

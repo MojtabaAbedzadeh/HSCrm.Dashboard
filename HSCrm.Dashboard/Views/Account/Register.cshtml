@@ -58,30 +58,34 @@
 </div>
 @section AdminScripts {
     <script>
-
         $("#registerForm").submit(function(e){
             e.preventDefault();
             var data = {};
-
             $("#registerForm").serializeArray().forEach(x=>{
                 data[x.name]=x.value;
             });
-
+            if (!data.UserName || !data.Password) {
+                SwalHelper.warning("لطفاً نام کاربری و رمز عبور را وارد نمایید.");
+                return false;
+            }
             $.ajax({
-                url:"https://localhost:7001/api/account/registertenant",
-                method:"POST",
-                contentType:"application/json",
-                data:JSON.stringify(data),
-                success:function(res){
-                    localStorage.setItem("token",res.token);
-                    window.location="/AdminArea/Home";
+                url: "https://localhost:7001/api/account/registertenant",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function(res){
+                    if (res && res.token) {
+                        localStorage.setItem("token", res.token);
+                    }
+                    SwalHelper.success("ثبت‌نام با موفقیت انجام شد. در حال هدایت به سیستم...", "خوش آمدید", 1800, function () {
+                        window.location = "/AdminArea/Home";
+                    });
                 },
-                error:function(err){
-                    alert(err.responseText);
+                error: function(err){
+                    var msg = (err.responseJSON && (err.responseJSON.message || err.responseJSON.title)) || err.responseText || "خطا در فرآیند ثبت‌نام";
+                    SwalHelper.error(msg, "خطا در ثبت‌نام");
                 }
             });
         });
-
     </script>
-
 }

@@ -301,69 +301,45 @@
     </div>
 }
 @section AdminScripts {
+    <!--Date picker js -->
     <script src="~/lib/persiandate/persian-date.js"></script>
     <script src="~/lib/persiandate/persian-datepicker.js"></script>
-    <script src="~/lib/sweetalert/sweetalert2.min.js"></script>
-
-
-    <!--PersianDate-->
     <script>
         $(document).ready(function () {
-            $(".persian-date").persianDatepicker({
-                format: 'YYYY/MM/DD'
+            $('.persian-date').persianDatepicker({
+                format: 'YYYY/MM/DD',
+                autoClose: true,
+                calendarSwitch: {
+                    "enabled": false,
+                    "format": "MMMM"
+                },
             });
-            $(".persian-date").val('');
         });
     </script>
     <!--Show add price modal-->
     <script>
         function showInsertPriceModel(productId, productTitle) {
-            $("#ProId").val(productId);
-            $("#ProductTitle").text('درج قیمت برای ' + productTitle);
-
+            $("#ProductId").val(productId);
+            $("#productTitle").text('درج قیمت برای ' + productTitle);
             $("#addNewPriceModal").modal('show');
         }
     </script>
-    <!--Add new Product-->
+    <!--Add new product-->
     <script>
         $("#btnProductSubmit").on('click', function (e) {
             e.preventDefault();
-
             var productTitle = $("#ProductTitle").val();
             var productUnit = $("#ProductUnit").val();
-
             if (!productTitle || productTitle.trim() === "") {
-                        swal.fire({
-            title: "خطا",
-            text: "عنوان محصول را وارد نمایید!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
+                SwalHelper.warning("عنوان محصول را وارد نمایید!");
                 return false;
             }
-
             if (!productUnit || productUnit.trim() === "") {
-                        swal.fire({
-            title: "خطا",
-            text: "واحد محصول را وارد نمایید!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
+                SwalHelper.warning("واحد محصول را وارد نمایید!");
                 return false;
             }
-
             var formData = new FormData($("#frmProduct")[0]);
-
             formData.set("IsActive", $("#IsActive").is(":checked"));
-
             $.ajax({
                 type: 'POST',
                 url: '@ApiAddress' + 'Product/CreateProduct',
@@ -375,66 +351,20 @@
                     Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
                 },
                 success: function (xhr) {
-                    if (xhr.statusCode == 200) {
-                                swal.fire({
-            title: "ثبت اطلاعات",
-            text: "ثبت محصول با موفقیت انجام شد!",
-            icon: "success",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
+                    SwalHelper.handleResponse(xhr, "ثبت محصول با موفقیت انجام شد!", function () {
                         $('#addProduct').modal('hide');
                         $('#ProductTitle').val("");
                         $('#chkActive').val("");
                         $('#ProductUnit').val("");
                         window.location.reload();
-                    }
-                    if (xhr.statusCode == 500) {
-                                swal.fire({
-            title: "خطا",
-            text: "خطایی در انجام عملیات رخ داده است!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-
-                    } else if (xhr.statusCode == 400) {
-                                swal.fire({
-            title: "خطا",
-            text: "لطفا اطلاعات محصول را کامل وارد نمایید!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-                    } else if (xhr.statusCode == 409) {
-                                swal.fire({
-            title: "خطا",
-            text: "محصول وارد شده در بانک اطلاعاتی موجود می باشد!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                            return false;
-                    }
-
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ثبت محصول";
+                    SwalHelper.error(msg);
                 }
             });
         });
-
     </script>
     <!--Show product update modal-->
     <script>
@@ -444,15 +374,21 @@
                 url: '@ApiAddress' + 'Product/GetById?productId=' + productId,
                 dataType: 'json',
                 headers: {
-                        "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
-                    },
+                    "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                },
                 success: function (xhr) {
-                    $("#ProductId").val(xhr.data.id);
-                    $("#ProductTitleU").val(xhr.data.productTitle);
-                    $("#ProductUnitU").val(xhr.data.productUnit);
-                    $("#IsActiveU").prop("checked", xhr.data.isActive);
-
-                    $("#editProduct").modal('show');
+                    if (xhr && xhr.data) {
+                        $("#ProductId").val(xhr.data.id);
+                        $("#ProductTitleU").val(xhr.data.productTitle);
+                        $("#ProductUnitU").val(xhr.data.productUnit);
+                        $("#IsActiveU").prop("checked", xhr.data.isActive);
+                        $("#editProduct").modal('show');
+                    } else {
+                        SwalHelper.error("اطلاعات محصول یافت نشد.");
+                    }
+                },
+                error: function () {
+                    SwalHelper.error("خطا در بازیابی اطلاعات محصول.");
                 }
             });
         }
@@ -461,88 +397,55 @@
     <script>
         $("#btnProductUpdate").on('click', function (e) {
             e.preventDefault();
-
+            var title = $("#ProductTitleU").val();
+            if (!title || title.trim() === "") {
+                SwalHelper.warning("عنوان محصول را وارد نمایید!");
+                return false;
+            }
             var model = {
                 productId: $("#ProductId").val(),
                 productTitle: $("#ProductTitleU").val(),
                 productUnit: $("#ProductUnitU").val(),
                 isActive: $("#IsActiveU").is(":checked"),
                 modifiedById: '@valUserId'
-            }
-
+            };
             $.ajax({
                 type: 'PUT',
                 url: '@ApiAddress' + 'Product/UpdateProduct',
-                dataType: 'Json',
+                dataType: 'json',
                 contentType: 'application/json',
                 processData: false,
                 data: JSON.stringify(model),
                 headers: {
-                        "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
-                    },
+                    "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                },
                 success: function (xhr) {
-                    if (xhr.statusCode == '200') {
-                            swal.fire({
-            title: "ویرایش",
-            text: "ویرایش محصول با موفقیت انجام شد!",
-            icon: "success",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
+                    SwalHelper.handleResponse(xhr, "ویرایش محصول با موفقیت انجام شد!", function () {
+                        $('#editProduct').modal('hide');
                         window.location.reload();
-                    }
-                    if (xhr.statusCode == '400') {
-                            swal.fire({
-            title: "خطا",
-            text: "پارامترهای ارسالی معتبر نیست!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-                    } else if (xhr.statusCode == '409') {
-                                swal.fire({
-            title: "خطا",
-            text: "اطلاعات تکراری می‌باشد!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-                    }else if (xhr.statusCode == '500') {
-                                 swal.fire({
-            title: "خطا",
-            text: "خطایی در انجام عملیات رخ داده است!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-                    }
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ویرایش محصول";
+                    SwalHelper.error(msg);
                 }
             });
-        })
+        });
     </script>
     <!--Add new price-->
     <script>
         $("#btnPriceSubmit").on('click', function (e) {
             e.preventDefault();
-
+            var buyPrice = $("#BuyPrice").val();
+            var sellPrice = $("#SellPrice").val();
+            var actionDate = $("#ActionDate").val();
+            if (!buyPrice || !sellPrice || !actionDate) {
+                SwalHelper.warning("لطفاً قیمت خرید، قیمت فروش و تاریخ اعمال را به صورت کامل وارد نمایید!");
+                return false;
+            }
             var formData = new FormData($("#frmPrice")[0]);
             $.ajax({
-                type: 'Post',
+                type: 'POST',
                 url: '@ApiAddress' + 'ProductPrice/CreatePrice',
                 processData: false,
                 contentType: false,
@@ -552,95 +455,55 @@
                     Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
                 },
                 success: function (xhr) {
-                    if (xhr.statusCode == '200') {
+                    SwalHelper.handleResponse(xhr, "قیمت جدید محصول با موفقیت ثبت شد!", function () {
                         $('#addNewPriceModal').modal('hide');
-                                swal.fire({
-            title: "ثبت اطلاعات",
-            text: "قیمت جدید محصول با موفقیت ثبت شد!",
-            icon: "success",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
                         window.location.reload();
-                    }
-                    if (xhr.statusCode == '550') {
-                                swal.fire({
-            title: "خطا",
-            text: "تاریخ اعمال قیمت معتبر نیست!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-                    } else if (xhr.statusCode == '500') {
-                                swal.fire({
-            title: "خطا",
-            text: "خطایی در انجام عملیات رخ داده است!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-                    } else if (xhr.statusCode == '400') {
-                                swal.fire({
-            title: "خطا",
-            text: "لطفا اطلاعات قیمت را کامل وارد نمایید!",
-            icon: "error",
-            showCancelButton: false,
-            allowOutsideClick: false,
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            timer: 1500
-        });
-                        return false;
-                    }
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ثبت قیمت جدید";
+                    SwalHelper.error(msg);
                 }
-            })
+            });
         });
     </script>
     <!--Show product price history-->
     <script>
         function productPriceHistory(productId, productTitle) {
             $("#productPriceHistory").text('لیست قیمت ' + productTitle);
-
             $.ajax({
                 type: 'GET',
                 url: '@ApiAddress' + 'ProductPrice/GetProductPriceHistory?productId=' + productId,
                 dataType: 'json',
                 headers: {
-                        "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
-                    },
+                    "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                },
                 success: function (xhr) {
                     $("#tblProductPriceHistory tbody").empty();
-                    $.each(xhr.data, function (i, v) {
-                        // تعیین کلاس CSS بر اساس مقدار isActive
-                        var rowClass = v.isActive ? 'confirmed-row' : 'rejected-row';
-
-                        // افزودن ردیف به جدول با کلاس CSS مناسب
-                        $("#tblProductPriceHistory tbody").append(
-                            "<tr class='" + rowClass + "'>" +
-                            "<td>" + (i + 1) + "</td>" +
-                            "<td>" + v.buyPrice + "</td>" +
-                            "<td>" + v.sellPrice + "</td>" +
-                            "<td>" + new persianDate(new Date(v.effectiveFrom)).format("YYYY/MM/DD") + "</td>" +
-                            "<td><a style='cursor:pointer; font-size:10px;' onclick='deletePrice(" + v.id + ")'>حذف</a></td>" +
-                            "</tr>"
-                        );
-                    });
+                    var list = xhr.data || [];
+                    if (list.length === 0) {
+                        $("#tblProductPriceHistory tbody").append('<tr><td colspan="5" class="text-center text-muted py-3">تاریخچه قیمتی یافت نشد.</td></tr>');
+                    } else {
+                        $.each(list, function (i, v) {
+                            var rowClass = v.isActive ? 'confirmed-row' : 'rejected-row';
+                            var formattedDate = v.effectiveFrom ? new persianDate(new Date(v.effectiveFrom)).format("YYYY/MM/DD") : '-';
+                            $("#tblProductPriceHistory tbody").append(
+                                "<tr class='" + rowClass + "'>" +
+                                "<td>" + (i + 1) + "</td>" +
+                                "<td>" + Number(v.buyPrice).toLocaleString() + "</td>" +
+                                "<td>" + Number(v.sellPrice).toLocaleString() + "</td>" +
+                                "<td>" + formattedDate + "</td>" +
+                                "<td><a class='text-danger' style='cursor:pointer; font-size:11px;' onclick='deletePrice(" + v.id + ")'>حذف</a></td>" +
+                                "</tr>"
+                            );
+                        });
+                    }
+                    $("#productPriceHistoryModal").modal('show');
+                },
+                error: function () {
+                    SwalHelper.error("خطا در بارگذاری تاریخچه قیمت محصول.");
                 }
             });
-
-
-            $("#productPriceHistoryModal").modal('show');
         }
     </script>
 }

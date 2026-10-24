@@ -110,48 +110,26 @@
         function showInsertRoleModel() {
             $("#addRoleModal").modal('show');
         }
-
         $("#btnRoleSubmit").on('click', function (e) {
             e.preventDefault();
-
             var Name = $("#RoleName").val();
             var FaName = $("#RoleFaName").val();
-
             if (!Name || Name.trim() === "") {
-                swal.fire({
-                    title: "خطا",
-                    text: "عنوان لاتین نقش را وارد نمایید!",
-                    icon: "error",
-                    showCancelButton: false,
-                    allowOutsideClick: false,
-                    confirmButtonColor: "green",
-                    confirmButtonText: "باشه"
-                });
+                SwalHelper.warning("عنوان لاتین نقش را وارد نمایید!");
                 return false;
             }
-
             if (!FaName || FaName.trim() === "") {
-                swal.fire({
-                    title: "خطا",
-                    text: "عنوان فارسی نقش را وارد نمایید!",
-                    icon: "error",
-                    showCancelButton: false,
-                    allowOutsideClick: false,
-                    confirmButtonColor: "green",
-                    confirmButtonText: "باشه"
-                });
+                SwalHelper.warning("عنوان فارسی نقش را وارد نمایید!");
                 return false;
             }
-
             var model = {
                 name: $("#RoleName").val(),
                 faName: $("#RoleFaName").val()
-            }
-
+            };
             $.ajax({
                 type: 'POST',
                 url: '@ApiAddress' + 'Role/CreateRole',
-                dataType: 'Json',
+                dataType: 'json',
                 contentType: 'application/json',
                 processData: false,
                 data: JSON.stringify(model),
@@ -159,55 +137,16 @@
                     Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
                 },
                 success: function (xhr) {
-                    if (xhr.statusCode == 200) {
-                        swal.fire({
-                            title: "ثبت اطلاعات",
-                            text: "ثبت نقش با موفقیت انجام شد!",
-                            icon: "success",
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه"
-                        });
+                    SwalHelper.handleResponse(xhr, "ثبت نقش با موفقیت انجام شد!", function () {
                         $('#addRoleModal').modal('hide');
-                        $('#RolaName').val("");
+                        $('#RoleName').val("");
+                        $('#RoleFaName').val("");
                         window.location.reload();
-                    }
-                    if (xhr.statusCode == 500) {
-                        swal.fire({
-                            title: "خطا",
-                            text: "خطایی در انجام عملیات رخ داده است!",
-                            icon: "error",
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه"
-                        });
-                        return false;
-
-                    } else if (xhr.statusCode == 400) {
-                        swal.fire({
-                            title: "خطا",
-                            text: "لطفا اطلاعات نقش را کامل وارد نمایید!",
-                            icon: "error",
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه"
-                        });
-                        return false;
-                    } else if (xhr.statusCode == 409) {
-                        swal.fire({
-                            title: "خطا",
-                            text: "عنوان نقش وارد شده در بانک اطلاعاتی موجود می باشد!",
-                            icon: "error",
-                            showCancelButton: false,
-                            allowOutsideClick: false,
-                            confirmButtonColor: "green",
-                            confirmButtonText: "باشه"
-                        });
-                        return false;
-                    }
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در ثبت نقش";
+                    SwalHelper.error(msg);
                 }
             });
         });

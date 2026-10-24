@@ -276,13 +276,15 @@ $(document).ready(function () {
                 if (status.status === true) {
                     swal.fire({
                         title: "موفق",
-                        text: "فاکتور با موفقیت ثبت شد",
+                        text: status.message || "فاکتور با موفقیت ثبت شد",
                         icon: "success",
                         confirmButtonColor: "green",
                         confirmButtonText: "باشه",
                         showConfirmButton: true,
                         timer: 1500,
                         allowOutsideClick: false
+                    }).then(function () {
+                        window.location.href = '/AdminArea/Invoice/PurchaseInvoice';
                     });
                     return;
                 }
