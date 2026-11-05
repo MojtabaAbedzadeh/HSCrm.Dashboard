@@ -139,7 +139,7 @@
             try {
                 const [allRes, sumRes] = await Promise.all([
                     fetch(`${apiBase}/BankAccount/GetAll`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/BankAccount/GetBalancesSummary`, { headers: getAuthHeaders() })
+                    fetch(`${apiBase}/BankAccount/BalancesSummary`, { headers: getAuthHeaders() })
                 ]);
                 const banks = (await allRes.json()).data || [];
                 const summaries = (await sumRes.json()).data || [];
@@ -179,7 +179,7 @@
                 }
 
                 const tbody = document.getElementById('bankTableBody');
-                tbody.innerHTML = banks.map(b => `
+                tbody.innerHTML = banks.length ? banks.map(b => `
                     <tr>
                         <td class="fw-bold">${escapeHtml(b.title)}</td>
                         <td>${escapeHtml(b.bankName)} ${b.branchName ? `(${escapeHtml(b.branchName)})` : ''}</td>
@@ -192,8 +192,11 @@
                             <a class="btn btn-sm btn-outline-primary" href="/AdminArea/Accounting/Reports?bankAccountId=${encodeURIComponent(b.id ?? '')}&tab=ledger">گردش حساب</a>
                         </td>
                     </tr>
-                `).join('');
-            } catch (err) { console.error(err); }
+                `).join('') : '<tr><td colspan="8" class="text-center text-muted py-4">حسابی برای نمایش ثبت نشده است.</td></tr>';
+            } catch (err) {
+                console.error("خطا در بارگذاری حساب‌های بانکی:", err);
+                document.getElementById('bankTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">دریافت فهرست حساب‌ها با خطا مواجه شد. لطفاً Console و پاسخ API را بررسی کنید.</td></tr>';
+            }
         }
 
         async function saveBankAccount() {
