@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace HSCrm.Models.ModelDto
 {
@@ -12,7 +12,11 @@ namespace HSCrm.Models.ModelDto
 
     public class RoleCreateDto
     {
-        public string Name { get; set; }
+        [Required(ErrorMessage = "نام انگلیسی نقش الزامی است")]
+        public string Name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "نام فارسی نقش الزامی است")]
+        public string FaName { get; set; } = string.Empty;
 
         public int TenantId { get; set; }
     }

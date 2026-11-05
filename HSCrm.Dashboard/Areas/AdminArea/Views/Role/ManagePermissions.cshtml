@@ -40,7 +40,8 @@
         </div>
     </div>
     <div class="card-body">
-        <form id="permissionForm">
+        <form id="permissionForm" method="post">
+            @Html.AntiForgeryToken()
             <input type="hidden" name="RoleId" value="@Model.RoleId" />
             <div class="accordion" id="permissionAccordion">
                 @{
@@ -173,13 +174,10 @@
                 url: '/AdminArea/Role/ManagePermissions',
                 type: 'POST',
                 data: formData,
-                headers: {
-                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
-                },
-                success: function () {
+                success: function (response) {
                             swal.fire({
             title: "ثبت اطلاعات",
-            text: "اطلاعات با موفقیت ذخیره شد!",
+            text: response.message || "اطلاعات با موفقیت ذخیره شد!",
             icon: "success",
             showCancelButton: false,
             showConfirmButton: true,
@@ -189,10 +187,10 @@
             timer: 1500
         });
                 },
-                error: function () {
+                error: function (xhr) {
                             swal.fire({
             title: "خطا",
-            text: "مشکلی در ثبت اطلاعات به وجود آمده است!",
+            text: (xhr.responseJSON && xhr.responseJSON.message) || "مشکلی در ثبت اطلاعات به وجود آمده است!",
             icon: "warning",
             showCancelButton: false,
             showConfirmButton: true,

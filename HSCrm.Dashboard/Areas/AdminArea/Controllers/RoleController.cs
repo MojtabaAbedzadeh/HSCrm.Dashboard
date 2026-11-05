@@ -1,12 +1,11 @@
-﻿using HSCrm.BussinessLogic.PublicMethod;
+using HSCrm.BussinessLogic.PublicMethod;
 using HSCrm.Dashboard.Controllers;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.Security.Claims;
-using System.Text;
+using System.Net.Http.Json;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
@@ -14,36 +13,100 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
     [Authorize(Roles = "Owner")]
     public class RoleController : BaseController
     {
-        private readonly IConfiguration _config;
         private readonly GetListApi _getListApi;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public RoleController(IConfiguration config, GetListApi getListApi) : base(config)
+        public RoleController(
+            IConfiguration config,
+            GetListApi getListApi,
+            IHttpClientFactory httpClientFactory) : base(config)
         {
-            _config = config;
             _getListApi = getListApi;
+            _httpClientFactory = httpClientFactory;
         }
+
         private string ApiUrl(string endpoint)
         {
             return _config["ApiAddress"] + endpoint;
         }
-        private string Token()
+
+        private HttpClient CreateApiClient()
         {
-            return User.FindFirstValue("Token");
+            return _httpClientFactory.CreateClient("ApiClient");
+        }
+
+        private async Task<(bool IsSuccess, string Message)> ReadApiResult(
+            HttpResponseMessage response)
+        {
+            var json = await response.Content.ReadAsStringAsync();
+            ApiResponse<object>? result = null;
+
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                try
+                {
+                    result = JsonConvert.DeserializeObject<ApiResponse<object>>(json);
+                }
+                catch
+                {
+                    // Invalid response JSON is handled below.
+                }
+            }
+
+            var isSuccess = response.IsSuccessStatusCode &&
+                            result?.Status == true;
+
+            var message = !string.IsNullOrWhiteSpace(result?.Message)
+                ? result.Message
+                : response.IsSuccessStatusCode
+                    ? "پاسخ معتبر از سرویس دریافت نشد."
+                    : $"خطا در ارتباط با سرویس (HTTP {(int)response.StatusCode}).";
+
+            return (isSuccess, message);
+        }
+        private ApiResponse<T>? DeserializeApiResponse<T>(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return null;
+
+            try
+            {
+                return JsonConvert.DeserializeObject<ApiResponse<T>>(json);
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+
+        private string GetApiErrorMessage<T>(ApiResponse<T>? result)
+        {
+            return !string.IsNullOrWhiteSpace(result?.Message)
+                ? result.Message
+                : "دریافت اطلاعات از سرویس با مشکل مواجه شد.";
         }
         public async Task<IActionResult> Index()
         {
-            var json = await _getListApi.GetApiList(ApiUrl("Role/GetRoles"));
+            var result = DeserializeApiResponse<List<RoleModel>>(
+                await _getListApi.GetApiList(ApiUrl("Role/GetRoles")));
 
-            var result = JsonConvert.DeserializeObject<ApiResponse<List<RoleModel>>>(json);
-            var model = result?.Data ?? new List<RoleModel>();
+            if (result?.Status != true || result.Data == null)
+            {
+                TempData["Error"] = GetApiErrorMessage(result);
+                return View(new List<RoleModel>());
+            }
 
-            return View(model);
+            return View(result.Data);
         }
+
+
         [HttpGet]
         public IActionResult Create()
         {
             return View(new RoleCreateDto());
         }
+
+        [AutoValidateAntiforgeryToken]
         [HttpPost]
         public async Task<IActionResult> Create(RoleCreateDto model)
         {
@@ -55,32 +118,44 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             if (int.TryParse(tenantId, out var parsedTenantId))
                 model.TenantId = parsedTenantId;
 
-            using var http = new HttpClient();
-            http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token());
+            var http = CreateApiClient();
 
-            var content = new StringContent(
-                JsonConvert.SerializeObject(model),
-                Encoding.UTF8,
-                "application/json");
+            var response = await http.PostAsJsonAsync(
+                "Role/CreateRole",
+                model);
 
-            var response = await http.PostAsync(ApiUrl("Role/CreateRole"), content);
+            var apiResult = await ReadApiResult(response);
 
-            if (!response.IsSuccessStatusCode)
+            if (!apiResult.IsSuccess)
             {
-                ModelState.AddModelError("", "خطا در ثبت نقش");
+                ModelState.AddModelError("", apiResult.Message);
                 return View(model);
             }
 
+            TempData["Success"] = "نقش با موفقیت ثبت شد.";
+
             return RedirectToAction(nameof(Index));
         }
+
         [HttpGet]
         public async Task<IActionResult> Edit(string id)
         {
-            var json = await _getListApi.GetApiList(ApiUrl($"Role/GetRoleById?roleId={id}"));
+            if (string.IsNullOrWhiteSpace(id))
+                return NotFound();
 
-            var result = JsonConvert.DeserializeObject<ApiResponse<RoleModel>>(json);
-            var role = result?.Data;
+            var safeId = Uri.EscapeDataString(id);
+
+            var result = DeserializeApiResponse<RoleModel>(
+                await _getListApi.GetApiList(
+                    ApiUrl($"Role/GetRoleById?roleId={safeId}")));
+
+            if (result?.Status != true)
+            {
+                TempData["Error"] = GetApiErrorMessage(result);
+                return RedirectToAction(nameof(Index));
+            }
+
+            var role = result.Data;
 
             if (role == null)
                 return NotFound();
@@ -94,82 +169,134 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
             return View(model);
         }
+
+
+        [AutoValidateAntiforgeryToken]
         [HttpPost]
         public async Task<IActionResult> Edit(RoleEditDto model)
         {
             if (!ModelState.IsValid)
                 return View(model);
 
-            using var http = new HttpClient();
-            http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token());
+            var http = CreateApiClient();
 
-            var content = new StringContent(
-                JsonConvert.SerializeObject(model),
-                Encoding.UTF8,
-                "application/json");
+            var response = await http.PutAsJsonAsync(
+                "Role/UpdateRole",
+                model);
 
-            var response = await http.PutAsync(ApiUrl("Role/UpdateRole"), content);
+            var apiResult = await ReadApiResult(response);
 
-            if (!response.IsSuccessStatusCode)
+            if (!apiResult.IsSuccess)
             {
-                ModelState.AddModelError("", "خطا در ویرایش نقش");
+                ModelState.AddModelError("", apiResult.Message);
                 return View(model);
             }
 
+            TempData["Success"] = "نقش با موفقیت ویرایش شد.";
+
             return RedirectToAction(nameof(Index));
         }
+
+        [AutoValidateAntiforgeryToken]
         [HttpPost]
         public async Task<IActionResult> Delete(string id)
         {
-            using var http = new HttpClient();
-            http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token());
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                TempData["Error"] = "شناسه نقش معتبر نیست.";
+                return RedirectToAction(nameof(Index));
+            }
 
-            await http.DeleteAsync(ApiUrl($"Role/DeleteRole/{id}"));
+            var http = CreateApiClient();
+
+            var safeId = Uri.EscapeDataString(id);
+
+            var response = await http.DeleteAsync(
+                $"Role/DeleteRole?roleId={safeId}");
+
+            var apiResult = await ReadApiResult(response);
+
+            if (!apiResult.IsSuccess)
+            {
+                TempData["Error"] = apiResult.Message;
+                return RedirectToAction(nameof(Index));
+            }
+
+            TempData["Success"] = "نقش با موفقیت حذف شد.";
 
             return RedirectToAction(nameof(Index));
         }
+
         [HttpGet]
         public async Task<IActionResult> ManagePermissions(string id)
         {
-            var roleJson = await _getListApi.GetApiList(ApiUrl($"Role/GetRoleById?roleId={id}"));
-            var roleResult = JsonConvert.DeserializeObject<ApiResponse<RoleModel>>(roleJson);
-            var role = roleResult?.Data;
+            if (string.IsNullOrWhiteSpace(id))
+                return NotFound();
+
+            var safeId = Uri.EscapeDataString(id);
+
+            var roleResult = DeserializeApiResponse<RoleModel>(
+                await _getListApi.GetApiList(
+                    ApiUrl($"Role/GetRoleById?roleId={safeId}")));
+
+            if (roleResult?.Status != true)
+            {
+                TempData["Error"] = GetApiErrorMessage(roleResult);
+                return RedirectToAction(nameof(Index));
+            }
+
+            var role = roleResult.Data;
 
             if (role == null)
                 return NotFound();
 
-            var permJson = await _getListApi.GetApiList(ApiUrl("Role/GetPermissions"));
-            var permResult = JsonConvert.DeserializeObject<ApiResponse<List<PermissionDto>>>(permJson);
-            var allPermissions = permResult?.Data ?? new List<PermissionDto>();
+            var permResult = DeserializeApiResponse<List<PermissionDto>>(
+                await _getListApi.GetApiList(ApiUrl("Role/GetPermissions")));
 
-            var selectedJson = await _getListApi.GetApiList(ApiUrl($"Role/GetRolePermissions?roleId={id}"));
-            var selectedResult = JsonConvert.DeserializeObject<ApiResponse<List<int>>>(selectedJson);
-            var selectedPermissionIds = selectedResult?.Data ?? new List<int>();
+            if (permResult?.Status != true || permResult.Data == null)
+            {
+                TempData["Error"] = GetApiErrorMessage(permResult);
+                return RedirectToAction(nameof(Index));
+            }
 
-            var check = allPermissions.Select(x => new { x.Name, x.Category, x.CategoryTitleFa }).ToList();
+            var selectedResult = DeserializeApiResponse<List<int>>(
+                await _getListApi.GetApiList(
+                    ApiUrl($"Role/GetRolePermissions?roleId={safeId}")));
+
+            if (selectedResult?.Status != true || selectedResult.Data == null)
+            {
+                TempData["Error"] = GetApiErrorMessage(selectedResult);
+                return RedirectToAction(nameof(Index));
+            }
+
+            var allPermissions = permResult.Data;
+            var selectedPermissionIds = selectedResult.Data;
 
             var model = new ManageRolePermissionsDto
             {
                 RoleId = role.Id,
                 RoleName = role.Name,
                 SelectedPermissionIds = selectedPermissionIds,
-                Permissions = allPermissions.Select(permission => new PermissionCheckboxDto
-                {
-                    PermissionId = permission.Id,
-                    Name = permission.Name,
-                    Title = permission.Title,
-                    CategoryTitleFa = permission.CategoryTitleFa,
-                    Category = permission.Category,
-                    IsSelected = selectedPermissionIds.Contains(permission.Id)
-                }).ToList()
+                Permissions = allPermissions.Select(permission =>
+                    new PermissionCheckboxDto
+                    {
+                        PermissionId = permission.Id,
+                        Name = permission.Name,
+                        Title = permission.Title,
+                        CategoryTitleFa = permission.CategoryTitleFa,
+                        Category = permission.Category,
+                        IsSelected = selectedPermissionIds.Contains(permission.Id)
+                    }).ToList()
             };
-            
+
             return View(model);
         }
+
+
+        [AutoValidateAntiforgeryToken]
         [HttpPost]
-        public async Task<IActionResult> ManagePermissions(ManageRolePermissionsDto model)
+        public async Task<IActionResult> ManagePermissions(
+            ManageRolePermissionsDto model)
         {
             var updateModel = new UpdateRolePermissionsDto
             {
@@ -177,23 +304,19 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
                 PermissionIds = model.SelectedPermissionIds ?? new List<int>()
             };
 
-            using var http = new HttpClient();
-            http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", Token());
+            var http = CreateApiClient();
 
-            var content = new StringContent(
-                JsonConvert.SerializeObject(updateModel),
-                Encoding.UTF8,
-                "application/json");
+            var response = await http.PostAsJsonAsync(
+                "Role/UpdateRolePermissions",
+                updateModel);
 
-            var response = await http.PostAsync(ApiUrl("Role/UpdateRolePermissions"), content);
-
-            if (!response.IsSuccessStatusCode)
+            var apiResult = await ReadApiResult(response);
+            if (!apiResult.IsSuccess)
             {
-                ModelState.AddModelError("", "خطا در ذخیره دسترسی‌ها");
-                return View(model);
+                return BadRequest(new { message = apiResult.Message });
             }
 
-            return RedirectToAction(nameof(Index));
+            return Ok(new { message = apiResult.Message });
         }
     }
 }
