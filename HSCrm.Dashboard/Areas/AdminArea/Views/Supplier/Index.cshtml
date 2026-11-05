@@ -387,6 +387,7 @@
                 SupplierFullName: $("#SupplierFullNameU").val(),
                 SupplierAddress: $("#SupplierAddressU").val(),
                 SupplierPhone: $("#SupplierPhoneU").val(),
+                ModifiedById: '@ViewBag.UserId'
             };
             $.ajax({
                 type: 'PUT',
