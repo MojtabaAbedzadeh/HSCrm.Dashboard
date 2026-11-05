@@ -36,16 +36,16 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
                 if (result == null || !result.Status)
                 {
                     ViewBag.ErrorMessage = result?.Message ?? "خطا در دریافت فهرست محصولات.";
-                    return View(new List<ProductPriceModel>());
+                    return View(new List<ProductModel>());
                 }
 
-                var model = result.Data ?? new List<ProductPriceModel>();
+                var model = result.Data ?? new List<ProductModel>();
                 return View(model);
             }
             catch (Exception ex)
             {
                 ViewBag.ErrorMessage = "خطا در ارتباط با سرور: " + ex.Message;
-                return View(new List<ProductPriceModel>());
+                return View(new List<ProductModel>());
             }
         }
     }
