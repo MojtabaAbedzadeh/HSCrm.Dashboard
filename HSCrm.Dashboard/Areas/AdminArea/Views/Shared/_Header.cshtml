@@ -20,7 +20,11 @@
 
     var avatarSrc = string.IsNullOrWhiteSpace(userImageUrl)
         ? Url.Content("~/assets/img/user/img-user.jpg")
-        : (userImageUrl.StartsWith("http") ? userImageUrl : $"https://localhost:7001{userImageUrl}");
+        : (Uri.TryCreate(userImageUrl, UriKind.Absolute, out var absoluteAvatarUri)
+            ? absoluteAvatarUri.ToString()
+            : (Uri.TryCreate(apiAddr, UriKind.Absolute, out var apiUri)
+                ? new Uri(apiUri, userImageUrl).ToString()
+                : Url.Content("~/assets/img/user/img-user.jpg")));
 }
 
 <header class="ec-main-header" id="header">
