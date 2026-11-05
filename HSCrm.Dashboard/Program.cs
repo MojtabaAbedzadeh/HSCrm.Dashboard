@@ -9,11 +9,13 @@ using Microsoft.AspNetCore.Authorization;
 var builder = WebApplication.CreateBuilder(args);
 
 var apiAddress = builder.Configuration["ApiAddress"];
-if (!Uri.TryCreate(apiAddress, UriKind.Absolute, out var apiUri) ||
+if (string.IsNullOrWhiteSpace(apiAddress) ||
+    !apiAddress.EndsWith("/", StringComparison.Ordinal) ||
+    !Uri.TryCreate(apiAddress, UriKind.Absolute, out var apiUri) ||
     (apiUri.Scheme != Uri.UriSchemeHttp && apiUri.Scheme != Uri.UriSchemeHttps))
 {
     throw new InvalidOperationException(
-        "API endpoint is not configured. Set ApiAddress (for example, ApiAddress=https://api.example.com/api/).");
+        "API endpoint is not configured correctly. Set ApiAddress to an absolute HTTP(S) API URL ending with / (for example, https://api.example.com/api/).");
 }
 
 if (!builder.Environment.IsDevelopment() &&
