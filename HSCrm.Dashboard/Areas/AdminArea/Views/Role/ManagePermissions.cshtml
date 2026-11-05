@@ -1,7 +1,9 @@
 ﻿@model HSCrm.Models.ModelDto.ManageRolePermissionsDto
 
 @{
-    var groupedPermissions = Model.Permissions.GroupBy(x => x.Category).OrderBy(x => x.Key);
+    var groupedPermissions = Model.Permissions
+        .GroupBy(x => string.IsNullOrWhiteSpace(x.CategoryTitleFa) ? x.Category : x.CategoryTitleFa)
+        .OrderBy(x => x.Key);
 }
 
 <style>
