@@ -5,6 +5,7 @@
     ViewData["selected"] = "user_list";
 
     string ApiAddress = ViewBag.ApiAddress;
+    var apiOrigin = Uri.TryCreate(ApiAddress, UriKind.Absolute, out var apiUri) ? apiUri.GetLeftPart(UriPartial.Authority) : "";
     var token = User.FindFirstValue("Token");
 }
 
@@ -44,7 +45,12 @@
                                 @foreach (var item in Model)
                                 {
                                     <tr>
-                                        <td><img class="vendor-thumb" src="@item.UserImageUrl" alt="user profile"></td>
+                                        @{
+                                            var listImageUrl = string.IsNullOrWhiteSpace(item.UserImageUrl)
+                                                ? Url.Content("~/assets/img/user/img-user.jpg")
+                                                : (Uri.TryCreate(item.UserImageUrl, UriKind.Absolute, out _) ? item.UserImageUrl : $"{apiOrigin}/{item.UserImageUrl.TrimStart('/')}");
+                                        }
+                                        <td><img class="vendor-thumb" src="@listImageUrl" alt="user profile"></td>
                                         <td>@item.UserFirstName</td>
                                         <td>@item.UserLastName</td>
                                         <td>
@@ -329,6 +335,13 @@
 
 @section AdminScripts {
     <script>
+        const userImageApiOrigin = '@apiOrigin';
+        function resolveUserImageUrl(value) {
+            if (!value) return '/assets/img/user/img-user.jpg';
+            try { return new URL(value, userImageApiOrigin + '/').href; }
+            catch { return '/assets/img/user/img-user.jpg'; }
+        }
+
         $("#btnUserSubmit").on('click', function (e) {
             e.preventDefault();
             var firstName = ($("#UserFirstNameC").val() || "").trim();
@@ -433,7 +446,7 @@
                         $("#PhoneNumber").val(xhr.data.phoneNumber);
                         $("#Email").val(xhr.data.email);
                         $("#UserImageUrl").val(xhr.data.userImageUrl);
-                        $("#imgUser").attr("src", xhr.data.userImageUrl || '');
+                        $("#imgUser").attr("src", resolveUserImageUrl(xhr.data.userImageUrl));
                         if (xhr.data.userGender) {
                             $("#editUser input[name='UserGender'][value='true']").prop("checked", true);
                         } else {
@@ -501,7 +514,7 @@
                 processData: false
             }).done(function (xhr) {
                 if (xhr.statusCode == '200') {
-                    $("#imgUserC").attr('src', xhr.message);
+                    $("#imgUserC").attr('src', resolveUserImageUrl(xhr.message));
                     $("#UserImageUrlC").val(xhr.message);
                     SwalHelper.toast("تصویر با موفقیت بارگذاری شد.", "success");
                 } else {
@@ -530,7 +543,7 @@
                 processData: false
             }).done(function (xhr) {
                 if (xhr.statusCode == '200') {
-                    $("#imgUser").attr('src', xhr.message);
+                    $("#imgUser").attr('src', resolveUserImageUrl(xhr.message));
                     $("#UserImageUrl").val(xhr.message);
                     SwalHelper.toast("تصویر جدید با موفقیت بارگذاری شد.", "success");
                 } else {
