@@ -104,11 +104,30 @@ namespace Automation.Dashboard.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(LoginModel model)
         {
-            var result = await _login.Login(model);
-            if (result == null)
+            if (model.FiscalYearId <= 0)
             {
-                ViewBag.ErrorMessage = "خطا در برقراری ارتباط نهایی.";
-                return View();
+                var loginView = await Login();
+                ViewBag.ErrorMessage = "لطفاً سال مالی را انتخاب کنید.";
+                return loginView;
+            }
+
+            UserLoginDto? result;
+            try
+            {
+                result = await _login.Login(model);
+            }
+            catch
+            {
+                var loginView = await Login();
+                ViewBag.ErrorMessage = "ورود انجام نشد. نام کاربری، رمز عبور و سال مالی انتخاب‌شده را بررسی کنید.";
+                return loginView;
+            }
+
+            if (result == null || string.IsNullOrWhiteSpace(result.Token))
+            {
+                var loginView = await Login();
+                ViewBag.ErrorMessage = "توکن ورود معتبر از وب‌سرویس دریافت نشد.";
+                return loginView;
             }
 
             // ایجاد کل Claimهای مورد نیاز فرانت از روی اطلاعات واقعی کاربر
