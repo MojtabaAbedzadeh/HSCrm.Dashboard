@@ -126,7 +126,7 @@
             document.getElementById('recDate').value = new Date().toISOString().split('T')[0];
             try {
                 const [recRes, invRes, bankRes] = await Promise.all([
-                    fetch(`${apiBase}/Receipt/GetReceipts`, { headers: getAuthHeaders() }),
+                    fetch(`${apiBase}/Receipt`, { headers: getAuthHeaders() }),
                     fetch(`${apiBase}/SalesInvoice/GetSalesInvoices`, { headers: getAuthHeaders() }),
                     fetch(`${apiBase}/BankAccount/GetAll`, { headers: getAuthHeaders() })
                 ]);
@@ -146,7 +146,7 @@
                 } else {
                     tbody.innerHTML = receipts.map(r => `
                         <tr>
-                            <td>#${Number(r.id)}</td>
+                            <td>#${Number(r.receiptId)}</td>
                             <td class="fw-bold">فاکتور #${Number(r.salesInvoiceId)}</td>
                             <td class="fw-bold text-success font-monospace" dir="ltr">${formatNum(r.amount)}</td>
                             <td>${r.receiptDate ? new Date(r.receiptDate).toLocaleDateString('fa-IR') : ''}</td>
