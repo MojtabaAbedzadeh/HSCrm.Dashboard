@@ -194,6 +194,12 @@
     </div>
 </div>
 <script>
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[char]));
+    }
+
     function openSalesInvoicePrintModal(id, number, dateStr, customer, project, total) {
         document.getElementById('prInvNumber').textContent = number || id;
         document.getElementById('prInvDate').textContent = dateStr || '-';
@@ -205,7 +211,7 @@
         tbody.innerHTML = '<tr><td colspan="7" class="py-3 text-muted">در حال دریافت ریز اقلام فاکتور از سرور...</td></tr>';
         new bootstrap.Modal(document.getElementById('printOfficialSalesInvoiceModal')).show();
 
-        fetch('@ApiAddress' + 'SalesInvoice/GetById?id=' + id, {
+        fetch('@ApiAddress' + 'SalesInvoice/GetById?id=' + encodeURIComponent(Number(id)), {
             headers: { 'Authorization': 'Bearer ' + '@User.FindFirstValue("Token")' }
         })
         .then(r => r.json())
@@ -215,7 +221,7 @@
             if (!Array.isArray(items) || items.length === 0) {
                 tbody.innerHTML = `<tr>
                     <td>1</td>
-                    <td>فروش کالا / خدمات طبق فاکتور شماره ${number || id}</td>
+                    <td>فروش کالا / خدمات طبق فاکتور شماره ${escapeHtml(number || id)}</td>
                     <td>1</td>
                     <td class="font-monospace">${Number(total || 0).toLocaleString('fa-IR')}</td>
                     <td>0</td>
@@ -226,8 +232,8 @@
                 tbody.innerHTML = items.map((it, idx) => `
                     <tr>
                         <td>${idx + 1}</td>
-                        <td>${it.productTitle || it.productName || ('کالای #' + it.productId)}</td>
-                        <td class="font-monospace">${it.quantity || it.count || 1}</td>
+                        <td>${escapeHtml(it.productTitle || it.productName || ('کالای #' + it.productId))}</td>
+                        <td class="font-monospace">${Number(it.quantity || it.count || 1).toLocaleString('fa-IR')}</td>
                         <td class="font-monospace">${Number(it.unitPrice || it.price || 0).toLocaleString('fa-IR')}</td>
                         <td class="font-monospace">${Number(it.discount || 0).toLocaleString('fa-IR')}</td>
                         <td class="font-monospace">${Number(it.tax || it.vatAmount || 0).toLocaleString('fa-IR')}</td>
