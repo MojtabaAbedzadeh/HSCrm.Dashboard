@@ -111,6 +111,12 @@
             return headers;
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
         function formatNum(n) { return Number(n || 0).toLocaleString('en-US'); }
 
         async function initSalesReturns() {
@@ -124,8 +130,8 @@
                 const whs = (await whRes.json()).data || [];
                 products = (await prodRes.json()).data || [];
 
-                document.getElementById('srProjectId').innerHTML = projs.map(p => `<option value="${p.id}">${p.projectTitle}</option>`).join('');
-                document.getElementById('srWarehouseId').innerHTML = whs.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+                document.getElementById('srProjectId').innerHTML = projs.map(p => `<option value="${Number(p.id)}">${escapeHtml(p.projectTitle)}</option>`).join('');
+                document.getElementById('srWarehouseId').innerHTML = whs.map(w => `<option value="${Number(w.id)}">${escapeHtml(w.name)}</option>`).join('');
             } catch (e) { console.error(e); }
 
             loadSalesReturns();
@@ -152,15 +158,15 @@
 
                     return `
                         <tr>
-                            <td class="fw-bold font-monospace" dir="ltr">${r.number}</td>
+                            <td class="fw-bold font-monospace" dir="ltr">${escapeHtml(r.number)}</td>
                             <td>${r.returnDate ? new Date(r.returnDate).toLocaleDateString('fa-IR') : ''}</td>
-                            <td>${r.project?.projectTitle || `پروژه #${r.projectId}`}</td>
-                            <td>${r.warehouse?.name || `انبار #${r.warehouseId}`}</td>
+                            <td>${escapeHtml(r.project?.projectTitle || `پروژه #${r.projectId}`)}</td>
+                            <td>${escapeHtml(r.warehouse?.name || `انبار #${r.warehouseId}`)}</td>
                             <td class="text-end font-monospace fw-bold" dir="ltr">${formatNum(r.total)}</td>
                             <td>${statusBadge}</td>
                             <td>
-                                ${r.status === 0 ? `<button class="btn btn-sm btn-success me-1" onclick="confirmSalesReturn(${r.id})">تأیید نهایی و صدور سند</button>` : ''}
-                                ${r.status !== 2 ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelSalesReturn(${r.id})">ابطال</button>` : ''}
+                                ${r.status === 0 ? `<button class="btn btn-sm btn-success me-1" onclick="confirmSalesReturn(${Number(r.id)})">تأیید نهایی و صدور سند</button>` : ''}
+                                ${r.status !== 2 ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelSalesReturn(${Number(r.id)})">ابطال</button>` : ''}
                             </td>
                         </tr>
                     `;
@@ -178,7 +184,7 @@
 
         function addSrItemRow() {
             const tr = document.createElement('tr');
-            const prodOpts = products.map(p => `<option value="${p.id}">${p.productName}</option>`).join('');
+            const prodOpts = products.map(p => `<option value="${Number(p.id)}">${escapeHtml(p.productName)}</option>`).join('');
             tr.innerHTML = `
                 <td><select class="form-select form-select-sm sr-prod">${prodOpts}</select></td>
                 <td><input type="number" class="form-control form-control-sm sr-qty" value="1" min="1" dir="ltr" /></td>
