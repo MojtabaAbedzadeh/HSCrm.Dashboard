@@ -222,6 +222,12 @@
             }
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
         function renderVoucherList() {
             const q = (document.getElementById('txtVoucherSearch').value || '').trim();
             const container = document.getElementById('vouchersListContainer');
@@ -239,12 +245,12 @@
                 const active = v.id === selectedVoucherId;
                 const dStr = v.voucherDate ? new Date(v.voucherDate).toLocaleDateString('fa-IR') : '';
                 return `
-                    <div onclick="selectVoucher(${v.id})" class="p-3 mb-2 rounded border ${active ? 'border-primary bg-light' : 'border-secondary-subtle'}" style="cursor:pointer;">
+                    <div onclick="selectVoucher(${Number(v.id)})" class="p-3 mb-2 rounded border ${active ? 'border-primary bg-light' : 'border-secondary-subtle'}" style="cursor:pointer;">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <span class="fw-bold text-primary">سند #${v.voucherNumber}</span>
                             <small class="text-muted">${dStr}</small>
                         </div>
-                        <div class="small text-dark mb-1 text-truncate">${v.description || 'سند حسابداری'}</div>
+                        <div class="small text-dark mb-1 text-truncate">${escapeHtml(v.description || 'سند حسابداری')}</div>
                         <div class="d-flex justify-content-between small text-muted">
                             <span>${v.items.length} آرتیکل</span>
                             <span class="fw-bold text-success font-monospace" dir="ltr">${formatNum(v.totalDebit)} ریال</span>
@@ -277,16 +283,16 @@
                 <tr>
                     <td class="text-center text-muted">${idx + 1}</td>
                     <td>
-                        <div class="fw-bold font-monospace text-primary" dir="ltr">${item.accountCode}</div>
-                        <div>${item.accountTitle}</div>
+                        <div class="fw-bold font-monospace text-primary" dir="ltr">${escapeHtml(item.accountCode)}</div>
+                        <div>${escapeHtml(item.accountTitle)}</div>
                     </td>
                     <td>
-                        <div>${item.description || ''}</div>
+                        <div>${escapeHtml(item.description || '')}</div>
                         <small class="text-muted">
-                            ${item.bankAccountTitle ? `<span class="me-2 text-primary">بانک: ${item.bankAccountTitle}</span>` : ''}
-                            ${item.customerName ? `<span class="me-2">مشتری: ${item.customerName}</span>` : ''}
-                            ${item.supplierName ? `<span class="me-2">تأمین‌کننده: ${item.supplierName}</span>` : ''}
-                            ${item.projectTitle ? `<span class="me-2">پروژه: ${item.projectTitle}</span>` : ''}
+                            ${item.bankAccountTitle ? `<span class="me-2 text-primary">بانک: ${escapeHtml(item.bankAccountTitle)}</span>` : ''}
+                            ${item.customerName ? `<span class="me-2">مشتری: ${escapeHtml(item.customerName)}</span>` : ''}
+                            ${item.supplierName ? `<span class="me-2">تأمین‌کننده: ${escapeHtml(item.supplierName)}</span>` : ''}
+                            ${item.projectTitle ? `<span class="me-2">پروژه: ${escapeHtml(item.projectTitle)}</span>` : ''}
                         </small>
                     </td>
                     <td class="text-end font-monospace fw-bold" dir="ltr">${item.debit > 0 ? formatNum(item.debit) : '—'}</td>
@@ -307,7 +313,7 @@
         function addManualVoucherRow() {
             const tbody = document.getElementById('mvRowsBody');
             const tr = document.createElement('tr');
-            const options = accounts.map(a => `<option value="${a.id}">${a.code} - ${a.title}</option>`).join('');
+            const options = accounts.map(a => `<option value="${Number(a.id)}">${escapeHtml(a.code)} - ${escapeHtml(a.title)}</option>`).join('');
             tr.innerHTML = `
                 <td><select class="form-select form-select-sm mv-acc">${options}</select></td>
                 <td><input type="text" class="form-control form-control-sm mv-desc" placeholder="شرح ردیف..." /></td>
