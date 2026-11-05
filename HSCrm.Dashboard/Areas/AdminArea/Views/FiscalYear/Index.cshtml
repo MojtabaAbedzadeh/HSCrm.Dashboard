@@ -142,7 +142,16 @@
             return headers;
         }
 
-        function formatNum(n) { return Number(n || 0).toLocaleString('en-US'); }
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
+        function formatNum(n) {
+            const value = Number(n);
+            return Number.isFinite(value) ? value.toLocaleString('en-US') : '0';
+        }
 
         async function initFiscalYears() {
             await loadFiscalYearsList();
@@ -164,16 +173,16 @@
                 tbody.innerHTML = list.map(f => `
                     <tr>
                         <td class="fw-bold">
-                            ${f.title}
+                            ${escapeHtml(f.title)}
                             ${f.isCurrent ? '<span class="badge bg-primary ms-1">سال جاری</span>' : ''}
                         </td>
-                        <td class="small font-monospace">${f.startDateShamsi || ''} تا ${f.endDateShamsi || ''}</td>
+                        <td class="small font-monospace">${escapeHtml(f.startDateShamsi || '')} تا ${escapeHtml(f.endDateShamsi || '')}</td>
                         <td>
                             ${f.isClosed ? '<span class="badge bg-danger">بسته شده (قفل)</span>' : '<span class="badge bg-success">باز (فعال)</span>'}
                         </td>
                         <td>
-                            ${!f.isCurrent ? `<button class="btn btn-sm btn-outline-primary me-1" onclick="setActiveFiscalYear(${f.id})">انتخاب به‌عنوان جاری</button>` : ''}
-                            ${f.isClosed ? `<button class="btn btn-sm btn-warning" onclick="reopenFiscalYear(${f.id})">بازگشایی (Reopen)</button>` : ''}
+                            ${!f.isCurrent ? `<button class="btn btn-sm btn-outline-primary me-1" onclick="setActiveFiscalYear(${Number(f.id)})">انتخاب به‌عنوان جاری</button>` : ''}
+                            ${f.isClosed ? `<button class="btn btn-sm btn-warning" onclick="reopenFiscalYear(${Number(f.id)})">بازگشایی (Reopen)</button>` : ''}
                         </td>
                     </tr>
                 `).join('');
@@ -189,13 +198,13 @@
                 const json = await res.json();
                 const p = json.data;
                 if (!p) {
-                    box.innerHTML = `<div class="text-warning">${json.message || 'اطلاعات ممیزی در دسترس نیست'}</div>`;
+                    box.innerHTML = `<div class="text-warning">${escapeHtml(json.message || 'اطلاعات ممیزی در دسترس نیست')}</div>`;
                     return;
                 }
 
                 box.innerHTML = `
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <strong class="text-primary">ممیزی سال مالی: ${p.fiscalYearTitle}</strong>
+                        <strong class="text-primary">ممیزی سال مالی: ${escapeHtml(p.fiscalYearTitle)}</strong>
                         <span class="badge ${p.isAlreadyClosed ? 'bg-danger' : 'bg-success'}">${p.isAlreadyClosed ? 'بسته شده' : 'آماده بستن'}</span>
                     </div>
                     <div class="row g-2 text-center small">
