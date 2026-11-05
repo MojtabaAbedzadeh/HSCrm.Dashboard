@@ -171,7 +171,7 @@ namespace Automation.Dashboard.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SwitchFiscalYear(int fiscalYearId, int fiscalYearStatus = 0, string? fiscalYearTitle = null)
+        public async Task<IActionResult> SwitchFiscalYear(int fiscalYearId)
         {
             if (HttpContext.User.Identity is not ClaimsIdentity currentIdentity || !currentIdentity.IsAuthenticated)
             {
@@ -206,9 +206,9 @@ namespace Automation.Dashboard.Controllers
                 claims.Add(new Claim("Token", apiToken));
                 claims.Add(new Claim("FiscalYearId", apiFiscalYearId.Value.ToString()));
                 claims.Add(new Claim("FiscalYearStatus", apiFiscalYearStatus.ToString()));
-                if (!string.IsNullOrWhiteSpace(apiFiscalYearTitle ?? fiscalYearTitle))
+                if (!string.IsNullOrWhiteSpace(apiFiscalYearTitle))
                 {
-                    claims.Add(new Claim("FiscalYearTitle", apiFiscalYearTitle ?? fiscalYearTitle!));
+                    claims.Add(new Claim("FiscalYearTitle", apiFiscalYearTitle));
                 }
 
                 Response.Cookies.Append("ActiveFiscalYearId", apiFiscalYearId.Value.ToString(), new CookieOptions
@@ -229,10 +229,10 @@ namespace Automation.Dashboard.Controllers
                 return Json(new
                 {
                     status = true,
-                    message = $"سال مالی فعال به «{apiFiscalYearTitle ?? fiscalYearTitle ?? apiFiscalYearId.Value.ToString()}» تغییر یافت.",
+                    message = $"سال مالی فعال به «{apiFiscalYearTitle ?? apiFiscalYearId.Value.ToString()}» تغییر یافت.",
                     fiscalYearId = apiFiscalYearId.Value,
                     fiscalYearStatus = apiFiscalYearStatus,
-                    fiscalYearTitle = apiFiscalYearTitle ?? fiscalYearTitle
+                    fiscalYearTitle = apiFiscalYearTitle
                 });
             }
             catch
