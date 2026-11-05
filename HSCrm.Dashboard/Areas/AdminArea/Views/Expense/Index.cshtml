@@ -400,7 +400,6 @@
                 expenseId: $("#expenseId").val(),
                 expenseTitle: $("#ExpenseTitleE").val(),
                 projectId: $("#ProjectIdE").val(),
-                tenantId: $("#TenantIdE").val(),
                 type: parseInt($("#TypeE").val()),
                 expenseDate: $("#ExpenseDateE").val(),
                 amount: $("#AmountE").val(),
@@ -409,7 +408,7 @@
                 paidAmount: $("#PaidAmountE").val(),
                 paymentMethod: $("#PaymentMethodE").val(),
                 referenceNo: $("#ReferenceNoE").val(),
-                modifiedById: $("#ModifiedByIdE").val()
+                referenceNo: $("#ReferenceNoE").val()
             };
             $.ajax({
                 type: 'PUT',
