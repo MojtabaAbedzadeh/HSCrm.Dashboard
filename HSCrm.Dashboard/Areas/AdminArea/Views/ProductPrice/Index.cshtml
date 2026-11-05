@@ -1,11 +1,10 @@
-﻿@model IEnumerable<ProductPriceModel>
+﻿@model IEnumerable<ProductModel>
 
 @{
     ViewData["Title"] = "قیمت محصولات";
     ViewData["selected"] = "price_list";
 
     string ApiAddress = ViewBag.ApiAddress;
-    string valTenantId = ViewBag.TenantId;
     string valUserId = ViewBag.UserId;
 }
 
@@ -51,8 +50,8 @@
                                 @foreach (var item in Model)
                                 {
                                     <tr>
-                                        <td>@item.Product.ProductTitle</td>
-                                        <td>@item.Product.ProductUnit</td>
+                                        <td>@item.ProductTitle</td>
+                                        <td>@item.ProductUnit</td>
                                         <td>
                                             <span class="badge @(item.IsActive ? "bg-success" : "bg-danger")">
                                                 @(item.IsActive ? "فعال" : "غیرفعال")
@@ -69,11 +68,11 @@
                                                 @if (ViewBag.FiscalYearStatus == "0")
                                                 {
                                                     <div class="dropdown-menu">
-                                                        <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.Id, @item.Product.ProductTitle)">قیمت جدید</a>
-                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">تاریخچه قیمت</a>
+                                                        <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.ProductId, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(item.ProductTitle)))">قیمت جدید</a>
+                                                        <a class="dropdown-item" href="#" onclick="showPriceHistory(@item.ProductId)">تاریخچه قیمت</a>
                                                         <hr />
-                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
-                                                        <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.ProductId)">ویرایش</a>
+                                                        <!-- حذف قیمت تا زمان پیاده‌سازی endpoint در API نمایش داده نمی‌شود. -->
                                                     </div>
                                                 }
                                                 else
@@ -104,24 +103,22 @@
                         <div class="col-lg-6">
                             <div class="form-group">
                                 <label for="BuyPrice">قیمت خرید</label>
-                                <input type="number" min="0" class="form-control" id="BuyPrice" name="BuyPrice">
+                                <input type="number" min="0" class="form-control" id="BuyPrice" name="BuyPrice" required>
                             </div>
                         </div>
                         <div class="col-lg-6">
                             <div class="form-group">
                                 <label for="SellPrice">قیمت فروش</label>
-                                <input type="number" min="0" class="form-control" id="SellPrice" name="SellPrice">
+                                <input type="number" min="0" class="form-control" id="SellPrice" name="SellPrice" required>
                             </div>
                         </div>
                         <div class="col-lg-6">
                             <div class="form-group">
                                 <label for="ActionDate">تاریخ اعمال</label>
-                                <input autocomplete="off" class="form-control persian-date" id="ActionDate" name="ActionDate">
+                                <input autocomplete="off" class="form-control persian-date" id="EffectiveFrom" name="EffectiveFrom" required>
                             </div>
                         </div>
-                        <input id="UserId" name="UserId" value="@ViewBag.UserId" hidden />
-                        <input id="FiscalYearId" name="FiscalYearId" value="@ViewBag.FiscalYearId" hidden />
-                        <input id="ProductId" name="ProductId" hidden />
+                                                                        <input id="ProId" name="ProId" hidden />
                         <div class="col-lg-12 alert" style="color:red">
                             <span class="text-danger" id="spnValidate"></span>
                         </div>
@@ -169,10 +166,8 @@
                                     <label for="IsActive" class="lbl-date-change">فعال</label>
                                 </div>
                             </div>
-                            <input id="TenantId" name="TenantId" value="@valTenantId" hidden>
-                            <input id="UserId" name="UserId" value="@valUserId" hidden>
-                            <div class="col-lg-12 alert" style="color:red">
-                                <span class="text-danger" id="spnValidate"></span>
+                                                        <div class="col-lg-12 alert" style="color:red">
+                                <span class="text-danger" id="spnValidateProductCreate"></span>
                             </div>
                         </div>
                     </div>
@@ -191,7 +186,7 @@
             <div class="modal-content">
                 <form id="frmEditProduct">
                     <div class="modal-header px-4">
-                        <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش محصول</h5>
+                        <h5 class="modal-title" id="editModalTitle">ویرایش محصول</h5>
                     </div>
                     <div class="modal-body px-4">
                         <div class="row mb-2">
@@ -245,7 +240,7 @@
             });
         });
         function showInsertPriceModel(productId, productTitle) {
-            $("#ProductId").val(productId);
+            $("#ProId").val(productId);
             $("#productTitle").text('درج قیمت برای ' + productTitle);
             $("#addNewPriceModal").modal('show');
         }
@@ -253,12 +248,16 @@
             e.preventDefault();
             var buyPrice = $("#BuyPrice").val();
             var sellPrice = $("#SellPrice").val();
-            var actionDate = $("#ActionDate").val();
+            var actionDate = ($("#EffectiveFrom").val() || "").trim();
             if (!buyPrice || !sellPrice || !actionDate) {
                 SwalHelper.warning("لطفاً قیمت خرید، قیمت فروش و تاریخ اعمال را به صورت کامل وارد نمایید!");
                 return false;
             }
             var formData = new FormData($("#frmPrice")[0]);
+            formData.set("ProId", $("#ProId").val());
+            formData.set("BuyPrice", buyPrice);
+            formData.set("SellPrice", sellPrice);
+            formData.set("EffectiveFrom", actionDate);
             $.ajax({
                 type: 'POST',
                 url: '@ApiAddress' + 'ProductPrice/CreatePrice',
@@ -317,6 +316,50 @@
                 }
             });
         });
+        function showPriceHistory(productId) {
+            $.ajax({
+                type: 'GET',
+                url: '@ApiAddress' + 'ProductPrice/GetProductPriceHistory?productId=' + encodeURIComponent(productId),
+                dataType: 'json',
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
+                success: function (response) {
+                    if (!response || response.status !== true || !Array.isArray(response.data)) {
+                        SwalHelper.error((response && response.message) || "تاریخچه قیمت دریافت نشد.");
+                        return;
+                    }
+
+                    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
+                        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                    }[character]));
+
+                    const rows = response.data.map(price => `
+                        <tr>
+                            <td>${escapeHtml(price.effectiveFrom)}</td>
+                            <td>${escapeHtml(price.effectiveTo || 'قیمت جاری')}</td>
+                            <td>${escapeHtml(price.buyPrice)}</td>
+                            <td>${escapeHtml(price.sellPrice)}</td>
+                            <td>${price.isActive ? 'فعال' : 'غیرفعال'}</td>
+                        </tr>`).join('');
+
+                    swal.fire({
+                        title: 'تاریخچه قیمت محصول',
+                        html: `<div class="table-responsive"><table class="table table-sm table-striped">
+                            <thead><tr><th>از تاریخ</th><th>تا تاریخ</th><th>خرید</th><th>فروش</th><th>وضعیت</th></tr></thead>
+                            <tbody>${rows || '<tr><td colspan="5">سابقه‌ای ثبت نشده است.</td></tr>'}</tbody>
+                        </table></div>`,
+                        width: '850px',
+                        confirmButtonText: 'بستن'
+                    });
+                },
+                error: function (xhr) {
+                    const message = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در دریافت تاریخچه قیمت.";
+                    SwalHelper.error(message);
+                }
+            });
+        }
+
         function showUpdateModal(productId) {
             $.ajax({
                 type: 'GET',

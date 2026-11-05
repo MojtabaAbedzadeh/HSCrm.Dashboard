@@ -67,7 +67,7 @@
                                                     }
                                                     @if (User.HasPermission(Permissions.Customers.Delete))
                                                     {
-                                                        <a class="dropdown-item" href="#">حذف</a>
+                                                        <!-- API حذف مشتری در نسخه فعلی وجود ندارد؛ گزینه حذف عمداً نمایش داده نمی‌شود. -->
                                                     }
                                                 </div>
                                             </div>
@@ -92,34 +92,8 @@
                 </div>
                 <div class="modal-body px-4">
                     <div class="row mb-2">
-                        <div class="col-lg-3" style="margin-top:10px">
-                            <div class="ec-vendor-img-upload" style="margin-bottom:-10px; position:sticky;top:30px;">
-                                <div class="ec-vendor-main-img">
-                                    <div class="avatar-upload"
-                                         style="margin-bottom: 10px; position:relative;">
-                                        <div class="avatar-edit"
-                                             style="position:absolute; left:25px; z-index:1; top:25px">
-                                            <input type="file" id="UserImagesC" name="UserImagesC" class="ec-image-upload" accept=".png, .jpg, .jpeg" style="opacity:0; width:40px;height:40px;padding:0;border-radius:50%; position:absolute;z-index:1">
-                                            <input id="UserImageUrlC" name="UserImageUrlC" hidden />
-                                            <label for="imageUpload"
-                                                   style="display:flex; -webkit-box-align:center; align-items:center; -webkit-box-pack:center;justify-content:center;width:40px; height:40px;padding:10px;margin-bottom:auto;border-radius:10px;background:#ffffff;border: 1px solid #eeeeee;box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.15); cursor: pointer; font-weight: normal; transition: all 0.2s ease-in-out;">
-                                                <img src="~/assets/img/icons/edit.svg" class="svg_img header_svg" alt="edit"
-                                                     style="width:25px;opacity:0.6;">
-                                            </label>
-                                        </div>
-                                        <div class="avatar-preview ec-preview"
-                                             style="width:100%;height:100%;padding:15px;position:relative;border:1px solid #eeeeee;border-radius:15px;">
-                                            <div class="imagePreview ec-div-preview"
-                                                 style="width:100%;height:100%;display:flex;background-size: cover;background-repeat: no-repeat;background-position: center;">
-                                                <img id="imgUserC" name="imgUserC" class="ec-image-preview" src="~/assets/img/user/default-user.png" alt="User"
-                                                     style="margin:auto;vertical-align:middle;max-width:100%;border-radius:10px">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-9">
+                        
+                        <div class="col-lg-12">
                             <div class="ec-vendor-upload-detail">
                                 <div class="row mb-2">
                                     <div class="col-lg-6">
@@ -142,7 +116,7 @@
                                     </div>
                                     <div class="col-lg-6">
                                         <div class="form-group form-floating">
-                                            <input class="form-control text-end" id="Password" name="Password" placeholder="رمز عبور">
+                                            <input type="password" class="form-control text-end" id="Password" name="Password" autocomplete="new-password" placeholder="رمز عبور">
                                             <label for="Password" style="right:0!important; left:unset!important;">رمز عبور</label>
                                         </div>
                                     </div>
@@ -165,7 +139,7 @@
                                         </div>
                                     </div>
                                     <div class="col-lg-12 alert" style="color:red">
-                                        <span class="text-danger" id="spnValidate"></span>
+                                        <span class="text-danger customer-validation-message"></span>
                                     </div>
                                 </div>
                             </div>
@@ -237,14 +211,29 @@
     <script>
         $("#btnCustomerSubmit").on('click', function (e) {
             e.preventDefault();
-            var name = $("#Name").val();
-            if (!name || name.trim() === "") {
+            const firstName = ($("#UserFirstName").val() || "").trim();
+            const lastName = ($("#UserLastName").val() || "").trim();
+            const userName = ($("#UserName").val() || "").trim();
+            const password = $("#Password").val() || "";
+
+            if (!firstName) {
                 SwalHelper.warning("لطفاً نام مشتری را وارد نمایید.");
+                $("#UserFirstName").trigger("focus");
                 return false;
             }
-            var password = $("#Password").val();
-            if (!password || password.length < 6) {
+            if (!lastName) {
+                SwalHelper.warning("لطفاً نام خانوادگی مشتری را وارد نمایید.");
+                $("#UserLastName").trigger("focus");
+                return false;
+            }
+            if (!userName) {
+                SwalHelper.warning("لطفاً نام کاربری را وارد نمایید.");
+                $("#UserName").trigger("focus");
+                return false;
+            }
+            if (password.length < 6) {
                 SwalHelper.warning("رمز عبور باید حداقل ۶ کاراکتر باشد.");
+                $("#Password").trigger("focus");
                 return false;
             }
             var formData = new FormData($("#frmCustomer")[0]);
@@ -288,8 +277,7 @@
                         $("#PhoneU").val(xhr.data.phone);
                         $("#EmailU").val(xhr.data.email);
                         $("#AddressU").val(xhr.data.address);
-                        $("#TenantIdU").val(xhr.data.tenantId);
-                        $("#ModifiedByIdU").val("@UserId");
+                        // TenantId و ModifiedById در سمت API از نشست احراز هویت تعیین می‌شوند.
                         $("#editCustomer").modal('show');
                     } else {
                         SwalHelper.error("اطلاعات مشتری یافت نشد.");
@@ -313,8 +301,7 @@
                 phone: $("#PhoneU").val(),
                 email: $("#EmailU").val(),
                 address: $("#AddressU").val(),
-                modifiedById: $("#ModifiedByIdU").val(),
-                tenantId: $("#TenantIdU").val(),
+                // شناسه مستأجر و کاربر ویرایش‌کننده از مرورگر دریافت نمی‌شوند.
             };
             $.ajax({
                 type: 'PUT',

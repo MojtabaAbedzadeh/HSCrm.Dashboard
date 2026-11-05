@@ -106,18 +106,28 @@
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + '@User.FindFirstValue("Token")'
             };
-            const tenantId = localStorage.getItem('TenantId') || '@ViewBag.TenantId';
+            const tenantId = localStorage.getItem('TenantId') || sessionStorage.getItem('TenantId') || '@ViewBag.TenantId';
             if (tenantId) headers['TenantId'] = tenantId;
+
             return headers;
         }
 
-        function formatNum(n) { return Number(n || 0).toLocaleString('en-US'); }
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
+        function formatNum(n) {
+            const value = Number(n);
+            return Number.isFinite(value) ? value.toLocaleString('en-US') : '0';
+        }
 
         async function initReceipts() {
             document.getElementById('recDate').value = new Date().toISOString().split('T')[0];
             try {
                 const [recRes, invRes, bankRes] = await Promise.all([
-                    fetch(`${apiBase}/Receipt/GetReceipts`, { headers: getAuthHeaders() }),
+                    fetch(`${apiBase}/Receipt`, { headers: getAuthHeaders() }),
                     fetch(`${apiBase}/SalesInvoice/GetSalesInvoices`, { headers: getAuthHeaders() }),
                     fetch(`${apiBase}/BankAccount/GetAll`, { headers: getAuthHeaders() })
                 ]);
@@ -126,10 +136,10 @@
                 const banks = (await bankRes.json()).data || [];
 
                 document.getElementById('recSalesInvoiceId').innerHTML =
-                    invoices.map(inv => `<option value="${inv.id}">فاکتور #${inv.number} - ${inv.project?.customer?.name || ''} (${formatNum(inv.total)} ریال)</option>`).join('');
+                    invoices.map(inv => `<option value="${Number(inv.id)}">فاکتور #${escapeHtml(inv.number)} - ${escapeHtml(inv.project?.customer?.name || '')} (${formatNum(inv.total)} ریال)</option>`).join('');
 
                 document.getElementById('recBankAccountId').innerHTML =
-                    banks.map(b => `<option value="${b.id}" ${b.isDefault ? 'selected' : ''}>${b.title}</option>`).join('');
+                    banks.map(b => `<option value="${Number(b.id)}" ${b.isDefault ? 'selected' : ''}>${escapeHtml(b.title)}</option>`).join('');
 
                 const tbody = document.getElementById('receiptsTableBody');
                 if (receipts.length === 0) {
@@ -137,13 +147,13 @@
                 } else {
                     tbody.innerHTML = receipts.map(r => `
                         <tr>
-                            <td>#${r.id}</td>
-                            <td class="fw-bold">فاکتور #${r.salesInvoiceId}</td>
+                            <td>#${Number(r.receiptId)}</td>
+                            <td class="fw-bold">فاکتور #${Number(r.salesInvoiceId)}</td>
                             <td class="fw-bold text-success font-monospace" dir="ltr">${formatNum(r.amount)}</td>
                             <td>${r.receiptDate ? new Date(r.receiptDate).toLocaleDateString('fa-IR') : ''}</td>
-                            <td>${r.method || ''}</td>
-                            <td>${r.bankAccountTitle || (r.bankAccountId ? `بانک #${r.bankAccountId}` : 'حساب پیش‌فرض')}</td>
-                            <td class="font-monospace" dir="ltr">${r.referenceNo || '—'}</td>
+                            <td>${escapeHtml(r.method || '')}</td>
+                            <td>${escapeHtml(r.bankAccountTitle || (r.bankAccountId ? `بانک #${r.bankAccountId}` : 'حساب پیش‌فرض'))}</td>
+                            <td class="font-monospace" dir="ltr">${escapeHtml(r.referenceNo || '—')}</td>
                         </tr>
                     `).join('');
                 }
@@ -164,13 +174,18 @@
                 return;
             }
             try {
-                const res = await fetch(`${apiBase}/Receipt/Create`, {
+                const res = await fetch(`${apiBase}/Receipt`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify(payload)
                 });
-                const json = await res.json();
-                if (!res.ok || json.status === false) throw new Error(json.message || 'خطا در ثبت دریافت');
+                const responseText = await res.text();
+                let json = null;
+                try { json = responseText ? JSON.parse(responseText) : null; } catch { /* handled below */ }
+                if (!res.ok || !json || json.status === false) {
+                    const detail = json?.message || (responseText && !json ? responseText.slice(0, 300) : "پاسخ معتبری از سرور دریافت نشد.");
+                    throw new Error(`ثبت دریافت ناموفق بود (HTTP ${res.status}): ${detail}`);
+                }
                 await swal.fire({ title: 'ثبت موفق', text: 'دریافت ثبت شد و سند حسابداری واریز به بانک صادر گردید.', icon: 'success', confirmButtonText: 'باشه' });
                 bootstrap.Modal.getInstance(document.getElementById('addReceiptModal'))?.hide();
                 initReceipts();

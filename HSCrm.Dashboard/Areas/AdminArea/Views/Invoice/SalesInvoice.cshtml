@@ -7,6 +7,8 @@
     ViewData["selected"] = "invoice_salles_list";
 
     string ApiAddress = ViewBag.ApiAddress;
+    var totalSales = Model?.Sum(x => x.Total) ?? 0m;
+    var invoiceCount = Model?.Count() ?? 0;
 }
 
 @section styles {
@@ -29,6 +31,37 @@
             }
         </div>
     }
+</div>
+<div class="accordion mb-4" id="salesFinancialSummary">
+    <div class="accordion-item">
+        <h2 class="accordion-header" id="salesFinancialSummaryHeading">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#salesFinancialSummaryBody" aria-expanded="false" aria-controls="salesFinancialSummaryBody">
+                <i class="mdi mdi-chart-box-outline me-2"></i> نمایش خلاصه مالی فاکتورهای فروش
+            </button>
+        </h2>
+        <div id="salesFinancialSummaryBody" class="accordion-collapse collapse" aria-labelledby="salesFinancialSummaryHeading" data-bs-parent="#salesFinancialSummary">
+            <div class="accordion-body">
+                <div class="row">
+                    <div class="col-xl-6 col-sm-6 p-b-15">
+                        <div class="card card-mini bg-primary text-white">
+                            <div class="card-body">
+                                <h2 class="mb-1">@totalSales.ToString("N0") ریال</h2>
+                                <p>جمع کل فاکتورهای فروش</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-6 col-sm-6 p-b-15">
+                        <div class="card card-mini bg-success text-white">
+                            <div class="card-body">
+                                <h2 class="mb-1">@invoiceCount.ToString("N0")</h2>
+                                <p>تعداد فاکتورهای فروش</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @if (ViewBag.FiscalYearStatus != "0")
 {
@@ -79,14 +112,6 @@
                                                 @if (ViewBag.FiscalYearStatus == "0")
                                                 {
                                                     <div class="dropdown-menu">
-                                                        @if (User.HasPermission(Permissions.SalesInvoices.Edit))
-                                                        {
-                                                            <a class="dropdown-item" href="#"><i class="mdi mdi-email-edit"></i> ویرایش</a>
-                                                        }
-                                                        @if (User.HasPermission(Permissions.SalesInvoices.Delete))
-                                                        {
-                                                            <a class="dropdown-item" href="#"><i class="mdi mdi-trash-can"></i> حذف</a>
-                                                        }
                                                         @if (item.Status == 0)
                                                         {
                                                             <div class="dropdown-divider"></div>
@@ -194,6 +219,12 @@
     </div>
 </div>
 <script>
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[char]));
+    }
+
     function openSalesInvoicePrintModal(id, number, dateStr, customer, project, total) {
         document.getElementById('prInvNumber').textContent = number || id;
         document.getElementById('prInvDate').textContent = dateStr || '-';
@@ -205,7 +236,7 @@
         tbody.innerHTML = '<tr><td colspan="7" class="py-3 text-muted">در حال دریافت ریز اقلام فاکتور از سرور...</td></tr>';
         new bootstrap.Modal(document.getElementById('printOfficialSalesInvoiceModal')).show();
 
-        fetch('@ApiAddress' + 'SalesInvoice/GetById?id=' + id, {
+        fetch('@ApiAddress' + 'SalesInvoice/GetById?id=' + encodeURIComponent(Number(id)), {
             headers: { 'Authorization': 'Bearer ' + '@User.FindFirstValue("Token")' }
         })
         .then(r => r.json())
@@ -215,7 +246,7 @@
             if (!Array.isArray(items) || items.length === 0) {
                 tbody.innerHTML = `<tr>
                     <td>1</td>
-                    <td>فروش کالا / خدمات طبق فاکتور شماره ${number || id}</td>
+                    <td>فروش کالا / خدمات طبق فاکتور شماره ${escapeHtml(number || id)}</td>
                     <td>1</td>
                     <td class="font-monospace">${Number(total || 0).toLocaleString('fa-IR')}</td>
                     <td>0</td>
@@ -226,8 +257,8 @@
                 tbody.innerHTML = items.map((it, idx) => `
                     <tr>
                         <td>${idx + 1}</td>
-                        <td>${it.productTitle || it.productName || ('کالای #' + it.productId)}</td>
-                        <td class="font-monospace">${it.quantity || it.count || 1}</td>
+                        <td>${escapeHtml(it.productTitle || it.productName || ('کالای #' + it.productId))}</td>
+                        <td class="font-monospace">${Number(it.quantity || it.count || 1).toLocaleString('fa-IR')}</td>
                         <td class="font-monospace">${Number(it.unitPrice || it.price || 0).toLocaleString('fa-IR')}</td>
                         <td class="font-monospace">${Number(it.discount || 0).toLocaleString('fa-IR')}</td>
                         <td class="font-monospace">${Number(it.tax || it.vatAmount || 0).toLocaleString('fa-IR')}</td>

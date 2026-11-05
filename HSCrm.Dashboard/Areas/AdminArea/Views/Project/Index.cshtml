@@ -89,7 +89,7 @@
                                                         }
                                                         @if (User.HasPermission(Permissions.Projects.Delete))
                                                         {
-                                                            <a class="dropdown-item" href="#">حذف</a>
+                                                            <!-- حذف پروژه تا زمان پیاده‌سازی endpoint در API نمایش داده نمی‌شود. -->
                                                         }
                                                         <div class="dropdown-divider"></div>
                                                         @if (User.HasPermission(Permissions.Expenses.View))
@@ -153,8 +153,7 @@
                                 </div>
                             </div>
                             <input hidden class="form-control text-end" id="CreateById" name="CreateById" value="@ViewBag.UserId">
-                            <input hidden class="form-control text-end" id="TenantId" name="TenantId" value="1">
-                            <div class="col-lg-12 alert" style="color:red">
+                                                        <div class="col-lg-12 alert" style="color:red">
                                 <span class="text-danger" id="spnValidate"></span>
                             </div>
                         </div>
@@ -174,7 +173,7 @@
             <div class="modal-content">
                 <form id="frmEditProject">
                     <div class="modal-header px-4">
-                        <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش پروژه</h5>
+                        <h5 class="modal-title" id="editModalTitle">ویرایش پروژه</h5>
                     </div>
                     <div class="modal-body px-4">
                         <div class="row mb-2">
@@ -202,9 +201,8 @@
                                     <label for="ProjectLocationE" style="right:0!important; left:unset!important;">محل پروژه</label>
                                 </div>
                             </div>
-                            <input hidden class="form-control text-end" id="ModifiedById" name="ModifiedById" value="@ViewBag.UserId">
-                            <div class="col-lg-12 alert" style="color:red">
-                                <span class="text-danger" id="spnValidate"></span>
+                                                        <div class="col-lg-12 alert" style="color:red">
+                                <span class="text-danger" id="spnValidateEdit"></span>
                             </div>
                         </div>
                     </div>
@@ -440,7 +438,6 @@
                 ProjectTitle: $("#ProjectTitleE").val(),
                 CustomerId: $("#CustomerIdE").val() ? parseInt($("#CustomerIdE").val()) : null,
                 ProjectLocation: $("#ProjectLocationE").val(),
-                ModifiedById: $("#ModifiedById").val()
             };
             $.ajax({
                 type: 'PUT',

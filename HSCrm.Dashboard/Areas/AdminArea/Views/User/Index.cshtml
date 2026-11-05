@@ -5,6 +5,7 @@
     ViewData["selected"] = "user_list";
 
     string ApiAddress = ViewBag.ApiAddress;
+    var apiOrigin = Uri.TryCreate(ApiAddress, UriKind.Absolute, out var apiUri) ? apiUri.GetLeftPart(UriPartial.Authority) : "";
     var token = User.FindFirstValue("Token");
 }
 
@@ -44,7 +45,12 @@
                                 @foreach (var item in Model)
                                 {
                                     <tr>
-                                        <td><img class="vendor-thumb" src="@item.UserImageUrl" alt="user profile"></td>
+                                        @{
+                                            var listImageUrl = string.IsNullOrWhiteSpace(item.UserImageUrl)
+                                                ? Url.Content("~/assets/img/user/img-user.jpg")
+                                                : (Uri.TryCreate(item.UserImageUrl, UriKind.Absolute, out _) ? item.UserImageUrl : $"{apiOrigin}/{item.UserImageUrl.TrimStart('/')}");
+                                        }
+                                        <td><img class="vendor-thumb" src="@listImageUrl" alt="user profile" onerror="this.onerror=null;this.src='@Url.Content("~/assets/img/user/img-user.jpg")';"></td>
                                         <td>@item.UserFirstName</td>
                                         <td>@item.UserLastName</td>
                                         <td>
@@ -63,7 +69,7 @@
                                                 <button type="button" class="btn btn-outline-success">اطلاعات</button> <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static"><span class="sr-only">اطلاعات</span></button>
                                                 <div class="dropdown-menu">
                                                     <a class="dropdown-item" href="#" onclick="showUpdateModal('@item.Id')">ویرایش</a>
-                                                    <a class="dropdown-item" href="#">حذف</a>
+                                                    <!-- حذف کاربر باید با تأیید و endpoint اختصاصی پیاده‌سازی شود. -->
                                                     <a class="dropdown-item" href="#" onclick="openRoleModal('@item.Id','@item.UserFirstName','@item.UserLastName')">تغییر نقش</a>
                                                 </div>
                                             </div>
@@ -96,7 +102,7 @@
                                              style="position:absolute; left:25px; z-index:1; top:25px">
                                             <input type="file" id="UserImagesC" name="UserImagesC" class="ec-image-upload" accept=".png, .jpg, .jpeg" style="opacity:0; width:40px;height:40px;padding:0;border-radius:50%; position:absolute;z-index:1">
                                             <input id="UserImageUrlC" name="UserImageUrlC" hidden />
-                                            <label for="imageUpload"
+                                            <label for="UserImagesC"
                                                    style="display:flex; -webkit-box-align:center; align-items:center; -webkit-box-pack:center;justify-content:center;width:40px; height:40px;padding:10px;margin-bottom:auto;border-radius:10px;background:#ffffff;border: 1px solid #eeeeee;box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.15); cursor: pointer; font-weight: normal; transition: all 0.2s ease-in-out;">
                                                 <img src="~/assets/img/icons/edit.svg" class="svg_img header_svg" alt="edit"
                                                      style="width:25px;opacity:0.6;">
@@ -106,7 +112,7 @@
                                              style="width:100%;height:100%;padding:15px;position:relative;border:1px solid #eeeeee;border-radius:15px;">
                                             <div class="imagePreview ec-div-preview"
                                                  style="width:100%;height:100%;display:flex;background-size: cover;background-repeat: no-repeat;background-position: center;">
-                                                <img id="imgUserC" name="imgUserC" class="ec-image-preview" src="~/assets/img/user/default-user.png" alt="User"
+                                                <img id="imgUserC" name="imgUserC" class="ec-image-preview" src="~/assets/img/user/default-user.png" alt="User" onerror="this.onerror=null;this.src='/assets/img/user/img-user.jpg';"
                                                      style="margin:auto;vertical-align:middle;max-width:100%;border-radius:10px">
                                             </div>
                                         </div>
@@ -143,6 +149,12 @@
                                     </div>
                                     <div class="col-lg-6">
                                         <div class="form-group form-floating">
+                                            <input class="form-control text-end" type="password" id="PasswordC" name="PasswordC" placeholder="رمز عبور" autocomplete="new-password" required>
+                                            <label for="PasswordC" style="right:0!important; left:unset!important;">رمز عبور اختصاصی</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group form-floating">
                                             <input class="form-control text-end" id="PhoneNumberC" name="PhoneNumberC" placeholder="شماره همراه">
                                             <label for="PhoneNumberC" style="right:0!important; left:unset!important;">شماره همراه</label>
                                         </div>
@@ -160,7 +172,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <input hidden class="form-control text-end" id="TenantId" name="TenantId" value="1">
                                     <div class="col-lg-12 alert" style="color:red">
                                         <span class="text-danger" id="spnValidate"></span>
                                     </div>
@@ -185,7 +196,7 @@
         <div class="modal-content">
             <form id="frmEditUser">
                 <div class="modal-header px-4">
-                    <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش کاربر</h5>
+                    <h5 class="modal-title" id="editModalTitle">ویرایش کاربر</h5>
                 </div>
                 <div class="modal-body px-4">
                     <div class="row mb-2">
@@ -197,7 +208,7 @@
                                         <div class="avatar-edit" style="position:absolute; left:25px; z-index:1; top:25px">
                                             <input type="file" id="UserImages" name="UserImages" class="ec-image-upload" accept=".png, .jpg, .jpeg" style="opacity:0; width:40px;height:40px;padding:0;border-radius:50%; position:absolute;z-index:1">
                                             <input id="UserImageUrl" name="UserImageUrl" hidden />
-                                            <label for="imageUpload" style="display:flex; -webkit-box-align:center; align-items:center; -webkit-box-pack:center;justify-content:center;width:40px; height:40px;padding:10px;margin-bottom:auto;border-radius:10px;background:#ffffff;border: 1px solid #eeeeee;box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.15); cursor: pointer; font-weight: normal; transition: all 0.2s ease-in-out;">
+                                            <label for="UserImages" style="display:flex; -webkit-box-align:center; align-items:center; -webkit-box-pack:center;justify-content:center;width:40px; height:40px;padding:10px;margin-bottom:auto;border-radius:10px;background:#ffffff;border: 1px solid #eeeeee;box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.15); cursor: pointer; font-weight: normal; transition: all 0.2s ease-in-out;">
                                                 <img src="~/assets/img/icons/edit.svg" class="svg_img header_svg" alt="edit" style="width:25px;opacity:0.6;">
                                             </label>
                                         </div>
@@ -205,7 +216,7 @@
                                              style="width:100%;height:100%;padding:15px;position:relative;border:1px solid #eeeeee;border-radius:15px;">
                                             <div class="imagePreview ec-div-preview"
                                                  style="width:100%;height:100%;display:flex;background-size: cover;background-repeat: no-repeat;background-position: center;">
-                                                <img id="imgUser" name="imgUser" class="ec-image-preview" src="~/assets/img/user/default-user.png" alt="User" style="margin:auto;vertical-align:middle;max-width:100%;border-radius:10px">
+                                                <img id="imgUser" name="imgUser" class="ec-image-preview" src="~/assets/img/user/default-user.png" alt="User" onerror="this.onerror=null;this.src='/assets/img/user/img-user.jpg';" style="margin:auto;vertical-align:middle;max-width:100%;border-radius:10px">
                                             </div>
                                         </div>
                                     </div>
@@ -254,7 +265,7 @@
                                         </div>
                                     </div>
                                     <div class="col-lg-12 alert" style="color:red">
-                                        <span class="text-danger" id="spnValidate"></span>
+                                        <span class="text-danger" id="spnValidateEdit"></span>
                                     </div>
                                 </div>
                             </div>
@@ -266,7 +277,7 @@
                         لغو
                     </button>
                     <button id="btnUserUpdate" type="button" class="btn btn-primary btn-pill">ذخیره </button>
-                    <div id="divMessage" class="text-center hidden position-absolute" style="left:50px;"></div>
+                    <div id="divMessageEdit" class="text-center hidden position-absolute" style="left:50px;"></div>
                 </div>
             </form>
         </div>
@@ -324,14 +335,22 @@
 
 @section AdminScripts {
     <script>
+        const userImageApiOrigin = '@apiOrigin';
+        function resolveUserImageUrl(value) {
+            if (!value) return '/assets/img/user/img-user.jpg';
+            try { return new URL(value, userImageApiOrigin + '/').href; }
+            catch { return '/assets/img/user/img-user.jpg'; }
+        }
+
         $("#btnUserSubmit").on('click', function (e) {
             e.preventDefault();
-            var firstName = $("#UserFirstName").val();
-            var lastName = $("#UserLastName").val();
-            var userName = $("#UserName").val();
-            var password = $("#Password").val();
-            if (!firstName || !lastName || !userName || !password) {
-                SwalHelper.warning("لطفاً نام، نام خانوادگی، نام کاربری و کلمه عبور را تکمیل نمایید!");
+            var firstName = ($("#UserFirstNameC").val() || "").trim();
+            var lastName = ($("#UserLastNameC").val() || "").trim();
+            var userName = ($("#UserNameC").val() || "").trim();
+            var phoneNumber = ($("#PhoneNumberC").val() || "").trim();
+            var password = ($("#PasswordC").val() || "");
+            if (!firstName || !lastName || !userName || !phoneNumber || !password.trim()) {
+                SwalHelper.warning("لطفاً نام، نام خانوادگی، نام کاربری، شماره همراه و رمز عبور اختصاصی را تکمیل نمایید!");
                 return false;
             }
             var formData = new FormData($("#frmUser")[0]);
@@ -427,7 +446,7 @@
                         $("#PhoneNumber").val(xhr.data.phoneNumber);
                         $("#Email").val(xhr.data.email);
                         $("#UserImageUrl").val(xhr.data.userImageUrl);
-                        $("#imgUser").attr("src", xhr.data.userImageUrl || '');
+                        $("#imgUser").attr("src", resolveUserImageUrl(xhr.data.userImageUrl));
                         if (xhr.data.userGender) {
                             $("#editUser input[name='UserGender'][value='true']").prop("checked", true);
                         } else {
@@ -450,11 +469,10 @@
                 UserId: $("#UserId").val(),
                 UserFirstName: $("#UserFirstName").val(),
                 UserLastName: $("#UserLastName").val(),
-                UserName: $("#UserName").val(),
                 PhoneNumber: $("#PhoneNumber").val(),
                 Email: $("#Email").val(),
                 UserImageUrl: $("#UserImageUrl").val(),
-                UserGender: $("input[name='UserGender']:checked").val() === "true"
+                UserGender: $("#editUser input[name='UserGender']:checked").val() === "true"
             };
             $.ajax({
                 type: 'PUT',
@@ -496,7 +514,7 @@
                 processData: false
             }).done(function (xhr) {
                 if (xhr.statusCode == '200') {
-                    $("#imgUserC").attr('src', xhr.message);
+                    $("#imgUserC").attr('src', resolveUserImageUrl(xhr.message));
                     $("#UserImageUrlC").val(xhr.message);
                     SwalHelper.toast("تصویر با موفقیت بارگذاری شد.", "success");
                 } else {
@@ -525,7 +543,7 @@
                 processData: false
             }).done(function (xhr) {
                 if (xhr.statusCode == '200') {
-                    $("#imgUser").attr('src', xhr.message);
+                    $("#imgUser").attr('src', resolveUserImageUrl(xhr.message));
                     $("#UserImageUrl").val(xhr.message);
                     SwalHelper.toast("تصویر جدید با موفقیت بارگذاری شد.", "success");
                 } else {

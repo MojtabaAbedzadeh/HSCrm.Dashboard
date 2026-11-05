@@ -20,7 +20,11 @@
 
     var avatarSrc = string.IsNullOrWhiteSpace(userImageUrl)
         ? Url.Content("~/assets/img/user/img-user.jpg")
-        : (userImageUrl.StartsWith("http") ? userImageUrl : $"https://localhost:7001{userImageUrl}");
+        : (Uri.TryCreate(userImageUrl, UriKind.Absolute, out var absoluteAvatarUri)
+            ? absoluteAvatarUri.ToString()
+            : (Uri.TryCreate(apiAddr, UriKind.Absolute, out var apiUri)
+                ? new Uri(apiUri, userImageUrl).ToString()
+                : Url.Content("~/assets/img/user/img-user.jpg")));
 }
 
 <header class="ec-main-header" id="header">
@@ -79,12 +83,12 @@
             <ul class="nav navbar-nav">
                 <li class="dropdown user-menu">
                     <button class="dropdown-toggle nav-link ec-drop" data-bs-toggle="dropdown" aria-expanded="false">
-                        <img src="@avatarSrc" class="user-image" alt="User Image">
+                        <img src="@avatarSrc" class="user-image" alt="User Image" onerror="this.onerror=null;this.src='@Url.Content("~/assets/img/user/img-user.jpg")';">
                     </button>
                     <ul class="dropdown-menu dropdown-menu-right ec-dropdown-menu">
                         <li class="dropdown-header align-items-center">
                             <div class="d-flex align-items-center">
-                                <img src="@avatarSrc" class="img-circle" alt="User Image" style="width: 40px; height: 40px;">
+                                <img src="@avatarSrc" class="img-circle" alt="User Image" style="width: 40px; height: 40px;" onerror="this.onerror=null;this.src='@Url.Content("~/assets/img/user/img-user.jpg")';">
                                 <div class="d-flex flex-column ms-2">
                                     <strong>@fullName</strong>
                                     <small class="text-muted">شناسه مجموعه: #@tenantId</small>
@@ -127,7 +131,7 @@
             </div>
             <div class="modal-body">
                 <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
-                    <img src="@avatarSrc" class="rounded-circle border" style="width: 64px; height: 64px; object-fit: cover;" />
+                    <img src="@avatarSrc" class="rounded-circle border" style="width: 64px; height: 64px; object-fit: cover;" onerror="this.onerror=null;this.src='@Url.Content("~/assets/img/user/img-user.jpg")';" />
                     <div>
                         <h6 class="fw-bold mb-1">@fullName</h6>
                         <div class="text-muted small">@email</div>
@@ -283,21 +287,36 @@
             });
         });
 
-        window.switchActiveFiscalYear = function (fyId, fyStatus, fyTitle) {
+        window.switchActiveFiscalYear = function (fyId) {
             const formData = new URLSearchParams();
             formData.append('fiscalYearId', fyId);
-            formData.append('fiscalYearStatus', fyStatus);
-            formData.append('fiscalYearTitle', fyTitle);
 
             fetch('/Account/SwitchFiscalYear', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: formData.toString()
             })
-            .then(r => r.json())
-            .then(res => {
-                if (res && res.status) {
-                    window.location.reload();
+            .then(async response => {
+                const res = await response.json();
+                if (!response.ok || !res || !res.status) {
+                    throw new Error(res?.message || 'تغییر سال مالی انجام نشد.');
+                }
+                try {
+                    localStorage.setItem('ActiveFiscalYearId', String(res.fiscalYearId));
+                    sessionStorage.setItem('ActiveFiscalYearId', String(res.fiscalYearId));
+                } catch (storageError) {
+                    // The authenticated cookie and JWT are authoritative; storage is only a UI cache.
+                }
+                window.location.reload();
+            })
+            .catch(error => {
+                const message = error?.message || 'ارتباط با سرور برای تغییر سال مالی برقرار نشد.';
+                if (window.SwalHelper?.error) {
+                    window.SwalHelper.error(message, 'خطا در تغییر سال مالی');
+                } else if (window.Swal?.fire) {
+                    window.Swal.fire({ title: 'خطا در تغییر سال مالی', text: message, icon: 'error' });
+                } else {
+                    alert(message);
                 }
             });
         };

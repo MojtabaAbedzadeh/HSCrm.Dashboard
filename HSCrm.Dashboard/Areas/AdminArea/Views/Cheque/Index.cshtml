@@ -123,11 +123,11 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold">تاریخ صدور (شمسی) <span class="text-danger">*</span></label>
-                            <input type="text" id="chqIssueDate" class="form-control" value="1403/08/01" required dir="ltr" />
+                            <input type="text" id="chqIssueDate" class="form-control" placeholder="مثلاً 1405/08/01" required dir="ltr" />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold">تاریخ سررسید (شمسی) <span class="text-danger">*</span></label>
-                            <input type="text" id="chqDueDate" class="form-control" value="1403/09/15" required dir="ltr" />
+                            <input type="text" id="chqDueDate" class="form-control" placeholder="مثلاً 1405/09/15" required dir="ltr" />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">نام بانک <span class="text-danger">*</span></label>
@@ -220,7 +220,16 @@
             return headers;
         }
 
-        function formatNum(n) { return Number(n || 0).toLocaleString('en-US'); }
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
+        function formatNum(n) {
+            const value = Number(n);
+            return Number.isFinite(value) ? value.toLocaleString('en-US') : '0';
+        }
 
         async function initChequesPage() {
             try {
@@ -234,14 +243,14 @@
                 const banks = (await bankRes.json()).data || [];
 
                 document.getElementById('chqCustomerId').innerHTML = '<option value="">-- انتخاب مشتری --</option>' +
-                    custs.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                    custs.map(c => `<option value="${Number(c.id)}">${escapeHtml(c.name)}</option>`).join('');
                 const supOpts = '<option value="">-- انتخاب تأمین‌کننده --</option>' +
-                    sups.map(s => `<option value="${s.id}">${s.supplierFullName}</option>`).join('');
+                    sups.map(s => `<option value="${Number(s.id)}">${escapeHtml(s.supplierFullName)}</option>`).join('');
                 document.getElementById('chqSupplierId').innerHTML = supOpts;
                 document.getElementById('csEndorsedSupplierId').innerHTML = supOpts;
 
                 const bankOpts = '<option value="">-- انتخاب حساب بانکی --</option>' +
-                    banks.map(b => `<option value="${b.id}">${b.title}</option>`).join('');
+                    banks.map(b => `<option value="${Number(b.id)}">${escapeHtml(b.title)}</option>`).join('');
                 document.getElementById('chqBankAccountId').innerHTML = bankOpts;
                 document.getElementById('csTargetBankAccountId').innerHTML = bankOpts;
             } catch (e) { console.error(e); }
@@ -265,19 +274,19 @@
 
                 tbody.innerHTML = list.map(c => `
                     <tr>
-                        <td><input type="checkbox" class="chq-select" value="${c.id}" checked /></td>
+                        <td><input type="checkbox" class="chq-select" value="${Number(c.id)}" checked /></td>
                         <td>
-                            <div class="fw-bold font-monospace" dir="ltr">#${c.chequeNumber}</div>
-                            <small class="text-muted font-monospace" dir="ltr">${c.sayadiId || ''}</small>
+                            <div class="fw-bold font-monospace" dir="ltr">#${escapeHtml(c.chequeNumber)}</div>
+                            <small class="text-muted font-monospace" dir="ltr">${escapeHtml(c.sayadiId || '')}</small>
                         </td>
                         <td>${c.type === 1 ? '<span class="text-success fw-bold">دریافتنی</span>' : '<span class="text-danger fw-bold">پرداختنی</span>'}</td>
-                        <td>${c.bankName}</td>
-                        <td>${c.customerName || c.supplierName || '—'}</td>
+                        <td>${escapeHtml(c.bankName)}</td>
+                        <td>${escapeHtml(c.customer?.name || c.supplier?.supplierFullName || '—')}</td>
                         <td>${c.dueDate ? new Date(c.dueDate).toLocaleDateString('fa-IR') : ''}</td>
                         <td class="text-end font-monospace fw-bold" dir="ltr">${formatNum(c.amount)}</td>
-                        <td>${statusLabels[c.status] || c.status}</td>
+                        <td>${statusLabels[c.status] || escapeHtml(c.status)}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="openStatusModal(${c.id})">تغییر وضعیت</button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="openStatusModal(${Number(c.id)})">تغییر وضعیت</button>
                         </td>
                     </tr>
                 `).join('');

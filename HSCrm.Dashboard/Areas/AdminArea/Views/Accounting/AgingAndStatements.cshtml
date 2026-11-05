@@ -204,6 +204,12 @@
             await loadAgingReport();
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
         async function loadPartiesDropdown() {
             const cmb = document.getElementById('cmbPartySelector');
             try {
@@ -215,7 +221,7 @@
                     list.map(p => {
                         const name = currentPartyType === 1 ? p.name : p.supplierFullName;
                         const sel = currentPartyId && p.id === currentPartyId ? 'selected' : '';
-                        return `<option value="${p.id}" ${sel}>${name}</option>`;
+                        return `<option value="${Number(p.id)}" ${sel}>${escapeHtml(name)}</option>`;
                     }).join('');
             } catch (e) { console.error(e); }
         }
@@ -240,18 +246,18 @@
                 }
 
                 tbody.innerHTML = rows.map(r => `
-                    <tr style="cursor:pointer;" onclick="selectPartyFromAging(${r.partyId})">
-                        <td class="fw-bold text-primary">${r.partyName}</td>
+                    <tr style="cursor:pointer;" onclick="selectPartyFromAging(${Number(r.partyId)})">
+                        <td class="fw-bold text-primary">${escapeHtml(r.partyName)}</td>
                         <td class="text-end font-monospace fw-bold" dir="ltr">${formatNum(r.totalOpenBalance)}</td>
                         <td class="text-end font-monospace bg-success-subtle" dir="ltr">${formatNum(r.bucket0To30)}</td>
                         <td class="text-end font-monospace" dir="ltr">${formatNum(r.bucket31To60)}</td>
                         <td class="text-end font-monospace" dir="ltr">${formatNum(r.bucket61To90)}</td>
                         <td class="text-end font-monospace bg-warning-subtle" dir="ltr">${formatNum(r.bucket91To180)}</td>
                         <td class="text-end font-monospace bg-danger-subtle" dir="ltr">${formatNum(r.bucketOver180)}</td>
-                        <td class="text-center font-monospace">${r.oldestOpenDateShamsi || '—'}</td>
+                        <td class="text-center font-monospace">${escapeHtml(r.oldestOpenDateShamsi || '—')}</td>
                         <td class="text-center fw-bold">${r.weightedAverageAgeDays || 0} روز</td>
                         <td class="text-end font-monospace text-primary" dir="ltr">${formatNum(r.pendingChequesAmount)}</td>
-                        <td><span class="badge bg-secondary">${r.creditRiskStatus || ''}</span></td>
+                        <td><span class="badge bg-secondary">${escapeHtml(r.creditRiskStatus || '')}</span></td>
                     </tr>
                 `).join('');
 
@@ -311,13 +317,13 @@
                     const diag = bal > 0 ? '<span class="text-primary fw-bold">بد</span>' : bal < 0 ? '<span class="text-warning fw-bold">بس</span>' : '<span class="text-muted">تسویه</span>';
                     return `
                         <tr>
-                            <td class="fw-bold font-monospace text-primary">#${t.voucherNumber}</td>
-                            <td class="font-monospace">${t.voucherDateShamsi || ''}</td>
-                            <td><span class="font-monospace text-primary">${t.accountCode}</span> - ${t.accountTitle}</td>
-                            <td>${t.referenceTypeTitle || ''}</td>
+                            <td class="fw-bold font-monospace text-primary">#${escapeHtml(t.voucherNumber)}</td>
+                            <td class="font-monospace">${escapeHtml(t.voucherDateShamsi || '')}</td>
+                            <td><span class="font-monospace text-primary">${escapeHtml(t.accountCode)}</span> - ${escapeHtml(t.accountTitle)}</td>
+                            <td>${escapeHtml(t.referenceTypeTitle || '')}</td>
                             <td>
-                                <div>${t.description || ''}</div>
-                                ${t.projectTitle ? `<small class="text-muted">پروژه: ${t.projectTitle}</small>` : ''}
+                                <div>${escapeHtml(t.description || '')}</div>
+                                ${t.projectTitle ? `<small class="text-muted">پروژه: ${escapeHtml(t.projectTitle)}</small>` : ''}
                             </td>
                             <td class="text-end font-monospace" dir="ltr">${formatNum(t.debit)}</td>
                             <td class="text-end font-monospace" dir="ltr">${formatNum(t.credit)}</td>
@@ -327,7 +333,7 @@
                     `;
                 }).join('');
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">${err.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">${escapeHtml(err.message)}</td></tr>`;
             }
         }
 

@@ -115,7 +115,7 @@
                                                         }
                                                         @if (User.HasPermission(Permissions.Products.Delete))
                                                         {
-                                                            <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                            <!-- حذف محصول تا زمان پیاده‌سازی endpoint در API نمایش داده نمی‌شود. -->
                                                         }
                                                     </div>
                                                 }
@@ -164,9 +164,7 @@
                                     <label for="IsActive" class="lbl-date-change">فعال</label>
                                 </div>
                             </div>
-                            <input id="TenantId" name="TenantId" value="@valTenantId" hidden>
-                            <input id="UserId" name="UserId" value="@valUserId" hidden>
-                            <div class="col-lg-12 alert" style="color:red">
+                                                        <div class="col-lg-12 alert" style="color:red">
                                 <span class="text-danger" id="spnValidate"></span>
                             </div>
                         </div>
@@ -186,7 +184,7 @@
             <div class="modal-content">
                 <form id="frmEditProduct">
                     <div class="modal-header px-4">
-                        <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش محصول</h5>
+                        <h5 class="modal-title" id="editModalTitle">ویرایش محصول</h5>
                     </div>
                     <div class="modal-body px-4">
                         <div class="row mb-2">
@@ -251,12 +249,10 @@
                                     <input autocomplete="off" class="form-control persian-date" id="EffectiveFrom" name="EffectiveFrom">
                                 </div>
                             </div>
-                            <input id="UserId" name="UserId" value="@ViewBag.UserId" hidden />
                             <input id="FiscalYearId" name="FiscalYearId" value="@ViewBag.FiscalYearId" hidden />
-                            <input id="TenantId" name="TenantId" value="@ViewBag.TenantId" hidden />
-                            <input id="ProId" name="ProId" hidden />
+                                                        <input id="ProId" name="ProId" hidden />
                             <div class="col-lg-12 alert" style="color:red">
-                                <span class="text-danger" id="spnValidate"></span>
+                                <span class="text-danger" id="spnValidateEdit"></span>
                             </div>
                         </div>
                     </div>

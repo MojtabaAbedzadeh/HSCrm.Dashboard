@@ -8,6 +8,23 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var apiAddress = builder.Configuration["ApiAddress"];
+if (string.IsNullOrWhiteSpace(apiAddress) ||
+    !apiAddress.EndsWith("/", StringComparison.Ordinal) ||
+    !Uri.TryCreate(apiAddress, UriKind.Absolute, out var apiUri) ||
+    (apiUri.Scheme != Uri.UriSchemeHttp && apiUri.Scheme != Uri.UriSchemeHttps))
+{
+    throw new InvalidOperationException(
+        "API endpoint is not configured correctly. Set ApiAddress to an absolute HTTP(S) API URL ending with / (for example, https://api.example.com/api/).");
+}
+
+if (!builder.Environment.IsDevelopment() &&
+    (apiUri.Scheme != Uri.UriSchemeHttps || apiUri.IsLoopback))
+{
+    throw new InvalidOperationException(
+        "Production requires ApiAddress to use a public HTTPS API endpoint; localhost and HTTP are not allowed.");
+}
+
 // Add services to the container.
 builder.Services.AddControllersWithViews(options =>
 {

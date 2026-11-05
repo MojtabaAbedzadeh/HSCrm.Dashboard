@@ -68,7 +68,7 @@
                                                 {
                                                     <div class="dropdown-menu">
                                                         <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
-                                                        <a class="dropdown-item" href="#">حذف</a>
+                                                        <!-- حذف تا زمان پیاده‌سازی endpoint در API نمایش داده نمی‌شود. -->
                                                     </div>
                                                 }
                                                 else
@@ -104,7 +104,7 @@
                         </div>
                         <div class="col-lg-6" style="margin-bottom:8px;">
                             <div class="form-check" style="margin:auto;">
-                                <input style="font-size:13px;" type="checkbox" class="form-check-input chk-date-type" id="IsActive">
+                                <input style="font-size:13px;" type="checkbox" class="form-check-input chk-date-type" id="IsActive" name="IsActive">
                                 <label for="IsActive" class="lbl-date-change">وضعیت انبار</label>
                             </div>
                         </div>
@@ -114,9 +114,7 @@
                                 <label for="Address" style="right:0!important; left:unset!important;">آدرس</label>
                             </div>
                         </div>
-                        <input hidden class="form-control text-end" id="CreateById" name="CreateById" value="@ViewBag.UserId">
-                        <input hidden class="form-control text-end" id="TenantId" name="TenantId" value="@ViewBag.TenantId">
-                        <div class="col-lg-12 alert" style="color:red">
+                                                                        <div class="col-lg-12 alert" style="color:red">
                             <span class="text-danger" id="spnValidate"></span>
                         </div>
                     </div>
@@ -136,7 +134,7 @@
         <div class="modal-content">
             <form id="frmEditWarehouse">
                 <div class="modal-header px-4">
-                    <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش انبار</h5>
+                    <h5 class="modal-title" id="editModalTitle">ویرایش انبار</h5>
                 </div>
                 <div class="modal-body px-4">
                     <div class="row mb-2">
@@ -159,10 +157,8 @@
                                 <label for="AddressE" style="right:0!important; left:unset!important;">آدرس</label>
                             </div>
                         </div>
-                        <input hidden class="form-control text-end" id="ModifiedByIdE" name="ModifiedByIdE" value="@ViewBag.UserId">
-                        <input hidden class="form-control text-end" id="TenantIdE" name="TenantIdE" value="@ViewBag.TenantId">
-                        <div class="col-lg-12 alert" style="color:red">
-                            <span class="text-danger" id="spnValidate"></span>
+                                                                        <div class="col-lg-12 alert" style="color:red">
+                            <span class="text-danger" id="spnValidateEdit"></span>
                         </div>
                     </div>
                 </div>
@@ -187,6 +183,7 @@
             }
 
             var formData = new FormData($("#frmWarehouse")[0]);
+            formData.set("IsActive", $("#IsActive").is(":checked"));
             $.ajax({
                 type: 'POST',
                 url: '@ApiAddress' + 'Warehouse/CreateWarehouse',
@@ -251,8 +248,6 @@
                 title: $("#TitleE").val(),
                 isActive: $("#IsActiveE").is(":checked"),
                 address: $("#AddressE").val(),
-                modifiedById: $("#ModifiedByIdE").val(),
-                tenantId: $("#TenantIdE").val(),
             };
 
             $.ajax({

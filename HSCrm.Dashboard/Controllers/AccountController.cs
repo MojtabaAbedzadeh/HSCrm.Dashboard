@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Security.Claims;
 
 namespace Automation.Dashboard.Controllers
@@ -103,11 +104,30 @@ namespace Automation.Dashboard.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(LoginModel model)
         {
-            var result = await _login.Login(model);
-            if (result == null)
+            if (model.FiscalYearId <= 0)
             {
-                ViewBag.ErrorMessage = "خطا در برقراری ارتباط نهایی.";
-                return View();
+                var loginView = await Login();
+                ViewBag.ErrorMessage = "لطفاً سال مالی را انتخاب کنید.";
+                return loginView;
+            }
+
+            UserLoginDto? result;
+            try
+            {
+                result = await _login.Login(model);
+            }
+            catch
+            {
+                var loginView = await Login();
+                ViewBag.ErrorMessage = "ورود انجام نشد. نام کاربری، رمز عبور و سال مالی انتخاب‌شده را بررسی کنید.";
+                return loginView;
+            }
+
+            if (result == null || string.IsNullOrWhiteSpace(result.Token))
+            {
+                var loginView = await Login();
+                ViewBag.ErrorMessage = "توکن ورود معتبر از وب‌سرویس دریافت نشد.";
+                return loginView;
             }
 
             // ایجاد کل Claimهای مورد نیاز فرانت از روی اطلاعات واقعی کاربر
@@ -170,47 +190,76 @@ namespace Automation.Dashboard.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SwitchFiscalYear(int fiscalYearId, int fiscalYearStatus = 0, string? fiscalYearTitle = null)
+        public async Task<IActionResult> SwitchFiscalYear(int fiscalYearId)
         {
             if (HttpContext.User.Identity is not ClaimsIdentity currentIdentity || !currentIdentity.IsAuthenticated)
             {
                 return Unauthorized(new { status = false, message = "کاربر احراز هویت نشده است." });
             }
 
-            var claims = currentIdentity.Claims
-                .Where(c => c.Type != "FiscalYearId" && c.Type != "FiscalYearStatus" && c.Type != "FiscalYearTitle")
-                .ToList();
-
-            claims.Add(new Claim("FiscalYearId", fiscalYearId.ToString()));
-            claims.Add(new Claim("FiscalYearStatus", fiscalYearStatus.ToString()));
-            if (!string.IsNullOrWhiteSpace(fiscalYearTitle))
+            try
             {
-                claims.Add(new Claim("FiscalYearTitle", fiscalYearTitle));
+                // The API validates tenant ownership and fiscal-year state, then issues
+                // a new JWT containing the selected FiscalYearId claim.
+                var apiResponse = await _getListApi.PostApi("Account/SwitchFiscalYear", fiscalYearId);
+                var tokenResponse = JObject.Parse(apiResponse);
+                string? apiToken = tokenResponse.Value<string>("token") ?? tokenResponse.Value<string>("Token");
+                int? apiFiscalYearId = tokenResponse.Value<int?>("fiscalYearId") ?? tokenResponse.Value<int?>("FiscalYearId");
+                string? apiFiscalYearTitle = tokenResponse.Value<string>("fiscalYearTitle") ?? tokenResponse.Value<string>("FiscalYearTitle");
+                int apiFiscalYearStatus = tokenResponse.Value<int?>("fiscalYearStatus")
+                    ?? tokenResponse.Value<int?>("FiscalYearStatus")
+                    ?? 0;
+
+                if (string.IsNullOrWhiteSpace(apiToken) || !apiFiscalYearId.HasValue)
+                {
+                    return StatusCode(502, new { status = false, message = "صدور توکن سال مالی جدید از وب‌سرویس ناموفق بود." });
+                }
+
+                var claims = currentIdentity.Claims
+                    .Where(c => c.Type != "Token"
+                        && c.Type != "FiscalYearId"
+                        && c.Type != "FiscalYearStatus"
+                        && c.Type != "FiscalYearTitle")
+                    .ToList();
+
+                claims.Add(new Claim("Token", apiToken));
+                claims.Add(new Claim("FiscalYearId", apiFiscalYearId.Value.ToString()));
+                claims.Add(new Claim("FiscalYearStatus", apiFiscalYearStatus.ToString()));
+                if (!string.IsNullOrWhiteSpace(apiFiscalYearTitle))
+                {
+                    claims.Add(new Claim("FiscalYearTitle", apiFiscalYearTitle));
+                }
+
+                Response.Cookies.Append("ActiveFiscalYearId", apiFiscalYearId.Value.ToString(), new CookieOptions
+                {
+                    HttpOnly = false,
+                    IsEssential = true,
+                    Expires = DateTimeOffset.UtcNow.AddDays(30)
+                });
+
+                var newIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                var newPrincipal = new ClaimsPrincipal(newIdentity);
+
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    newPrincipal,
+                    new AuthenticationProperties { IsPersistent = true });
+
+                return Json(new
+                {
+                    status = true,
+                    message = $"سال مالی فعال به «{apiFiscalYearTitle ?? apiFiscalYearId.Value.ToString()}» تغییر یافت.",
+                    fiscalYearId = apiFiscalYearId.Value,
+                    fiscalYearStatus = apiFiscalYearStatus,
+                    fiscalYearTitle = apiFiscalYearTitle
+                });
             }
-
-            Response.Cookies.Append("ActiveFiscalYearId", fiscalYearId.ToString(), new CookieOptions
+            catch
             {
-                HttpOnly = false,
-                IsEssential = true,
-                Expires = DateTimeOffset.UtcNow.AddDays(30)
-            });
-
-            var newIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var newPrincipal = new ClaimsPrincipal(newIdentity);
-
-            await HttpContext.SignInAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme,
-                newPrincipal,
-                new AuthenticationProperties { IsPersistent = true });
-
-            return Json(new
-            {
-                status = true,
-                message = $"سال مالی فعال به «{fiscalYearTitle ?? fiscalYearId.ToString()}» تغییر یافت.",
-                fiscalYearId,
-                fiscalYearStatus,
-                fiscalYearTitle
-            });
+                // Keep the existing cookie and token untouched when the API rejects
+                // the requested fiscal year or cannot issue a replacement token.
+                return BadRequest(new { status = false, message = "تغییر سال مالی انجام نشد. لطفاً دوباره تلاش کنید." });
+            }
         }
 
         public IActionResult AccessDenied()
