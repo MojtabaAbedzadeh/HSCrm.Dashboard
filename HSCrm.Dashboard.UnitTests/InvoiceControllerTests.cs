@@ -74,7 +74,8 @@ namespace HSCrm.Dashboard.UnitTests
             var apiResponse = new ApiResponse<List<PurchaseInvoiceModel>>
             {
                 Status = true,
-                Data = invoices
+                Data = invoices,
+                Message = "موفق"
             };
 
             _getListApiMock.Setup(x => x.GetApiList(It.Is<string>(s => s.StartsWith("PurchaseInvoice/GetPurchaseInvoices"))))
