@@ -131,7 +131,7 @@
                 products = (await prodRes.json()).data || [];
 
                 document.getElementById('srProjectId').innerHTML = projs.map(p => `<option value="${Number(p.id)}">${escapeHtml(p.projectTitle)}</option>`).join('');
-                document.getElementById('srWarehouseId').innerHTML = whs.map(w => `<option value="${Number(w.id)}">${escapeHtml(w.name)}</option>`).join('');
+                document.getElementById('srWarehouseId').innerHTML = whs.map(w => `<option value="${Number(w.id)}">${escapeHtml(w.title)}</option>`).join('');
             } catch (e) { console.error(e); }
 
             loadSalesReturns();
@@ -159,9 +159,9 @@
                     return `
                         <tr>
                             <td class="fw-bold font-monospace" dir="ltr">${escapeHtml(r.number)}</td>
-                            <td>${r.returnDate ? new Date(r.returnDate).toLocaleDateString('fa-IR') : ''}</td>
-                            <td>${escapeHtml(r.project?.projectTitle || `پروژه #${r.projectId}`)}</td>
-                            <td>${escapeHtml(r.warehouse?.name || `انبار #${r.warehouseId}`)}</td>
+                            <td>${r.issueDate ? new Date(r.issueDate).toLocaleDateString('fa-IR') : ''}</td>
+                            <td>${escapeHtml(r.projectTitle || `پروژه #${r.projectId}`)}</td>
+                            <td>${escapeHtml(r.warehouseTitle || `انبار #${r.warehouseId}`)}</td>
                             <td class="text-end font-monospace fw-bold" dir="ltr">${formatNum(r.total)}</td>
                             <td>${statusBadge}</td>
                             <td>
@@ -184,7 +184,7 @@
 
         function addSrItemRow() {
             const tr = document.createElement('tr');
-            const prodOpts = products.map(p => `<option value="${Number(p.id)}">${escapeHtml(p.productName)}</option>`).join('');
+            const prodOpts = products.map(p => `<option value="${Number(p.productId)}">${escapeHtml(p.productTitle)}</option>`).join('');
             tr.innerHTML = `
                 <td><select class="form-select form-select-sm sr-prod">${prodOpts}</select></td>
                 <td><input type="number" class="form-control form-control-sm sr-qty" value="1" min="1" dir="ltr" /></td>
@@ -208,8 +208,9 @@
                 });
             });
             const payload = {
-                number: document.getElementById('srNumber').value.trim(),
-                returnDateShamsi: document.getElementById('srDate').value.trim(),
+                invoiceNumber: document.getElementById('srNumber').value.trim(),
+                issueDate: document.getElementById('srDate').value.trim(),
+                sellerUserId: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.UserId?.ToString() ?? "")),
                 projectId: Number(document.getElementById('srProjectId').value),
                 warehouseId: Number(document.getElementById('srWarehouseId').value),
                 items: items
@@ -232,7 +233,7 @@
 
         async function confirmSalesReturn(id) {
             try {
-                const res = await fetch(`${apiBase}/SalesReturnInvoice/${id}/Confirm`, { method: 'POST', headers: getAuthHeaders() });
+                const res = await fetch(`${apiBase}/SalesReturnInvoice/Confirm/${id}`, { method: 'POST', headers: getAuthHeaders() });
                 const json = await res.json();
                 if (!res.ok || json.status === false) throw new Error(json.message || 'خطا در تأیید نهایی');
                 await swal.fire({ title: 'تأیید نهایی', text: json.message, icon: 'success', confirmButtonText: 'باشه' });
@@ -244,7 +245,7 @@
 
         async function cancelSalesReturn(id) {
             try {
-                const res = await fetch(`${apiBase}/SalesReturnInvoice/${id}/Cancel`, { method: 'POST', headers: getAuthHeaders() });
+                const res = await fetch(`${apiBase}/SalesReturnInvoice/Cancel/${id}`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify('ابطال توسط کاربر') });
                 const json = await res.json();
                 if (!res.ok || json.status === false) throw new Error(json.message || 'خطا در ابطال');
                 await swal.fire({ title: 'ابطال موفق', text: json.message, icon: 'success', confirmButtonText: 'باشه' });
