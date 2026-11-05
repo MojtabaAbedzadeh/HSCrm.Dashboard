@@ -123,11 +123,11 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold">تاریخ صدور (شمسی) <span class="text-danger">*</span></label>
-                            <input type="text" id="chqIssueDate" class="form-control" value="1403/08/01" required dir="ltr" />
+                            <input type="text" id="chqIssueDate" class="form-control" placeholder="مثلاً 1405/08/01" required dir="ltr" />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold">تاریخ سررسید (شمسی) <span class="text-danger">*</span></label>
-                            <input type="text" id="chqDueDate" class="form-control" value="1403/09/15" required dir="ltr" />
+                            <input type="text" id="chqDueDate" class="form-control" placeholder="مثلاً 1405/09/15" required dir="ltr" />
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">نام بانک <span class="text-danger">*</span></label>
@@ -284,7 +284,7 @@
                         <td>${escapeHtml(c.customer?.name || c.supplier?.supplierFullName || '—')}</td>
                         <td>${c.dueDate ? new Date(c.dueDate).toLocaleDateString('fa-IR') : ''}</td>
                         <td class="text-end font-monospace fw-bold" dir="ltr">${formatNum(c.amount)}</td>
-                        <td>${escapeHtml(statusLabels[c.status] || c.status)}</td>
+                        <td>${statusLabels[c.status] || escapeHtml(c.status)}</td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary" onclick="openStatusModal(${Number(c.id)})">تغییر وضعیت</button>
                         </td>
