@@ -526,5 +526,27 @@
             }
             calcExpenseRemaining();
         });
+
+        function syncExpenseEditPayment() {
+            const amount = Number.parseFloat($("#AmountE").val() || 0);
+            let paidAmount = Number.parseFloat($("#PaidAmountE").val() || 0);
+            const status = $("#PaymentStatusE").val();
+
+            if (status === "0") {
+                paidAmount = 0;
+                $("#PaymentMethodE").val("");
+                $("#BankAccountIdE").val("");
+                $("#ReferenceNoE").val("");
+            } else if (status === "2") {
+                paidAmount = amount;
+            }
+
+            if (paidAmount > amount) paidAmount = amount;
+            if (paidAmount < 0 || !Number.isFinite(paidAmount)) paidAmount = 0;
+            $("#PaidAmountE").val(paidAmount);
+        }
+
+        $("#AmountE, #PaidAmountE, #PaymentStatusE").on("input change", syncExpenseEditPayment);
+        $("#PaymentStatusE").on("change", syncExpenseEditPayment);
     </script>
 }
