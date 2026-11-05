@@ -281,7 +281,7 @@
                         </td>
                         <td>${c.type === 1 ? '<span class="text-success fw-bold">دریافتنی</span>' : '<span class="text-danger fw-bold">پرداختنی</span>'}</td>
                         <td>${escapeHtml(c.bankName)}</td>
-                        <td>${escapeHtml(c.customerName || c.supplierName || '—')}</td>
+                        <td>${escapeHtml(c.customer?.name || c.supplier?.supplierFullName || '—')}</td>
                         <td>${c.dueDate ? new Date(c.dueDate).toLocaleDateString('fa-IR') : ''}</td>
                         <td class="text-end font-monospace fw-bold" dir="ltr">${formatNum(c.amount)}</td>
                         <td>${escapeHtml(statusLabels[c.status] || c.status)}</td>
