@@ -69,10 +69,10 @@
                                                 @if (ViewBag.FiscalYearStatus == "0")
                                                 {
                                                     <div class="dropdown-menu">
-                                                        <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(item.Product.ProductTitle)))">قیمت جدید</a>
-                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">تاریخچه قیمت</a>
+                                                        <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.ProductId, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(item.Product.ProductTitle)))">قیمت جدید</a>
+                                                        <a class="dropdown-item" href="#" onclick="showPriceHistory(@item.ProductId)">تاریخچه قیمت</a>
                                                         <hr />
-                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.ProductId)">ویرایش</a>
                                                         <!-- حذف قیمت تا زمان پیاده‌سازی endpoint در API نمایش داده نمی‌شود. -->
                                                     </div>
                                                 }
@@ -317,6 +317,50 @@
                 }
             });
         });
+        function showPriceHistory(productId) {
+            $.ajax({
+                type: 'GET',
+                url: '@ApiAddress' + 'ProductPrice/GetProductPriceHistory?productId=' + encodeURIComponent(productId),
+                dataType: 'json',
+                headers: {
+                    Authorization: 'Bearer ' + '@User.FindFirstValue("Token")'
+                },
+                success: function (response) {
+                    if (!response || response.status !== true || !Array.isArray(response.data)) {
+                        SwalHelper.error((response && response.message) || "تاریخچه قیمت دریافت نشد.");
+                        return;
+                    }
+
+                    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
+                        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                    }[character]));
+
+                    const rows = response.data.map(price => `
+                        <tr>
+                            <td>${escapeHtml(price.effectiveFrom)}</td>
+                            <td>${escapeHtml(price.effectiveTo || 'قیمت جاری')}</td>
+                            <td>${escapeHtml(price.buyPrice)}</td>
+                            <td>${escapeHtml(price.sellPrice)}</td>
+                            <td>${price.isActive ? 'فعال' : 'غیرفعال'}</td>
+                        </tr>`).join('');
+
+                    swal.fire({
+                        title: 'تاریخچه قیمت محصول',
+                        html: `<div class="table-responsive"><table class="table table-sm table-striped">
+                            <thead><tr><th>از تاریخ</th><th>تا تاریخ</th><th>خرید</th><th>فروش</th><th>وضعیت</th></tr></thead>
+                            <tbody>${rows || '<tr><td colspan="5">سابقه‌ای ثبت نشده است.</td></tr>'}</tbody>
+                        </table></div>`,
+                        width: '850px',
+                        confirmButtonText: 'بستن'
+                    });
+                },
+                error: function (xhr) {
+                    const message = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در دریافت تاریخچه قیمت.";
+                    SwalHelper.error(message);
+                }
+            });
+        }
+
         function showUpdateModal(productId) {
             $.ajax({
                 type: 'GET',
