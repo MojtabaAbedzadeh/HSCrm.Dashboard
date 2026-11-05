@@ -164,6 +164,12 @@
             3: 'حساب معین'
         };
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
         async function loadAccounts() {
             try {
                 const res = await fetch(`${apiBase}/Accounting/Accounts`, { headers: getAuthHeaders() });
