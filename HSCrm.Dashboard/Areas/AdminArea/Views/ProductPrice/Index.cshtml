@@ -116,12 +116,10 @@
                         <div class="col-lg-6">
                             <div class="form-group">
                                 <label for="ActionDate">تاریخ اعمال</label>
-                                <input autocomplete="off" class="form-control persian-date" id="ActionDate" name="ActionDate">
+                                <input autocomplete="off" class="form-control persian-date" id="ActionDate" name="EffectiveFrom">
                             </div>
                         </div>
-                        <input id="UserId" name="UserId" value="@ViewBag.UserId" hidden />
-                        <input id="FiscalYearId" name="FiscalYearId" value="@ViewBag.FiscalYearId" hidden />
-                        <input id="ProductId" name="ProductId" hidden />
+                                                                        <input id="ProId" name="ProId" hidden />
                         <div class="col-lg-12 alert" style="color:red">
                             <span class="text-danger" id="spnValidate"></span>
                         </div>
@@ -169,8 +167,7 @@
                                     <label for="IsActive" class="lbl-date-change">فعال</label>
                                 </div>
                             </div>
-                                                        <input id="UserId" name="UserId" value="@valUserId" hidden>
-                            <div class="col-lg-12 alert" style="color:red">
+                                                        <div class="col-lg-12 alert" style="color:red">
                                 <span class="text-danger" id="spnValidate"></span>
                             </div>
                         </div>
@@ -244,7 +241,7 @@
             });
         });
         function showInsertPriceModel(productId, productTitle) {
-            $("#ProductId").val(productId);
+            $("#ProId").val(productId);
             $("#productTitle").text('درج قیمت برای ' + productTitle);
             $("#addNewPriceModal").modal('show');
         }
