@@ -124,7 +124,16 @@
             return headers;
         }
 
-        function formatNum(n) { return Number(n || 0).toLocaleString('en-US'); }
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
+        function formatNum(n) {
+            const value = Number(n);
+            return Number.isFinite(value) ? value.toLocaleString('en-US') : '0';
+        }
 
         async function loadBanks() {
             try {
@@ -143,10 +152,10 @@
                         <div class="col-md-4 mb-3">
                             <div class="card card-default p-3 h-100 border-top border-3 ${s.isDefault ? 'border-primary' : 'border-secondary'}">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="fw-bold mb-0">${s.title}</h6>
+                                    <h6 class="fw-bold mb-0">${escapeHtml(s.title)}</h6>
                                     ${s.isDefault ? '<span class="badge bg-primary">پیش‌فرض</span>' : ''}
                                 </div>
-                                <small class="text-muted font-monospace mb-2" dir="ltr">${s.cardNumber || s.accountNumber || ''}</small>
+                                <small class="text-muted font-monospace mb-2" dir="ltr">${escapeHtml(s.cardNumber || s.accountNumber || '')}</small>
                                 <div class="row text-center border-top pt-2 small">
                                     <div class="col-4">
                                         <span class="text-muted d-block">کل واریز</span>
@@ -162,7 +171,7 @@
                                     </div>
                                 </div>
                                 <div class="mt-2 text-end">
-                                    <a href="/AdminArea/Accounting/Reports?bankAccountId=${s.bankAccountId}&tab=ledger" class="btn btn-sm btn-link p-0">مشاهده ریز گردش ←</a>
+                                    <a href="/AdminArea/Accounting/Reports?bankAccountId=${encodeURIComponent(s.bankAccountId ?? '')}&tab=ledger" class="btn btn-sm btn-link p-0">مشاهده ریز گردش ←</a>
                                 </div>
                             </div>
                         </div>
@@ -172,15 +181,15 @@
                 const tbody = document.getElementById('bankTableBody');
                 tbody.innerHTML = banks.map(b => `
                     <tr>
-                        <td class="fw-bold">${b.title}</td>
-                        <td>${b.bankName} ${b.branchName ? `(${b.branchName})` : ''}</td>
-                        <td class="font-monospace" dir="ltr">${b.accountNumber || '—'}</td>
-                        <td class="font-monospace" dir="ltr">${b.cardNumber || '—'}</td>
-                        <td class="font-monospace" dir="ltr">${b.shebaNumber || '—'}</td>
+                        <td class="fw-bold">${escapeHtml(b.title)}</td>
+                        <td>${escapeHtml(b.bankName)} ${b.branchName ? `(${escapeHtml(b.branchName)})` : ''}</td>
+                        <td class="font-monospace" dir="ltr">${escapeHtml(b.accountNumber || '—')}</td>
+                        <td class="font-monospace" dir="ltr">${escapeHtml(b.cardNumber || '—')}</td>
+                        <td class="font-monospace" dir="ltr">${escapeHtml(b.shebaNumber || '—')}</td>
                         <td class="text-end font-monospace" dir="ltr">${formatNum(b.initialBalance)}</td>
                         <td>${b.isDefault ? '<span class="badge bg-primary">پیش‌فرض</span>' : '—'}</td>
                         <td>
-                            <a class="btn btn-sm btn-outline-primary" href="/AdminArea/Accounting/Reports?bankAccountId=${b.id}&tab=ledger">گردش حساب</a>
+                            <a class="btn btn-sm btn-outline-primary" href="/AdminArea/Accounting/Reports?bankAccountId=${encodeURIComponent(b.id ?? '')}&tab=ledger">گردش حساب</a>
                         </td>
                     </tr>
                 `).join('');
