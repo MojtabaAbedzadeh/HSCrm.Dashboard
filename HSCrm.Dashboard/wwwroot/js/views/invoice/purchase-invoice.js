@@ -858,7 +858,28 @@ $('#btnUpdateInvoice').on('click', function () {
     const payment = validatePayment();
     if (!payment.isValid) return;
 
-    const issueDateValue = "2026-08-09";
+    // تبدیل تاریخ شمسی انتخاب‌شده به تاریخ میلادی قابل‌قبول برای DateTime در API
+    const rawIssueDate = String($('#invoiceDate').val() || '').trim();
+    const normalizedIssueDate = rawIssueDate
+        .replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+        .replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)));
+    const dateParts = normalizedIssueDate.split(/[\\/\\-]/).map(Number);
+    if (dateParts.length !== 3 || dateParts.some(part => !Number.isInteger(part) || part <= 0)) {
+        SwalHelper.error('تاریخ فاکتور معتبر نیست؛ لطفاً تاریخ را دوباره انتخاب کنید.', 'خطا در ویرایش فاکتور');
+        return;
+    }
+
+    let issueDateValue;
+    try {
+        const unixDate = new persianDate(dateParts).valueOf();
+        issueDateValue = new persianDate(unixDate)
+            .toCalendar('gregorian')
+            .toLocale('en')
+            .format('YYYY-MM-DD');
+    } catch (error) {
+        SwalHelper.error('تبدیل تاریخ فاکتور با خطا مواجه شد؛ لطفاً تاریخ را دوباره انتخاب کنید.', 'خطا در ویرایش فاکتور');
+        return;
+    }
 
     // ۳. ساخت آبجکت نهایی (مطابق با مدل Update در بک‌اند)
     const model = {
