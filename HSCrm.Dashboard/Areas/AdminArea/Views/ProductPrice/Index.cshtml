@@ -1,4 +1,4 @@
-﻿@model IEnumerable<ProductPriceModel>
+﻿@model IEnumerable<ProductModel>
 
 @{
     ViewData["Title"] = "قیمت محصولات";
@@ -51,8 +51,8 @@
                                 @foreach (var item in Model)
                                 {
                                     <tr>
-                                        <td>@item.Product.ProductTitle</td>
-                                        <td>@item.Product.ProductUnit</td>
+                                        <td>@item.ProductTitle</td>
+                                        <td>@item.ProductUnit</td>
                                         <td>
                                             <span class="badge @(item.IsActive ? "bg-success" : "bg-danger")">
                                                 @(item.IsActive ? "فعال" : "غیرفعال")
