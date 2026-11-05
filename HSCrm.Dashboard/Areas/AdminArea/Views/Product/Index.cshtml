@@ -407,6 +407,7 @@
                 productTitle: $("#ProductTitleU").val(),
                 productUnit: $("#ProductUnitU").val(),
                 isActive: $("#IsActiveU").is(":checked"),
+                modifiedById: '@valUserId'
             };
             $.ajax({
                 type: 'PUT',
