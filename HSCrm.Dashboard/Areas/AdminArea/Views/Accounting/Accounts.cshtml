@@ -195,18 +195,18 @@
 
             tbody.innerHTML = filtered.map(a => `
                 <tr>
-                    <td class="fw-bold font-monospace text-primary" dir="ltr">${a.code}</td>
-                    <td class="fw-bold">${a.title}</td>
+                    <td class="fw-bold font-monospace text-primary" dir="ltr">${escapeHtml(a.code)}</td>
+                    <td class="fw-bold">${escapeHtml(a.title)}</td>
                     <td>${levelLabels[a.level] || 'معین'}</td>
-                    <td><span class="badge bg-info text-dark">${categoryLabels[a.category] || a.category}</span></td>
-                    <td>${natureLabels[a.nature] || a.nature}</td>
+                    <td><span class="badge bg-info text-dark">${escapeHtml(categoryLabels[a.category] || a.category)}</span></td>
+                    <td>${escapeHtml(natureLabels[a.nature] || a.nature)}</td>
                     <td>
                         <span class="badge ${a.isSystemAccount ? 'bg-secondary' : 'bg-success'}">
                             ${a.isSystemAccount ? 'سیستمی (پیش‌فرض)' : 'تعریف کاربر'}
                         </span>
                     </td>
                     <td>
-                        <a class="btn btn-sm btn-outline-primary" href="/AdminArea/Accounting/Reports?accountId=${a.id}&tab=ledger">
+                        <a class="btn btn-sm btn-outline-primary" href="/AdminArea/Accounting/Reports?accountId=${encodeURIComponent(a.id ?? '')}&tab=ledger">
                             مشاهده گردش معین
                         </a>
                     </td>
