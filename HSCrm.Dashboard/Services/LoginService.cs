@@ -1,5 +1,6 @@
 ﻿using HSCrm.Dashboard.Services.Interface;
 using HSCrm.Models.ModelDto;
+using Newtonsoft.Json.Linq;
 
 namespace HSCrm.Dashboard.Services
 {
@@ -29,6 +30,32 @@ namespace HSCrm.Dashboard.Services
                 }
 
                 var result = await response.Content.ReadFromJsonAsync<UserLoginDto>();
+                if (result == null)
+                    return null;
+
+                // CheckUser is the pre-login step used to populate the fiscal-year
+                // selector. Once a fiscal year is selected, obtain the final JWT
+                // from Account/login so the token carries the validated FiscalYearId.
+                if (model.FiscalYearId > 0)
+                {
+                    var loginUrl = _config["ApiAddress"] + "Account/login";
+                    using var loginResponse = await http.PostAsJsonAsync(loginUrl, model);
+                    if (!loginResponse.IsSuccessStatusCode)
+                    {
+                        var loginError = await loginResponse.Content.ReadAsStringAsync();
+                        throw new Exception($"خطا در ورود با سال مالی انتخاب‌شده: {loginError}");
+                    }
+
+                    var loginJson = JObject.Parse(await loginResponse.Content.ReadAsStringAsync());
+                    var fiscalYearToken = loginJson.Value<string>("token") ?? loginJson.Value<string>("Token");
+                    if (string.IsNullOrWhiteSpace(fiscalYearToken))
+                        throw new Exception("توکن معتبر برای سال مالی انتخاب‌شده از وب‌سرویس دریافت نشد.");
+
+                    result.Token = fiscalYearToken;
+                    result.FiscalYearStatus = loginJson.Value<int?>("fiscalYearStatus")
+                        ?? loginJson.Value<int?>("FiscalYearStatus")
+                        ?? result.FiscalYearStatus;
+                }
 
                 return result;
             }
