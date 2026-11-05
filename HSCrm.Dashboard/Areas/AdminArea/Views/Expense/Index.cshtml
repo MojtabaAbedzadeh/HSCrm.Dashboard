@@ -479,6 +479,7 @@
             if ($("#PaymentStatus").val() == "0") {
                 $("#PaidAmount").val(0);
                 $("#PaymentMethod").val("");
+                $("#BankAccountId").val("");
                 $("#ReferenceNo").val("");
                 paidAmount = 0;
             }
@@ -500,6 +501,7 @@
             if (status == "0") {
                 $("#PaidAmount").val(0);
                 $("#PaymentMethod").val("");
+                $("#BankAccountId").val("");
                 $("#ReferenceNo").val("");
             } else if (status == "2") {
                 $("#PaidAmount").val($("#Amount").val() || 0);
