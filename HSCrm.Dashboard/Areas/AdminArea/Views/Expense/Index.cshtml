@@ -196,14 +196,6 @@
                         </div>
                         <div class="col-lg-4 mt-2">
                             <div class="form-group form-floating">
-                                <select id="SupplierId" name="SupplierId" class="form-control text-end">
-                                    <option value="">-- بدون تأمین‌کننده (اختیاری) --</option>
-                                </select>
-                                <label for="SupplierId" style="right:0!important; left:unset!important;">طرف‌حساب / تأمین‌کننده (در صورت نسیه)</label>
-                            </div>
-                        </div>
-                        <div class="col-lg-4 mt-2">
-                            <div class="form-group form-floating">
                                 <input class="form-control text-end" id="ReferenceNo" name="ReferenceNo" placeholder="شماره پیگیری / فیش">
                                 <label for="ReferenceNo" style="right:0!important; left:unset!important;">شماره پیگیری / فیش</label>
                             </div>
@@ -348,18 +340,6 @@
                     list.forEach(function (b) {
                         var title = (b.bankName || b.title || 'حساب') + (b.accountNumber ? ' - ' + b.accountNumber : '');
                         $('#BankAccountId, #BankAccountIdE').append('<option value="' + b.id + '">' + title + '</option>');
-                    });
-                }
-            });
-            $.ajax({
-                type: 'GET',
-                url: '@ApiAddress' + 'Supplier/GetByTenant?tenantId=@ViewBag.TenantId',
-                headers: { "Authorization": "Bearer " + "@User.FindFirstValue("Token")" },
-                success: function (res) {
-                    var list = res.data || res || [];
-                    list.forEach(function (s) {
-                        var name = s.supplierFullName || s.name || ('تأمین‌کننده #' + s.id);
-                        $('#SupplierId').append('<option value="' + s.id + '">' + name + '</option>');
                     });
                 }
             });
