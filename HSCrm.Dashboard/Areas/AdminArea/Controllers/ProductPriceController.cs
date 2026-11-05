@@ -4,7 +4,6 @@ using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System.Security.Claims;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
@@ -22,22 +21,21 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
         public async Task<IActionResult> Index()
         {
-            string apiUrl = "ProductPrice/GetProductPriceHistory";
-            string token = User.FindFirstValue("Token");
+            string apiUrl = "Product/GetProducts";
 
             try
             {
                 var json = await _getListApi.GetApiList(apiUrl);
                 if (string.IsNullOrWhiteSpace(json))
                 {
-                    ViewBag.ErrorMessage = "امکان دریافت تاریخچه قیمت‌ها وجود ندارد.";
-                    return View(new List<ProductPriceModel>());
+                    ViewBag.ErrorMessage = "امکان دریافت فهرست محصولات وجود ندارد.";
+                    return View(new List<ProductModel>());
                 }
 
-                var result = JsonConvert.DeserializeObject<ApiResponse<List<ProductPriceModel>>>(json);
+                var result = JsonConvert.DeserializeObject<ApiResponse<List<ProductModel>>>(json);
                 if (result == null || !result.Status)
                 {
-                    ViewBag.ErrorMessage = result?.Message ?? "خطا در دریافت تاریخچه قیمت‌ها.";
+                    ViewBag.ErrorMessage = result?.Message ?? "خطا در دریافت فهرست محصولات.";
                     return View(new List<ProductPriceModel>());
                 }
 
