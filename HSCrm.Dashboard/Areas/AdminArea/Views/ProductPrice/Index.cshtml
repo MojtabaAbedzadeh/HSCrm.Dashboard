@@ -103,19 +103,19 @@
                         <div class="col-lg-6">
                             <div class="form-group">
                                 <label for="BuyPrice">قیمت خرید</label>
-                                <input type="number" min="0" class="form-control" id="BuyPrice" name="BuyPrice">
+                                <input type="number" min="0" class="form-control" id="BuyPrice" name="BuyPrice" required>
                             </div>
                         </div>
                         <div class="col-lg-6">
                             <div class="form-group">
                                 <label for="SellPrice">قیمت فروش</label>
-                                <input type="number" min="0" class="form-control" id="SellPrice" name="SellPrice">
+                                <input type="number" min="0" class="form-control" id="SellPrice" name="SellPrice" required>
                             </div>
                         </div>
                         <div class="col-lg-6">
                             <div class="form-group">
                                 <label for="ActionDate">تاریخ اعمال</label>
-                                <input autocomplete="off" class="form-control persian-date" id="ActionDate" name="EffectiveFrom">
+                                <input autocomplete="off" class="form-control persian-date" id="EffectiveFrom" name="EffectiveFrom" required>
                             </div>
                         </div>
                                                                         <input id="ProId" name="ProId" hidden />
@@ -248,12 +248,16 @@
             e.preventDefault();
             var buyPrice = $("#BuyPrice").val();
             var sellPrice = $("#SellPrice").val();
-            var actionDate = $("#ActionDate").val();
+            var actionDate = ($("#EffectiveFrom").val() || "").trim();
             if (!buyPrice || !sellPrice || !actionDate) {
                 SwalHelper.warning("لطفاً قیمت خرید، قیمت فروش و تاریخ اعمال را به صورت کامل وارد نمایید!");
                 return false;
             }
             var formData = new FormData($("#frmPrice")[0]);
+            formData.set("ProId", $("#ProId").val());
+            formData.set("BuyPrice", buyPrice);
+            formData.set("SellPrice", sellPrice);
+            formData.set("EffectiveFrom", actionDate);
             $.ajax({
                 type: 'POST',
                 url: '@ApiAddress' + 'ProductPrice/CreatePrice',
