@@ -87,7 +87,6 @@
                                     <th>نوع پرداخت</th>
                                     <th>شماره مرجع</th>
                                     <th>شناسه مرجع</th>
-                                    <th style="width:140px;">عملیات</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -99,32 +98,8 @@
                                         <td>@item.PaymentDate</td>
                                         <td>@item.Method</td>
                                         <td>@item.ReferenceNo</td>
-                                        <td>@item.ReferenceNo</td>
-                                        <td>
-                                            <div class="btn-group mb-1">
-                                                <button type="button" class="btn btn-outline-success">اطلاعات</button>
-                                                <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static">
-                                                    <span class="sr-only">اطلاعات</span>
-                                                </button>
-                                                @if (ViewBag.FiscalYearStatus == "0")
-                                                {
-                                                    <div class="dropdown-menu">
-                                                        @if (User.HasPermission(Permissions.Products.Edit))
-                                                        {
-                                                            <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
-                                                        }
-                                                        @if (User.HasPermission(Permissions.Products.Delete))
-                                                        {
-                                                            <!-- حذف پرداخت تا زمان وجود endpoint حذف در API نمایش داده نمی‌شود. -->
-                                                        }
-                                                    </div>
-                                                }
-                                                else
-                                                {
-                                                    <div class="dropdown-menu"></div>
-                                                }
-                                            </div>
-                                        </td>
+                                        <td>@(item.PurchaseInvoiceId?.ToString() ?? item.ExpenseId?.ToString() ?? "-")</td>
+
                                     </tr>
                                 }
                             </tbody>
