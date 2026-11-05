@@ -69,11 +69,11 @@
                                                 @if (ViewBag.FiscalYearStatus == "0")
                                                 {
                                                     <div class="dropdown-menu">
-                                                        <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.Id, @item.Product.ProductTitle)">قیمت جدید</a>
+                                                        <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.Id, @Html.Raw(System.Text.Json.JsonSerializer.Serialize(item.Product.ProductTitle)))">قیمت جدید</a>
                                                         <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">تاریخچه قیمت</a>
                                                         <hr />
                                                         <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
-                                                        <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                        <!-- حذف قیمت تا زمان پیاده‌سازی endpoint در API نمایش داده نمی‌شود. -->
                                                     </div>
                                                 }
                                                 else
