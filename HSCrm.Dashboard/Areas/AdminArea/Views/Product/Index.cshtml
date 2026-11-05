@@ -115,7 +115,7 @@
                                                         }
                                                         @if (User.HasPermission(Permissions.Products.Delete))
                                                         {
-                                                            <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                            <!-- حذف محصول تا زمان پیاده‌سازی endpoint در API نمایش داده نمی‌شود. -->
                                                         }
                                                     </div>
                                                 }
@@ -407,7 +407,6 @@
                 productTitle: $("#ProductTitleU").val(),
                 productUnit: $("#ProductUnitU").val(),
                 isActive: $("#IsActiveU").is(":checked"),
-                modifiedById: '@valUserId'
             };
             $.ajax({
                 type: 'PUT',
