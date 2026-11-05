@@ -325,12 +325,12 @@
     <script>
         $("#btnUserSubmit").on('click', function (e) {
             e.preventDefault();
-            var firstName = $("#UserFirstName").val();
-            var lastName = $("#UserLastName").val();
-            var userName = $("#UserName").val();
-            var password = $("#Password").val();
-            if (!firstName || !lastName || !userName || !password) {
-                SwalHelper.warning("لطفاً نام، نام خانوادگی، نام کاربری و کلمه عبور را تکمیل نمایید!");
+            var firstName = ($("#UserFirstNameC").val() || "").trim();
+            var lastName = ($("#UserLastNameC").val() || "").trim();
+            var userName = ($("#UserNameC").val() || "").trim();
+            var phoneNumber = ($("#PhoneNumberC").val() || "").trim();
+            if (!firstName || !lastName || !userName || !phoneNumber) {
+                SwalHelper.warning("لطفاً نام، نام خانوادگی، نام کاربری و شماره همراه را تکمیل نمایید!");
                 return false;
             }
             var formData = new FormData($("#frmUser")[0]);
@@ -449,11 +449,10 @@
                 UserId: $("#UserId").val(),
                 UserFirstName: $("#UserFirstName").val(),
                 UserLastName: $("#UserLastName").val(),
-                UserName: $("#UserName").val(),
                 PhoneNumber: $("#PhoneNumber").val(),
                 Email: $("#Email").val(),
                 UserImageUrl: $("#UserImageUrl").val(),
-                UserGender: $("input[name='UserGender']:checked").val() === "true"
+                UserGender: $("#editUser input[name='UserGender']:checked").val() === "true"
             };
             $.ajax({
                 type: 'PUT',
