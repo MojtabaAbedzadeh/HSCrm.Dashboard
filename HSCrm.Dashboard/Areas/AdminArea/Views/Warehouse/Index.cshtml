@@ -104,7 +104,7 @@
                         </div>
                         <div class="col-lg-6" style="margin-bottom:8px;">
                             <div class="form-check" style="margin:auto;">
-                                <input style="font-size:13px;" type="checkbox" class="form-check-input chk-date-type" id="IsActive">
+                                <input style="font-size:13px;" type="checkbox" class="form-check-input chk-date-type" id="IsActive" name="IsActive">
                                 <label for="IsActive" class="lbl-date-change">وضعیت انبار</label>
                             </div>
                         </div>
@@ -183,6 +183,7 @@
             }
 
             var formData = new FormData($("#frmWarehouse")[0]);
+            formData.set("IsActive", $("#IsActive").is(":checked"));
             $.ajax({
                 type: 'POST',
                 url: '@ApiAddress' + 'Warehouse/CreateWarehouse',
