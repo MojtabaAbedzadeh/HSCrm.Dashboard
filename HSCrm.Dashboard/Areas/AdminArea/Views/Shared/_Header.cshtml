@@ -299,6 +299,12 @@
                 if (!response.ok || !res || !res.status) {
                     throw new Error(res?.message || 'تغییر سال مالی انجام نشد.');
                 }
+                try {
+                    localStorage.setItem('ActiveFiscalYearId', String(res.fiscalYearId));
+                    sessionStorage.setItem('ActiveFiscalYearId', String(res.fiscalYearId));
+                } catch (storageError) {
+                    // The authenticated cookie and JWT are authoritative; storage is only a UI cache.
+                }
                 window.location.reload();
             })
             .catch(error => {
