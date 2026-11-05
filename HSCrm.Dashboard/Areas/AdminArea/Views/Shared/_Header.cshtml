@@ -283,11 +283,9 @@
             });
         });
 
-        window.switchActiveFiscalYear = function (fyId, fyStatus, fyTitle) {
+        window.switchActiveFiscalYear = function (fyId) {
             const formData = new URLSearchParams();
             formData.append('fiscalYearId', fyId);
-            formData.append('fiscalYearStatus', fyStatus);
-            formData.append('fiscalYearTitle', fyTitle);
 
             fetch('/Account/SwitchFiscalYear', {
                 method: 'POST',
