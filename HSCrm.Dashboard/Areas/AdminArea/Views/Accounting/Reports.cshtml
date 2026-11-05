@@ -181,6 +181,12 @@
             return Number(n || 0).toLocaleString('en-US');
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
         async function initReports() {
             try {
                 const [accRes, bankRes] = await Promise.all([
@@ -192,11 +198,11 @@
 
                 const cmbAcc = document.getElementById('cmbLedgerAccount');
                 cmbAcc.innerHTML = '<option value="">همه حساب‌ها</option>' +
-                    accs.map(a => `<option value="${a.id}" ${String(a.id) === initAccId ? 'selected' : ''}>${a.code} - ${a.title}</option>`).join('');
+                    accs.map(a => `<option value="${Number(a.id)}" ${String(a.id) === initAccId ? 'selected' : ''}>${escapeHtml(a.code)} - ${escapeHtml(a.title)}</option>`).join('');
 
                 const cmbBank = document.getElementById('cmbLedgerBank');
                 cmbBank.innerHTML = '<option value="">همه بانک‌ها و صندوق‌ها</option>' +
-                    banks.map(b => `<option value="${b.id}" ${String(b.id) === initBankId ? 'selected' : ''}>${b.title}</option>`).join('');
+                    banks.map(b => `<option value="${Number(b.id)}" ${String(b.id) === initBankId ? 'selected' : ''}>${escapeHtml(b.title)}</option>`).join('');
             } catch (e) { console.error(e); }
 
             loadTrialBalance();
@@ -223,9 +229,9 @@
                     bd += r.balanceDebit || 0;
                     bc += r.balanceCredit || 0;
                     return `
-                        <tr style="cursor:pointer;" onclick="openAccountLedger(${r.accountId})" title="کلیک برای مشاهده ریز گردش این حساب">
-                            <td class="fw-bold font-monospace text-primary" dir="ltr">${r.accountCode}</td>
-                            <td class="fw-bold">${r.accountTitle}</td>
+                        <tr style="cursor:pointer;" onclick="openAccountLedger(${Number(r.accountId)})" title="کلیک برای مشاهده ریز گردش این حساب">
+                            <td class="fw-bold font-monospace text-primary" dir="ltr">${escapeHtml(r.accountCode)}</td>
+                            <td class="fw-bold">${escapeHtml(r.accountTitle)}</td>
                             <td class="text-end font-monospace" dir="ltr">${formatNum(r.turnoverDebit)}</td>
                             <td class="text-end font-monospace" dir="ltr">${formatNum(r.turnoverCredit)}</td>
                             <td class="text-end font-monospace fw-bold bg-info-subtle" dir="ltr">${formatNum(r.balanceDebit)}</td>
@@ -274,16 +280,16 @@
                     const diag = bal > 0 ? '<span class="text-primary fw-bold">بد</span>' : bal < 0 ? '<span class="text-warning fw-bold">بس</span>' : '<span class="text-muted">تسویه</span>';
                     return `
                         <tr>
-                            <td class="fw-bold font-monospace text-primary">#${tx.voucherNumber}</td>
+                            <td class="fw-bold font-monospace text-primary">#${escapeHtml(tx.voucherNumber)}</td>
                             <td>${dStr}</td>
-                            <td><span class="font-monospace text-primary">${tx.accountCode}</span> - ${tx.accountTitle}</td>
+                            <td><span class="font-monospace text-primary">${escapeHtml(tx.accountCode)}</span> - ${escapeHtml(tx.accountTitle)}</td>
                             <td>
-                                <div>${tx.description || ''}</div>
+                                <div>${escapeHtml(tx.description || '')}</div>
                                 <small class="text-muted">
-                                    ${tx.bankAccountTitle ? `بانک: ${tx.bankAccountTitle} ` : ''}
-                                    ${tx.customerName ? `مشتری: ${tx.customerName} ` : ''}
-                                    ${tx.supplierName ? `تأمین‌کننده: ${tx.supplierName} ` : ''}
-                                    ${tx.projectTitle ? `پروژه: ${tx.projectTitle}` : ''}
+                                    ${tx.bankAccountTitle ? `بانک: ${escapeHtml(tx.bankAccountTitle)} ` : ''}
+                                    ${tx.customerName ? `مشتری: ${escapeHtml(tx.customerName)} ` : ''}
+                                    ${tx.supplierName ? `تأمین‌کننده: ${escapeHtml(tx.supplierName)} ` : ''}
+                                    ${tx.projectTitle ? `پروژه: ${escapeHtml(tx.projectTitle)}` : ''}
                                 </small>
                             </td>
                             <td class="text-end font-monospace" dir="ltr">${formatNum(tx.debit)}</td>
