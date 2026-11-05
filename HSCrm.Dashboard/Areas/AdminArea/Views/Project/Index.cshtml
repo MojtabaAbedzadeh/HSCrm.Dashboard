@@ -89,7 +89,7 @@
                                                         }
                                                         @if (User.HasPermission(Permissions.Projects.Delete))
                                                         {
-                                                            <a class="dropdown-item" href="#">حذف</a>
+                                                            <!-- حذف پروژه تا زمان پیاده‌سازی endpoint در API نمایش داده نمی‌شود. -->
                                                         }
                                                         <div class="dropdown-divider"></div>
                                                         @if (User.HasPermission(Permissions.Expenses.View))
@@ -440,7 +440,6 @@
                 ProjectTitle: $("#ProjectTitleE").val(),
                 CustomerId: $("#CustomerIdE").val() ? parseInt($("#CustomerIdE").val()) : null,
                 ProjectLocation: $("#ProjectLocationE").val(),
-                ModifiedById: $("#ModifiedById").val()
             };
             $.ajax({
                 type: 'PUT',
