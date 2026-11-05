@@ -63,7 +63,7 @@
                                                 <button type="button" class="btn btn-outline-success">اطلاعات</button> <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static"><span class="sr-only">اطلاعات</span></button>
                                                 <div class="dropdown-menu">
                                                     <a class="dropdown-item" href="#" onclick="showUpdateModal('@item.Id')">ویرایش</a>
-                                                    <a class="dropdown-item" href="#">حذف</a>
+                                                    <!-- حذف کاربر باید با تأیید و endpoint اختصاصی پیاده‌سازی شود. -->
                                                     <a class="dropdown-item" href="#" onclick="openRoleModal('@item.Id','@item.UserFirstName','@item.UserLastName')">تغییر نقش</a>
                                                 </div>
                                             </div>
@@ -96,7 +96,7 @@
                                              style="position:absolute; left:25px; z-index:1; top:25px">
                                             <input type="file" id="UserImagesC" name="UserImagesC" class="ec-image-upload" accept=".png, .jpg, .jpeg" style="opacity:0; width:40px;height:40px;padding:0;border-radius:50%; position:absolute;z-index:1">
                                             <input id="UserImageUrlC" name="UserImageUrlC" hidden />
-                                            <label for="imageUpload"
+                                            <label for="UserImagesC"
                                                    style="display:flex; -webkit-box-align:center; align-items:center; -webkit-box-pack:center;justify-content:center;width:40px; height:40px;padding:10px;margin-bottom:auto;border-radius:10px;background:#ffffff;border: 1px solid #eeeeee;box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.15); cursor: pointer; font-weight: normal; transition: all 0.2s ease-in-out;">
                                                 <img src="~/assets/img/icons/edit.svg" class="svg_img header_svg" alt="edit"
                                                      style="width:25px;opacity:0.6;">
@@ -160,7 +160,6 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <input hidden class="form-control text-end" id="TenantId" name="TenantId" value="1">
                                     <div class="col-lg-12 alert" style="color:red">
                                         <span class="text-danger" id="spnValidate"></span>
                                     </div>
@@ -197,7 +196,7 @@
                                         <div class="avatar-edit" style="position:absolute; left:25px; z-index:1; top:25px">
                                             <input type="file" id="UserImages" name="UserImages" class="ec-image-upload" accept=".png, .jpg, .jpeg" style="opacity:0; width:40px;height:40px;padding:0;border-radius:50%; position:absolute;z-index:1">
                                             <input id="UserImageUrl" name="UserImageUrl" hidden />
-                                            <label for="imageUpload" style="display:flex; -webkit-box-align:center; align-items:center; -webkit-box-pack:center;justify-content:center;width:40px; height:40px;padding:10px;margin-bottom:auto;border-radius:10px;background:#ffffff;border: 1px solid #eeeeee;box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.15); cursor: pointer; font-weight: normal; transition: all 0.2s ease-in-out;">
+                                            <label for="UserImages" style="display:flex; -webkit-box-align:center; align-items:center; -webkit-box-pack:center;justify-content:center;width:40px; height:40px;padding:10px;margin-bottom:auto;border-radius:10px;background:#ffffff;border: 1px solid #eeeeee;box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.15); cursor: pointer; font-weight: normal; transition: all 0.2s ease-in-out;">
                                                 <img src="~/assets/img/icons/edit.svg" class="svg_img header_svg" alt="edit" style="width:25px;opacity:0.6;">
                                             </label>
                                         </div>
