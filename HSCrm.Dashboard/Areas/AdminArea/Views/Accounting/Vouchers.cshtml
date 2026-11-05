@@ -161,64 +161,64 @@
         async function initPage() {
             document.getElementById('mvDate').value = new Date().toISOString().split('T')[0];
             try {
-                const [accRes, ledgerRes] = await Promise.all([
+                const [accRes, ledgerRes, voucherRes] = await Promise.all([
                     fetch(`${apiBase}/Accounting/Accounts`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/Accounting/Ledger`, { headers: getAuthHeaders() })
+                    fetch(`${apiBase}/Accounting/Ledger`, { headers: getAuthHeaders() }),
+                    fetch(`${apiBase}/Accounting/Vouchers`, { headers: getAuthHeaders() })
                 ]);
-                const accJson = await accRes.json();
+
+                if (!accRes.ok || !ledgerRes.ok || !voucherRes.ok) {
+                    throw new Error('دریافت اطلاعات اسناد حسابداری ناموفق بود.');
+                }
+
+                const [accJson, ledgerJson, voucherJson] = await Promise.all([
+                    accRes.json(), ledgerRes.json(), voucherRes.json()
+                ]);
                 accounts = accJson.data || [];
-
-                const ledgerJson = await ledgerRes.json();
                 const txs = ledgerJson.data || [];
+                const voucherHeaders = new Map((voucherJson.data || []).map(v => [Number(v.id), v]));
 
-                // Group ledger transactions by VoucherId to build complete vouchers view
-                const map = new Map();
+                // Ledger supplies the detailed rows; JournalVouchers is the authoritative
+                // source for voucher header totals. Never infer the displayed voucher total
+                // by adding debit and credit rows from the ledger.
+                const itemGroups = new Map();
                 txs.forEach(tx => {
-                    if (!map.has(tx.voucherId)) {
-                        map.set(tx.voucherId, {
-                            id: tx.voucherId,
-                            voucherNumber: tx.voucherNumber,
-                            voucherDate: tx.voucherDate,
-                            referenceType: tx.referenceType,
-                            referenceId: tx.referenceId,
-                            description: tx.description,
-                            totalDebit: 0,
-                            totalCredit: 0,
-                            items: []
-                        });
-                    }
-                    const v = map.get(tx.voucherId);
-                    v.totalDebit += (tx.debit || 0);
-                    v.totalCredit += (tx.credit || 0);
-                    v.items.push(tx);
+                    const id = Number(tx.voucherId);
+                    if (!itemGroups.has(id)) itemGroups.set(id, []);
+                    itemGroups.get(id).push(tx);
                 });
 
-                vouchers = Array.from(map.values()).sort((a, b) => b.voucherNumber - a.voucherNumber);
+                vouchers = Array.from(itemGroups.entries()).map(([id, items]) => {
+                    const header = voucherHeaders.get(id);
+                    if (!header) return null;
+                    return {
+                        id,
+                        voucherNumber: header.voucherNumber,
+                        voucherDate: header.voucherDate,
+                        referenceType: header.referenceType,
+                        referenceId: header.referenceId,
+                        description: header.description,
+                        totalDebit: Number(header.totalDebit || 0),
+                        totalCredit: Number(header.totalCredit || 0),
+                        items
+                    };
+                }).filter(Boolean).sort((a, b) => b.voucherNumber - a.voucherNumber);
+
                 const urlParams = new URLSearchParams(window.location.search);
                 const qRefType = urlParams.get('refType');
                 const qRefId = urlParams.get('refId');
                 if (qRefType && qRefId) {
                     const matched = vouchers.find(x => String(x.referenceType) === String(qRefType) && String(x.referenceId) === String(qRefId));
-                    if (matched) {
-                        selectedVoucherId = matched.id;
-                    } else {
-                        try {
-                            const refRes = await fetch(`${apiBase}/Accounting/GetByReference?referenceType=${qRefType}&referenceId=${qRefId}`, { headers: getAuthHeaders() });
-                            const refJson = await refRes.json();
-                            if (refJson.data && refJson.data.id) {
-                                vouchers.unshift(refJson.data);
-                                selectedVoucherId = refJson.data.id;
-                            }
-                        } catch (e) {}
-                    }
+                    if (matched) selectedVoucherId = matched.id;
                 }
-                if (vouchers.length > 0 && !selectedVoucherId) {
-                    selectedVoucherId = vouchers[0].id;
-                }
+
+                if (vouchers.length > 0 && !selectedVoucherId) selectedVoucherId = vouchers[0].id;
                 renderVoucherList();
                 renderSelectedVoucher();
             } catch (err) {
-                console.error(err);
+                console.error('خطا در دریافت اسناد حسابداری:', err);
+                document.getElementById('vouchersListContainer').innerHTML =
+                    '<div class="text-center py-4 text-danger">دریافت اسناد حسابداری ناموفق بود. لطفاً دسترسی و اتصال API را بررسی کنید.</div>';
             }
         }
 
@@ -253,7 +253,15 @@
                         <div class="small text-dark mb-1 text-truncate">${escapeHtml(v.description || 'سند حسابداری')}</div>
                         <div class="d-flex justify-content-between small text-muted">
                             <span>${v.items.length} آرتیکل</span>
-                            <span class="fw-bold text-success font-monospace" dir="ltr">${formatNum(v.totalDebit)} ریال</span>
+                            <span class="fw-bold text-success">جمع بدهکار سند</span>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span class="text-muted">بدهکار</span>
+                            <span class="fw-bold font-monospace" dir="ltr">${formatNum(v.totalDebit)} ریال</span>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span class="text-muted">بستانکار</span>
+                            <span class="fw-bold font-monospace" dir="ltr">${formatNum(v.totalCredit)} ریال</span>
                         </div>
                     </div>
                 `;
