@@ -187,6 +187,9 @@ namespace Automation.Dashboard.Controllers
                 string? apiToken = tokenResponse.Value<string>("token") ?? tokenResponse.Value<string>("Token");
                 int? apiFiscalYearId = tokenResponse.Value<int?>("fiscalYearId") ?? tokenResponse.Value<int?>("FiscalYearId");
                 string? apiFiscalYearTitle = tokenResponse.Value<string>("fiscalYearTitle") ?? tokenResponse.Value<string>("FiscalYearTitle");
+                int apiFiscalYearStatus = tokenResponse.Value<int?>("fiscalYearStatus")
+                    ?? tokenResponse.Value<int?>("FiscalYearStatus")
+                    ?? 0;
 
                 if (string.IsNullOrWhiteSpace(apiToken) || !apiFiscalYearId.HasValue)
                 {
@@ -202,7 +205,7 @@ namespace Automation.Dashboard.Controllers
 
                 claims.Add(new Claim("Token", apiToken));
                 claims.Add(new Claim("FiscalYearId", apiFiscalYearId.Value.ToString()));
-                claims.Add(new Claim("FiscalYearStatus", fiscalYearStatus.ToString()));
+                claims.Add(new Claim("FiscalYearStatus", apiFiscalYearStatus.ToString()));
                 if (!string.IsNullOrWhiteSpace(apiFiscalYearTitle ?? fiscalYearTitle))
                 {
                     claims.Add(new Claim("FiscalYearTitle", apiFiscalYearTitle ?? fiscalYearTitle!));
@@ -228,7 +231,7 @@ namespace Automation.Dashboard.Controllers
                     status = true,
                     message = $"سال مالی فعال به «{apiFiscalYearTitle ?? fiscalYearTitle ?? apiFiscalYearId.Value.ToString()}» تغییر یافت.",
                     fiscalYearId = apiFiscalYearId.Value,
-                    fiscalYearStatus,
+                    fiscalYearStatus = apiFiscalYearStatus,
                     fiscalYearTitle = apiFiscalYearTitle ?? fiscalYearTitle
                 });
             }
