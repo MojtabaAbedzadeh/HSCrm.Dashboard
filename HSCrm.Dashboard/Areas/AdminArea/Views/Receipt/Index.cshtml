@@ -109,9 +109,6 @@
             const tenantId = localStorage.getItem('TenantId') || sessionStorage.getItem('TenantId') || '@ViewBag.TenantId';
             if (tenantId) headers['TenantId'] = tenantId;
 
-            const fiscalYearId = localStorage.getItem('ActiveFiscalYearId') || sessionStorage.getItem('ActiveFiscalYearId');
-            if (fiscalYearId) headers['X-FiscalYear-Id'] = fiscalYearId;
-
             return headers;
         }
 
