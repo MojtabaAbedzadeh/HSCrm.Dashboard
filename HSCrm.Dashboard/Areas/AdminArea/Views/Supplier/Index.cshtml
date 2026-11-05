@@ -59,7 +59,7 @@
                                                 <div class="dropdown-menu">
                                                     <a class="dropdown-item text-primary fw-bold" href="/AdminArea/Accounting/AgingAndStatements?partyType=2&partyId=@item.Id">صورت‌حساب جامع ۳۶۰ درجه</a>
                                                     <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
-                                                    <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                    <!-- حذف تا زمان پیاده‌سازی endpoint در API نمایش داده نمی‌شود. -->
                                                 </div>
                                             </div>
                                         </td>
@@ -145,8 +145,6 @@
                                 <label for="SupplierAddressU" style="right:0!important; left:unset!important;">آدرس</label>
                             </div>
                         </div>
-                        <input hidden class="form-control text-end" id="ModifiedByIdU" name="ModifiedByIdU" value="@ViewBag.UserId">
-                        <input hidden class="form-control text-end" id="TenantIdU" name="TenantIdU" value="2">
                         <div class="col-lg-12 alert" style="color:red">
                             <span class="text-danger" id="spnValidate"></span>
                         </div>
@@ -389,7 +387,6 @@
                 SupplierFullName: $("#SupplierFullNameU").val(),
                 SupplierAddress: $("#SupplierAddressU").val(),
                 SupplierPhone: $("#SupplierPhoneU").val(),
-                ModifiedById: $("#ModifiedByIdU").val(),
             };
             $.ajax({
                 type: 'PUT',
