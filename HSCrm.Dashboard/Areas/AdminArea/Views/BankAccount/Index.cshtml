@@ -135,14 +135,29 @@
             return Number.isFinite(value) ? value.toLocaleString('en-US') : '0';
         }
 
+        async function readApiResponse(response) {
+            const body = await response.text();
+            let json = null;
+            try { json = body ? JSON.parse(body) : null; } catch { /* handled below */ }
+            if (!response.ok || !json) {
+                throw new Error(`API پاسخ معتبر نداد (HTTP ${response.status}): ${body.slice(0, 250)}`);
+            }
+            if (json.status === false) throw new Error(json.message || "درخواست API ناموفق بود.");
+            return json.data ?? [];
+        }
+
         async function loadBanks() {
             try {
-                const [allRes, sumRes] = await Promise.all([
-                    fetch(`${apiBase}/BankAccount/GetAll`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/BankAccount/BalancesSummary`, { headers: getAuthHeaders() })
-                ]);
-                const banks = (await allRes.json()).data || [];
-                const summaries = (await sumRes.json()).data || [];
+                const allRes = await fetch(`${apiBase}/BankAccount/GetAll`, { headers: getAuthHeaders() });
+                const banks = await readApiResponse(allRes);
+
+                let summaries = [];
+                try {
+                    const sumRes = await fetch(`${apiBase}/BankAccount/BalancesSummary`, { headers: getAuthHeaders() });
+                    summaries = await readApiResponse(sumRes);
+                } catch (summaryError) {
+                    console.warn("خلاصه گردش حساب‌ها بارگذاری نشد؛ فهرست حساب‌ها مستقل نمایش داده می‌شود.", summaryError);
+                }
 
                 const cardsDiv = document.getElementById('bankSummaryCards');
                 if (summaries.length === 0) {
