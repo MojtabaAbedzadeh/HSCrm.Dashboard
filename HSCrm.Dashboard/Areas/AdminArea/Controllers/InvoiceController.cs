@@ -111,7 +111,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         public async Task<IActionResult> EditPurchaseInvoice(int id)
         {
             var tenantId = User.FindFirstValue("TenantId");
-            string apiUrl = "PurchaseInvoice/GetById?InvoiceId=" + id;
+            string apiUrl = "PurchaseInvoice/" + id;
             try
             {
                 string json = await _getListApi.GetApiList(apiUrl);
