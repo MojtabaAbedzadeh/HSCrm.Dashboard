@@ -143,6 +143,12 @@
                                     </div>
                                     <div class="col-lg-6">
                                         <div class="form-group form-floating">
+                                            <input class="form-control text-end" type="password" id="PasswordC" name="PasswordC" placeholder="رمز عبور" autocomplete="new-password" required>
+                                            <label for="PasswordC" style="right:0!important; left:unset!important;">رمز عبور اختصاصی</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group form-floating">
                                             <input class="form-control text-end" id="PhoneNumberC" name="PhoneNumberC" placeholder="شماره همراه">
                                             <label for="PhoneNumberC" style="right:0!important; left:unset!important;">شماره همراه</label>
                                         </div>
@@ -329,8 +335,9 @@
             var lastName = ($("#UserLastNameC").val() || "").trim();
             var userName = ($("#UserNameC").val() || "").trim();
             var phoneNumber = ($("#PhoneNumberC").val() || "").trim();
-            if (!firstName || !lastName || !userName || !phoneNumber) {
-                SwalHelper.warning("لطفاً نام، نام خانوادگی، نام کاربری و شماره همراه را تکمیل نمایید!");
+            var password = ($("#PasswordC").val() || "");
+            if (!firstName || !lastName || !userName || !phoneNumber || !password.trim()) {
+                SwalHelper.warning("لطفاً نام، نام خانوادگی، نام کاربری، شماره همراه و رمز عبور اختصاصی را تکمیل نمایید!");
                 return false;
             }
             var formData = new FormData($("#frmUser")[0]);
