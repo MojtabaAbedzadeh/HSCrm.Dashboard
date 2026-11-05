@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Security.Claims;
 
 namespace Automation.Dashboard.Controllers
@@ -182,10 +183,10 @@ namespace Automation.Dashboard.Controllers
                 // The API validates tenant ownership and fiscal-year state, then issues
                 // a new JWT containing the selected FiscalYearId claim.
                 var apiResponse = await _getListApi.PostApi("Account/SwitchFiscalYear", fiscalYearId);
-                var tokenResponse = JsonConvert.DeserializeObject<dynamic>(apiResponse);
-                string? apiToken = tokenResponse?.token?.ToString() ?? tokenResponse?.Token?.ToString();
-                int? apiFiscalYearId = (int?)tokenResponse?.fiscalYearId ?? (int?)tokenResponse?.FiscalYearId;
-                string? apiFiscalYearTitle = tokenResponse?.fiscalYearTitle?.ToString() ?? tokenResponse?.FiscalYearTitle?.ToString();
+                var tokenResponse = JObject.Parse(apiResponse);
+                string? apiToken = tokenResponse.Value<string>("token") ?? tokenResponse.Value<string>("Token");
+                int? apiFiscalYearId = tokenResponse.Value<int?>("fiscalYearId") ?? tokenResponse.Value<int?>("FiscalYearId");
+                string? apiFiscalYearTitle = tokenResponse.Value<string>("fiscalYearTitle") ?? tokenResponse.Value<string>("FiscalYearTitle");
 
                 if (string.IsNullOrWhiteSpace(apiToken) || !apiFiscalYearId.HasValue)
                 {
@@ -231,7 +232,7 @@ namespace Automation.Dashboard.Controllers
                     fiscalYearTitle = apiFiscalYearTitle ?? fiscalYearTitle
                 });
             }
-            catch (Exception ex)
+            catch
             {
                 // Keep the existing cookie and token untouched when the API rejects
                 // the requested fiscal year or cannot issue a replacement token.
