@@ -144,6 +144,22 @@
                         </div>
                         <div class="col-lg-4">
                             <div class="form-group form-floating">
+                                <select id="PaymentStatus" name="PaymentStatus" class="form-control text-end">
+                                    <option value="0">پرداخت نشده</option>
+                                    <option value="1">پرداخت جزئی</option>
+                                    <option value="2">تسویه شده</option>
+                                </select>
+                                <label for="PaymentStatus" style="right:0!important; left:unset!important;">وضعیت پرداخت</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
+                                <input type="number" min="0" class="form-control text-end" id="PaidAmount" name="PaidAmount" value="0">
+                                <label for="PaidAmount" style="right:0!important; left:unset!important;">مبلغ پرداخت‌شده</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
                                 <select id="Type" name="Type" class="form-control text-end">
                                     <option value="1">حمل و نقل</option>
                                     <option value="2">غذا</option>
@@ -198,9 +214,7 @@
                                 <label for="Description" style="right:0!important; left:unset!important;">توضیحات</label>
                             </div>
                         </div>
-                        <input hidden class="form-control text-end" id="UserId" name="UserId" value="@ViewBag.UserId">
-                        <input hidden class="form-control text-end" id="TenantId" name="TenantId" value="@ViewBag.TenantId">
-                        <div class="col-lg-12 alert" style="color:red">
+                                                <div class="col-lg-12 alert" style="color:red">
                             <span class="text-danger" id="spnValidate"></span>
                         </div>
                     </div>
@@ -238,6 +252,49 @@
                                 <label for="AmountE" style="right:0!important; left:unset!important;">مبلغ</label>
                             </div>
                         </div>
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
+                                <select id="PaymentStatusE" name="PaymentStatusE" class="form-control text-end">
+                                    <option value="0">پرداخت نشده</option>
+                                    <option value="1">پرداخت جزئی</option>
+                                    <option value="2">تسویه شده</option>
+                                </select>
+                                <label for="PaymentStatusE" style="right:0!important; left:unset!important;">وضعیت پرداخت</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
+                                <input type="number" min="0" class="form-control text-end" id="PaidAmountE" name="PaidAmountE" value="0">
+                                <label for="PaidAmountE" style="right:0!important; left:unset!important;">مبلغ پرداخت‌شده</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="form-group form-floating">
+                                <select id="PaymentMethodE" name="PaymentMethodE" class="form-control text-end">
+                                    <option value="1">نقد (صندوق/تنخواه)</option>
+                                    <option value="2">کارت به کارت / بانکی</option>
+                                    <option value="3">پایا</option>
+                                    <option value="4">ساتنا</option>
+                                    <option value="5">چک پرداختی</option>
+                                    <option value="6">نسیه (بستانکاری تأمین‌کننده)</option>
+                                </select>
+                                <label for="PaymentMethodE" style="right:0!important; left:unset!important;">روش پرداخت</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="form-group form-floating">
+                                <select id="BankAccountIdE" name="BankAccountIdE" class="form-control text-end">
+                                    <option value="">-- انتخاب حساب بانکی / صندوق --</option>
+                                </select>
+                                <label for="BankAccountIdE" style="right:0!important; left:unset!important;">حساب بانکی / صندوق پرداخت‌کننده</label>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="form-group form-floating">
+                                <input class="form-control text-end" id="ReferenceNoE" name="ReferenceNoE" placeholder="شماره پیگیری / فیش">
+                                <label for="ReferenceNoE" style="right:0!important; left:unset!important;">شماره پیگیری / فیش</label>
+                            </div>
+                        </div>
                         <div class="col-lg-4 form-floating">
                             <select id="ProjectIdE" name="ProjectIdE" class="form-control text-end" asp-items="@(new SelectList(lstProject, "DrId", "DrName"))">
                             </select>
@@ -262,9 +319,7 @@
                                 <label for="DescriptionE" style="right:0!important; left:unset!important;">توضیحات</label>
                             </div>
                         </div>
-                        <input hidden class="form-control text-end" id="ModifiedByIdE" name="ModifiedByIdE" value="@ViewBag.UserId">
-                        <input hidden class="form-control text-end" id="TenantIdE" name="TenantIdE" value="@ViewBag.TenantId">
-                        <div class="col-lg-12 alert" style="color:red">
+                                                <div class="col-lg-12 alert" style="color:red">
                             <span class="text-danger" id="spnValidateEdit"></span>
                         </div>
                     </div>
@@ -292,7 +347,7 @@
                     var list = res.data || res || [];
                     list.forEach(function (b) {
                         var title = (b.bankName || b.title || 'حساب') + (b.accountNumber ? ' - ' + b.accountNumber : '');
-                        $('#BankAccountId').append('<option value="' + b.id + '">' + title + '</option>');
+                        $('#BankAccountId, #BankAccountIdE').append('<option value="' + b.id + '">' + title + '</option>');
                     });
                 }
             });
@@ -359,26 +414,32 @@
         function showUpdateModal(expenseId) {
             $.ajax({
                 type: 'GET',
-                url: '@ApiAddress' + 'Expense/GetById?expenseId=' + expenseId,
+                url: '@ApiAddress' + 'Expense/GetExpense',
                 dataType: 'json',
                 headers: {
                     "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
                 },
                 success: function (xhr) {
-                    if (xhr && xhr.data && xhr.data.length > 0) {
-                        const expense = xhr.data[0];
-                        $("#expenseId").val(expense.expenseId);
+                    const expenses = xhr && Array.isArray(xhr.data) ? xhr.data : [];
+                    const expense = expenses.find(item => Number(item.id) === Number(expenseId));
+                    if (expense) {
+                        $("#expenseId").val(expense.id);
                         $("#ExpenseTitleE").val(expense.expenseTitle);
                         $("#ProjectIdE").val(expense.projectId);
                         $("#TypeE").val(expense.type);
                         $("#AmountE").val(expense.amount);
                         $("#DescriptionE").val(expense.description);
-                        $("#TenantIdE").val(expense.tenantId);
-                        $("#ExpenseDateE").val(expense.expenseDate);
                         $("#PaymentStatusE").val(expense.paymentStatus);
                         $("#PaidAmountE").val(expense.paidAmount);
                         $("#PaymentMethodE").val(expense.paymentMethod);
-                        $("#ReferenceNoE").val(expense.referenceNo);
+                        $("#BankAccountIdE").val(expense.bankAccountId || "");
+                        $("#ReferenceNoE").val(expense.referenceNo || "");
+                        if (expense.expenseDate) {
+                            const expenseDate = new Date(expense.expenseDate);
+                            if (!Number.isNaN(expenseDate.getTime())) {
+                                $("#ExpenseDateE").val(new persianDate(expenseDate.getTime()).format("YYYY/MM/DD"));
+                            }
+                        }
                         $("#editExpense").modal('show');
                     } else {
                         SwalHelper.error("اطلاعات هزینه یافت نشد.");
@@ -407,6 +468,7 @@
                 paymentStatus: $("#PaymentStatusE").val(),
                 paidAmount: $("#PaidAmountE").val(),
                 paymentMethod: $("#PaymentMethodE").val(),
+                bankAccountId: $("#BankAccountIdE").val() || null,
                 referenceNo: $("#ReferenceNoE").val()
             };
             $.ajax({
