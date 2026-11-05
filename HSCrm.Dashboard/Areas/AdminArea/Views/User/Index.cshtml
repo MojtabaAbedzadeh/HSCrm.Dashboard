@@ -50,7 +50,7 @@
                                                 ? Url.Content("~/assets/img/user/img-user.jpg")
                                                 : (Uri.TryCreate(item.UserImageUrl, UriKind.Absolute, out _) ? item.UserImageUrl : $"{apiOrigin}/{item.UserImageUrl.TrimStart('/')}");
                                         }
-                                        <td><img class="vendor-thumb" src="@listImageUrl" alt="user profile"></td>
+                                        <td><img class="vendor-thumb" src="@listImageUrl" alt="user profile" onerror="this.onerror=null;this.src='@Url.Content("~/assets/img/user/img-user.jpg")';"></td>
                                         <td>@item.UserFirstName</td>
                                         <td>@item.UserLastName</td>
                                         <td>
