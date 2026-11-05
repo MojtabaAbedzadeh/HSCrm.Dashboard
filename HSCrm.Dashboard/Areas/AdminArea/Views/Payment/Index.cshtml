@@ -446,14 +446,6 @@
                     headers["TenantId"] = tenantId;
                 }
 
-                const fiscalYearId =
-                    localStorage.getItem("ActiveFiscalYearId") ||
-                    sessionStorage.getItem("ActiveFiscalYearId");
-
-                if (fiscalYearId) {
-                    headers["X-FiscalYear-Id"] = fiscalYearId;
-                }
-
                 return headers;
             }
     </script>
