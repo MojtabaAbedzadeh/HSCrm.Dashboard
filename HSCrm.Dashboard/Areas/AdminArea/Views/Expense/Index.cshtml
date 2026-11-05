@@ -85,12 +85,6 @@
                                                                 ویرایش
                                                             </a>
                                                         }
-                                                        @if (User.HasPermission(Permissions.Expenses.Delete))
-                                                        {
-                                                            <a class="dropdown-item" href="#" onclick="deleteExpense(@item.Id)">
-                                                                حذف
-                                                            </a>
-                                                        }
                                                         <div class="dropdown-divider"></div>
                                                         <a class="dropdown-item text-info" href="/AdminArea/Accounting/Vouchers?refType=5&refId=@item.Id">
                                                             <i class="mdi mdi-book-open-page-variant me-1"></i> مشاهده سند حسابداری
