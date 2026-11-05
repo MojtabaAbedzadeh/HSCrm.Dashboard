@@ -174,13 +174,18 @@
                 return;
             }
             try {
-                const res = await fetch(`${apiBase}/Receipt/Create`, {
+                const res = await fetch(`${apiBase}/Receipt`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify(payload)
                 });
-                const json = await res.json();
-                if (!res.ok || json.status === false) throw new Error(json.message || 'خطا در ثبت دریافت');
+                const responseText = await res.text();
+                let json = null;
+                try { json = responseText ? JSON.parse(responseText) : null; } catch { /* handled below */ }
+                if (!res.ok || !json || json.status === false) {
+                    const detail = json?.message || (responseText && !json ? responseText.slice(0, 300) : "پاسخ معتبری از سرور دریافت نشد.");
+                    throw new Error(`ثبت دریافت ناموفق بود (HTTP ${res.status}): ${detail}`);
+                }
                 await swal.fire({ title: 'ثبت موفق', text: 'دریافت ثبت شد و سند حسابداری واریز به بانک صادر گردید.', icon: 'success', confirmButtonText: 'باشه' });
                 bootstrap.Modal.getInstance(document.getElementById('addReceiptModal'))?.hide();
                 initReceipts();
