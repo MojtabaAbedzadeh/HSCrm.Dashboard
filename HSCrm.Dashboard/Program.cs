@@ -20,9 +20,25 @@ if (!builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(dataProtec
 
 if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
 {
-    Directory.CreateDirectory(dataProtectionKeysPath);
+    if (!Path.IsPathRooted(dataProtectionKeysPath))
+        throw new InvalidOperationException("DataProtection:KeysPath must be an absolute path.");
+
+    var fullKeysPath = Path.GetFullPath(dataProtectionKeysPath);
+    if (!builder.Environment.IsDevelopment())
+    {
+        var contentRoot = Path.GetFullPath(builder.Environment.ContentRootPath);
+        var relativeKeysPath = Path.GetRelativePath(contentRoot, fullKeysPath);
+        if (relativeKeysPath == "."
+            || relativeKeysPath == ".."
+            || (!Path.IsPathRooted(relativeKeysPath)
+                && !relativeKeysPath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)))
+            throw new InvalidOperationException(
+                "DataProtection:KeysPath must be outside the deployed application directory.");
+    }
+
+    Directory.CreateDirectory(fullKeysPath);
     builder.Services.AddDataProtection()
-        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+        .PersistKeysToFileSystem(new DirectoryInfo(fullKeysPath))
         .SetApplicationName("HSCrm.Dashboard");
 }
 
