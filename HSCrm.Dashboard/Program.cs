@@ -123,6 +123,10 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Public liveness endpoint for IIS post-deployment smoke checks.
+app.MapGet("/health/live", () => Results.Ok(new { status = "Healthy" }))
+    .AllowAnonymous();
+
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
