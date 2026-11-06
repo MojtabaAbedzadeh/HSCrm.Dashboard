@@ -37,9 +37,14 @@ if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
     }
 
     Directory.CreateDirectory(fullKeysPath);
-    builder.Services.AddDataProtection()
+    var dataProtectionBuilder = builder.Services.AddDataProtection()
         .PersistKeysToFileSystem(new DirectoryInfo(fullKeysPath))
         .SetApplicationName("HSCrm.Dashboard");
+
+    // IIS on Windows protects persisted key material with machine-level DPAPI.
+    // Other operating systems must configure an equivalent certificate-based protector.
+    if (OperatingSystem.IsWindows())
+        dataProtectionBuilder.ProtectKeysWithDpapi(protectToLocalMachine: true);
 }
 
 var apiAddress = builder.Configuration["ApiAddress"];
