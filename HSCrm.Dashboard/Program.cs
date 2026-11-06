@@ -4,9 +4,48 @@ using HSCrm.Dashboard.Filters;
 using HSCrm.Dashboard.Services;
 using HSCrm.Dashboard.Services.Interface;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Persist cookie-encryption keys outside the deployment directory.
+// Configure DataProtection__KeysPath to a durable folder writable only by this app pool.
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    throw new InvalidOperationException(
+        "Production requires DataProtection:KeysPath to point to a persistent, protected directory.");
+}
+
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    if (!Path.IsPathRooted(dataProtectionKeysPath))
+        throw new InvalidOperationException("DataProtection:KeysPath must be an absolute path.");
+
+    var fullKeysPath = Path.GetFullPath(dataProtectionKeysPath);
+    if (!builder.Environment.IsDevelopment())
+    {
+        var contentRoot = Path.GetFullPath(builder.Environment.ContentRootPath);
+        var relativeKeysPath = Path.GetRelativePath(contentRoot, fullKeysPath);
+        if (relativeKeysPath == "."
+            || relativeKeysPath == ".."
+            || (!Path.IsPathRooted(relativeKeysPath)
+                && !relativeKeysPath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal)))
+            throw new InvalidOperationException(
+                "DataProtection:KeysPath must be outside the deployed application directory.");
+    }
+
+    Directory.CreateDirectory(fullKeysPath);
+    var dataProtectionBuilder = builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(fullKeysPath))
+        .SetApplicationName("HSCrm.Dashboard");
+
+    // IIS on Windows protects persisted key material with machine-level DPAPI.
+    // Other operating systems must configure an equivalent certificate-based protector.
+    if (OperatingSystem.IsWindows())
+        dataProtectionBuilder.ProtectKeysWithDpapi(protectToLocalMachine: true);
+}
 
 var apiAddress = builder.Configuration["ApiAddress"];
 if (string.IsNullOrWhiteSpace(apiAddress) ||
@@ -64,6 +103,9 @@ builder.Services.AddAuthentication(options =>
     options.LogoutPath = "/Account/Login";
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.Cookie.IsEssential = true;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
     options.SlidingExpiration = true;
 });
 
@@ -85,6 +127,10 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Public liveness endpoint for IIS post-deployment smoke checks.
+app.MapGet("/health/live", () => Results.Ok(new { status = "Healthy" }))
+    .AllowAnonymous();
 
 app.MapControllerRoute(
     name: "areas",

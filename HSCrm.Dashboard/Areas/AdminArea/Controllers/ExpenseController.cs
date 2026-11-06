@@ -12,7 +12,6 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
     [Area(nameof(AdminArea))]
     public class ExpenseController : BaseController
     {
-        private readonly IConfiguration _config;
         private readonly GetListApi _getListApi;
 
         public ExpenseController(IConfiguration config, GetListApi getListApi) : base(config)
@@ -43,11 +42,14 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         }
 
         [HttpGet]
-        private async Task<List<ProjetcsDropDown>> GetProjectList(string tenantId)
+        private async Task<List<ProjetcsDropDown>> GetProjectList(string? tenantId)
         {
+            if (string.IsNullOrWhiteSpace(tenantId))
+                return new List<ProjetcsDropDown>();
+
             try
             {
-                string apiUrl = "Project/ProjectDropdownList?tenantId=" + tenantId;
+                string apiUrl = "Project/ProjectDropdownList?tenantId=" + Uri.EscapeDataString(tenantId);
                 var json = await _getListApi.GetApiList(apiUrl);
                 if (string.IsNullOrWhiteSpace(json)) return new List<ProjetcsDropDown>();
                 var result = JObject.Parse(json);
