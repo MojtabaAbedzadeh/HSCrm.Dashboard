@@ -4,9 +4,27 @@ using HSCrm.Dashboard.Filters;
 using HSCrm.Dashboard.Services;
 using HSCrm.Dashboard.Services.Interface;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Persist cookie-encryption keys outside the deployment directory.
+// Configure DataProtection__KeysPath to a durable folder writable only by this app pool.
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    throw new InvalidOperationException(
+        "Production requires DataProtection:KeysPath to point to a persistent, protected directory.");
+}
+
+if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+{
+    Directory.CreateDirectory(dataProtectionKeysPath);
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+        .SetApplicationName("HSCrm.Dashboard");
+}
 
 var apiAddress = builder.Configuration["ApiAddress"];
 if (string.IsNullOrWhiteSpace(apiAddress) ||
@@ -64,6 +82,9 @@ builder.Services.AddAuthentication(options =>
     options.LogoutPath = "/Account/Login";
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.Cookie.IsEssential = true;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.Lax;
     options.SlidingExpiration = true;
 });
 

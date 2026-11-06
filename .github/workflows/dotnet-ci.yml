@@ -5,9 +5,11 @@ on:
     branches:
       - master
       - fix/frontend-audit
+      - release/1.0.0-deployment
   pull_request:
     branches:
       - master
+      - fix/frontend-audit
 
 permissions:
   contents: read
