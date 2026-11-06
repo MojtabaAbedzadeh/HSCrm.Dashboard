@@ -37,48 +37,11 @@ jobs:
         run: |
           $version = "${{ inputs.release_version }}"
           if ([string]::IsNullOrWhiteSpace($version)) { $version = "${{ github.ref_name }}" }
-          if ($version -notmatch '^v?\d+\.\d+\.\d+([+-][0-9A-Za-z.-]+)?        run: dotnet restore HSCrm.Dashboard.sln
-
-      - name: Build
-        run: dotnet build HSCrm.Dashboard.sln --configuration Release --no-restore
-
-      - name: Test
-        run: dotnet test HSCrm.Dashboard.sln --configuration Release --no-build --verbosity normal
-
-      - name: Publish Dashboard for IIS
-        run: dotnet publish HSCrm.Dashboard/HSCrm.Dashboard.csproj --configuration Release --no-restore --output "${{ runner.temp }}\publish\dashboard"
-
-      - name: Include deployment metadata
-        shell: pwsh
-        run: |
-          @(
-            "component=dashboard"
-            "targetFramework=net8.0"
-            "version=${{ steps.release-version.outputs.version }}"
-            "commit=${{ github.sha }}"
-            "builtAtUtc=$([DateTime]::UtcNow.ToString('o'))"
-          ) | Set-Content -Path "${{ runner.temp }}\publish\dashboard\release-info.txt" -Encoding utf8
-
-      - name: Upload IIS package
-        uses: actions/upload-artifact@v4
-        with:
-          name: hscrm-dashboard-${{ steps.release-version.outputs.version }}
-          path: ${{ runner.temp }}\publish\dashboard\
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: hscrm-dashboard-test-results-${{ github.run_id }}
-          path: '**/TestResults/*.trx'
-          if-no-files-found: ignore
-          retention-days: 14
-) {
+          if ($version -notmatch '^v?\d+\.\d+\.\d+([+-][0-9A-Za-z.-]+)?$') {
             throw "Release version must follow semantic version format (for example 1.0.0)."
           }
           "version=$version" | Add-Content -Path $env:GITHUB_OUTPUT
+
       - name: Restore
         run: dotnet restore HSCrm.Dashboard.sln
 
