@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Security.Claims;
 
 namespace HSCrm.Dashboard.Controllers
 {
+    [Authorize]
     public class BaseController : Controller
     {
         protected readonly IConfiguration _config;
