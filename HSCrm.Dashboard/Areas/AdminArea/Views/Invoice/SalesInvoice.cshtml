@@ -236,7 +236,10 @@
                 `).join('');
             }
         })
-        .catch(() => {});
+        .catch(err => {
+            tbody.innerHTML = '<tr><td colspan="7" class="py-3 text-danger text-center">خطا در بارگذاری اقلام فاکتور از سرور.</td></tr>';
+            SwalHelper.error("خطا در بارگذاری ریز اقلام فاکتور از سرور.");
+        });
     }
 </script>
 

@@ -430,19 +430,19 @@
 
                 if (hasPurchase === hasExpense) {
                     e.preventDefault();
-                    alert("فقط یکی از مرجع‌ها باید انتخاب شود.");
+                    SwalHelper.warning("فقط یکی از مرجع‌ها (فاکتور خرید یا هزینه) باید انتخاب شود.", "اطلاعات ناقص");
                     return;
                 }
 
                 if (!document.getElementById("PaymentDate").value) {
                     e.preventDefault();
-                    alert("تاریخ پرداخت را وارد کنید.");
+                    SwalHelper.warning("لطفاً تاریخ پرداخت را وارد کنید.", "اطلاعات ناقص");
                     return;
                 }
 
                 if (!document.getElementById("Amount").value) {
                     e.preventDefault();
-                    alert("مبلغ را وارد کنید.");
+                    SwalHelper.warning("لطفاً مبلغ پرداختی را وارد کنید.", "اطلاعات ناقص");
                     return;
                 }
             });
