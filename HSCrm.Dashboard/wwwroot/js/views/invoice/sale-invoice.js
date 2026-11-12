@@ -27,7 +27,7 @@ $(document).ready(function () {
     // Auto-fetch next invoice number suggestion from pattern engine
     if ($('#invoiceNumber').length) {
         $.ajax({
-            url: `${ApiAddress}/api/SalesInvoice/GetNextInvoiceNumber`,
+            url: (ApiAddress.endsWith('/') ? ApiAddress : ApiAddress + '/') + 'SalesInvoice/GetNextInvoiceNumber',
             type: 'GET',
             headers: Token ? { 'Authorization': `Bearer ${Token}` } : {},
             success: function (res) {

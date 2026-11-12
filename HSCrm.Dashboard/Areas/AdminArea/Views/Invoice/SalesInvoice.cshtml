@@ -602,7 +602,7 @@ $('#patternSales, #patternPurchase, #patternSalesReturn, #patternPurchaseReturn'
 
 function loadInvoicePatterns() {
     $.ajax({
-        url: '@ViewBag.ApiAddress/api/Tenant/GetInvoicePatterns',
+        url: ('@ViewBag.ApiAddress'.endsWith('/') ? '@ViewBag.ApiAddress' : '@ViewBag.ApiAddress/') + 'Tenant/GetInvoicePatterns',
         type: 'GET',
         headers: { 'Authorization': 'Bearer @ViewBag.Token' },
         success: function(res) {
@@ -631,7 +631,7 @@ function saveInvoicePatterns() {
     };
 
     $.ajax({
-        url: '@ViewBag.ApiAddress/api/Tenant/UpdateInvoicePatterns',
+        url: ('@ViewBag.ApiAddress'.endsWith('/') ? '@ViewBag.ApiAddress' : '@ViewBag.ApiAddress/') + 'Tenant/UpdateInvoicePatterns',
         type: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify(data),

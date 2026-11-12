@@ -1,3 +1,25 @@
+$(document).ready(function () {
+    if ($('#invoiceNumber').length && !$('#InvoiceId').val()) {
+        $.ajax({
+            url: (ApiAddress.endsWith('/') ? ApiAddress : ApiAddress + '/') + 'PurchaseInvoice/GetNextInvoiceNumber',
+            type: 'GET',
+            headers: Token ? { 'Authorization': `Bearer ${Token}` } : {},
+            success: function (res) {
+                const nextNum = res?.nextInvoiceNumber || res?.NextInvoiceNumber;
+                if (nextNum) {
+                    $('#invoiceNumber').attr('placeholder', `شماره خودکار: ${nextNum}`);
+                    if (!$('#invoiceNumber').val()) {
+                        $('#invoiceNumber').val(nextNum);
+                    }
+                }
+            },
+            error: function () {
+                $('#invoiceNumber').attr('placeholder', 'شماره خودکار سیستم');
+            }
+        });
+    }
+});
+
 ﻿// ================================
 // Helpers
 // ================================
@@ -878,7 +900,7 @@ $('#btnUpdateInvoice').on('click', function () {
             'Authorization': 'Bearer ' + Token
         },
         success: function (status) {
-            if (status.Status === true) {
+            if (status.Status === true || status.status === true || status.statusCode === 200) {
                 swal.fire({
                     title: "موفق",
                     text: "فاکتور با موفقیت ویرایش شد",
