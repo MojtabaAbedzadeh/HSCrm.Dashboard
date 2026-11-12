@@ -414,18 +414,7 @@ function validateInvoiceForm() {
     }
 
     // شماره فاکتور
-    if (!$('#invoiceNumber').val().trim()) {
-        swal.fire({
-            title: "خطا",
-            text: "شماره فاکتور را وارد کنید",
-            icon: "error",
-            confirmButtonColor: "green",
-            showConfirmButton: true,
-            timer: 1500,
-            allowOutsideClick: false
-        });
-        return false;
-    }
+    // شماره فاکتور اختیاری است؛ در صورت خالی بودن بر اساس الگو ساخته می‌شود
 
     // تاریخ فاکتور
     if (!$('#invoiceDate').val()) {

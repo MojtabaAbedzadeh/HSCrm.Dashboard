@@ -23,6 +23,27 @@ $(document).ready(function () {
             format: "MMMM"
         }
     });
+
+    // Auto-fetch next invoice number suggestion from pattern engine
+    if ($('#invoiceNumber').length) {
+        $.ajax({
+            url: `${ApiAddress}/api/SalesInvoice/GetNextInvoiceNumber`,
+            type: 'GET',
+            headers: Token ? { 'Authorization': `Bearer ${Token}` } : {},
+            success: function (res) {
+                const nextNum = res?.nextInvoiceNumber || res?.NextInvoiceNumber;
+                if (nextNum) {
+                    $('#invoiceNumber').attr('placeholder', `شماره خودکار: ${nextNum}`);
+                    if (!$('#invoiceNumber').val()) {
+                        $('#invoiceNumber').val(nextNum);
+                    }
+                }
+            },
+            error: function () {
+                $('#invoiceNumber').attr('placeholder', 'شماره خودکار سیستم');
+            }
+        });
+    }
 });
 
 function formatPrice(value) {
@@ -459,20 +480,7 @@ function validateInvoiceForm() {
         return false;
     }
 
-    if (!$('#invoiceNumber').val().trim()) {
-        swal.fire({
-            title: "خطا",
-            text: "شماره فاکتور را وارد کنید",
-            icon: "error",
-            confirmButtonColor: "green",
-            confirmButtonText: "باشه",
-            showConfirmButton: true,
-            timer: 1500,
-            allowOutsideClick: false
-        });
-
-        return false;
-    }
+    // شماره فاکتور اختیاری است؛ در صورت خالی بودن بر اساس الگوی سازمان تولید می‌شود
 
     if (!$('#invoiceDate').val()) {
         swal.fire({
