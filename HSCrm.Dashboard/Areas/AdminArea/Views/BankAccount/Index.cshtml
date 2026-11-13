@@ -130,10 +130,12 @@
             try {
                 const [allRes, sumRes] = await Promise.all([
                     fetch(`${apiBase}/BankAccount/GetAll`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/BankAccount/GetBalancesSummary`, { headers: getAuthHeaders() })
+                    fetch(`${apiBase}/BankAccount/BalancesSummary`, { headers: getAuthHeaders() })
                 ]);
-                const banks = (await allRes.json()).data || [];
-                const summaries = (await sumRes.json()).data || [];
+                const banksJson = allRes.ok ? await allRes.json() : { data: [] };
+                const sumJson = sumRes.ok ? await sumRes.json() : { data: [] };
+                const banks = banksJson.data || [];
+                const summaries = sumJson.data || [];
 
                 const cardsDiv = document.getElementById('bankSummaryCards');
                 if (summaries.length === 0) {

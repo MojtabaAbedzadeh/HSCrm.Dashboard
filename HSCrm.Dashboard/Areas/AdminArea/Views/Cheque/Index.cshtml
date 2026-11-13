@@ -225,8 +225,8 @@
         async function initChequesPage() {
             try {
                 const [custRes, supRes, bankRes] = await Promise.all([
-                    fetch(`${apiBase}/Customer/GetCustomers`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/Supplier/GetSuppliers`, { headers: getAuthHeaders() }),
+                    fetch(`${apiBase}/Customer/GetCustomer`, { headers: getAuthHeaders() }),
+                    fetch(`${apiBase}/Supplier/GetSupplier`, { headers: getAuthHeaders() }),
                     fetch(`${apiBase}/BankAccount/GetAll`, { headers: getAuthHeaders() })
                 ]);
                 const custs = (await custRes.json()).data || [];
