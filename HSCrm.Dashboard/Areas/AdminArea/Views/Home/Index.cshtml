@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["AdminTitle"] = "داشبورد جامع مدیریتی و مالی";
     ViewData["selected"] = "dashboard";
     string ApiAddress = ViewBag.ApiAddress;
@@ -52,6 +52,43 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
         <a href="/AdminArea/FiscalYear/Index" class="btn btn-sm btn-primary">مدیریت سال‌های مالی</a>
     </div>
 }
+
+<!-- کارت راهنمای راه‌اندازی اولیه شرکت (Onboarding Checklist) -->
+<div id="onboardingBannerWrap" class="mb-4 d-none">
+    <div id="onboardingCard" class="card border-0 shadow-sm border-start border-4 border-primary">
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h5 class="mb-1 fw-bold text-primary">
+                    <i class="mdi mdi-rocket-launch-outline me-1"></i>راهنمای راه‌اندازی اولیه شرکت
+                </h5>
+                <small class="text-muted" id="onboardingSummaryText">برای شروع کار بدون خطا با سامانه، اطلاعات پایه زیر را تکمیل کنید.</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary fs-6" id="onboardingPercentBadge">0%</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnDismissOnboarding" title="بستن موقت">
+                    <i class="mdi mdi-close me-1"></i>بستن موقت
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="progress mb-3" style="height: 10px;">
+                <div class="progress-bar progress-bar-striped bg-primary" id="onboardingProgressBar" role="progressbar" style="width: 0%;"></div>
+            </div>
+            <div class="row g-2" id="onboardingStepsGrid"></div>
+        </div>
+    </div>
+    <div id="onboardingReopenBar" class="d-none">
+        <div class="alert alert-light border d-flex justify-content-between align-items-center py-2 mb-0">
+            <small class="text-muted">
+                <i class="mdi mdi-information-outline me-1 text-primary"></i>
+                تنظیمات و اطلاعات اولیه شرکت هنوز به صورت کامل ثبت نشده است (<strong id="onboardingReopenRatio">0/0</strong> مرحله تکمیل‌شده).
+            </small>
+            <button type="button" class="btn btn-xs btn-outline-primary" id="btnReopenOnboarding">
+                نمایش راهنمای راه‌اندازی
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- ردیف اول: ۶ کارت شاخص کلیدی عملکرد مالی (KPIs) -->
 <div class="row g-3 mb-4">
@@ -359,6 +396,102 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
             }
         }
 
-        document.addEventListener('DOMContentLoaded', loadDashboardData);
+        function escapeDashHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        async function loadOnboardingChecklist() {
+            const wrap = document.getElementById('onboardingBannerWrap');
+            const card = document.getElementById('onboardingCard');
+            const reopenBar = document.getElementById('onboardingReopenBar');
+            if (!wrap || !card || !reopenBar) return;
+
+            const dismissKey = `hscrm_onboarding_dismissed_${dashTenantId || '0'}`;
+
+            try {
+                const res = await fetch(`${dashApiBase}/Tenant/GetOnboardingStatus`, {
+                    headers: { 'Authorization': 'Bearer ' + dashToken },
+                    suppressGlobalAlert: true
+                });
+                const json = await res.json();
+                const status = json && json.data ? json.data : null;
+                if (!status || status.isCompleted) {
+                    wrap.classList.add('d-none');
+                    return;
+                }
+
+                wrap.classList.remove('d-none');
+                const pct = Number(status.completionPercent || 0);
+                const completed = Number(status.completedSteps || 0);
+                const total = Number(status.totalSteps || 0);
+
+                document.getElementById('onboardingPercentBadge').textContent = `${pct}% (${completed}/${total})`;
+                document.getElementById('onboardingProgressBar').style.width = `${pct}%`;
+                document.getElementById('onboardingSummaryText').textContent =
+                    `تاکنون ${completed} مورد از ${total} پیش‌نیاز راه‌اندازی تکمیل شده است.`;
+                document.getElementById('onboardingReopenRatio').textContent = `${completed}/${total}`;
+
+                const grid = document.getElementById('onboardingStepsGrid');
+                const steps = Array.isArray(status.steps) ? status.steps : [];
+                grid.innerHTML = steps.map(step => {
+                    const done = !!step.isCompleted;
+                    const badgeClass = done ? 'bg-success' : 'bg-warning text-dark';
+                    const badgeText = done ? 'تکمیل شد' : 'در انتظار ثبت';
+                    const iconClass = done ? 'mdi-check-circle text-success' : 'mdi-alert-circle-outline text-warning';
+                    return `
+                        <div class="col-md-6 col-xl-4">
+                            <div class="p-3 rounded border h-100 d-flex flex-column justify-content-between ${done ? 'bg-light border-success-subtle' : 'bg-white'}">
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold small">
+                                            <i class="mdi ${iconClass} me-1"></i>${escapeDashHtml(step.title)}
+                                        </span>
+                                        <span class="badge ${badgeClass}">${badgeText}</span>
+                                    </div>
+                                    <p class="text-muted small mb-2">${escapeDashHtml(step.description)}</p>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">تعداد فعلی: <strong class="font-monospace">${Number(step.currentCount || 0)}</strong></small>
+                                    <a href="${escapeDashHtml(step.actionUrl || '/AdminArea/Settings/Index')}" class="btn btn-xs ${done ? 'btn-outline-success' : 'btn-primary'}">
+                                        ${done ? 'مشاهده / ویرایش' : 'شروع تکمیل'}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('');
+
+                const isDismissed = localStorage.getItem(dismissKey) === '1';
+                if (isDismissed) {
+                    card.classList.add('d-none');
+                    reopenBar.classList.remove('d-none');
+                } else {
+                    card.classList.remove('d-none');
+                    reopenBar.classList.add('d-none');
+                }
+
+                document.getElementById('btnDismissOnboarding').onclick = function () {
+                    localStorage.setItem(dismissKey, '1');
+                    card.classList.add('d-none');
+                    reopenBar.classList.remove('d-none');
+                };
+
+                document.getElementById('btnReopenOnboarding').onclick = function () {
+                    localStorage.removeItem(dismissKey);
+                    card.classList.remove('d-none');
+                    reopenBar.classList.add('d-none');
+                };
+            } catch (err) {
+                console.error('Onboarding load error:', err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadOnboardingChecklist();
+            loadDashboardData();
+        });
     </script>
 }

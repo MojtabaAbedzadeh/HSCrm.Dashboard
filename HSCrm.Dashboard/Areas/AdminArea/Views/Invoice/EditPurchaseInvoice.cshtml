@@ -1,4 +1,4 @@
-﻿@using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Costants
 @model PurchaseInvoiceEditModel
 @{
     ViewData["AdminTitle"] = "ویرایش فاکتور خرید";
@@ -26,7 +26,7 @@
     <div class="row">
         <!-- شناسه مخفی فاکتور برای استفاده در آپدیت -->
         <input type="hidden" id="InvoiceId" value="@Model.Id" />
-        <input type="hidden" id="InvoiceStaus" value="@Model.Status" />
+        <input type="hidden" id="InvoiceStatus" value="@((int)Model.Status)" />
 
         <div class="col-12" style="margin-top:20px;">
             <div class="ec-vendor-list card card-default">
@@ -54,7 +54,7 @@
                         </div>
                         <div class="col-lg-2 col-md-4 form-floating">
                             <!-- فیلد تاریخ که مقدار تاریخ میلادی فاکتور را برای تبدیل نگه می‌دارد -->
-                            <input autocomplete="off" id="invoiceDate" name="invoiceDate" class="form-control persian-date text-end" placeholder="تاریخ فاکتور" value="@Model.IssueDate.ToString("yyyy/MM/dd")" />
+                            <input autocomplete="off" id="invoiceDate" name="invoiceDate" class="form-control persian-date text-end" placeholder="تاریخ فاکتور" value="@ConvertDate.ConvertMiladiToShamsi(Model.IssueDate, "yyyy/MM/dd")" />
                             <label for="invoiceDate" style="right:0!important; left:unset!important;">تاریخ فاکتور</label>
                         </div>
                     </div>
@@ -181,13 +181,13 @@
                                     <ul class="list-unstyled mt-3 row">
                                         <li class="mid text-dark col-lg-4">
                                             <div class="form-group form-floating">
-                                                <input type="number" min="0" class="form-control text-end" id="invoiceDiscount" name="invoiceDiscount" placeholder="تخفیف ریالی" value="@Model.Discount.ToString("N0")" />
+                                                <input type="number" min="0" class="form-control text-end" id="invoiceDiscount" name="invoiceDiscount" placeholder="تخفیف ریالی" value="@Model.Discount.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" />
                                                 <label for="invoiceDiscount" style="right:0!important; left:unset!important;">تخفیف ریالی</label>
                                             </div>
                                         </li>
                                         <li class="mid text-dark col-lg-4">
                                             <div class="form-group form-floating">
-                                                <input type="number" min="0" class="form-control text-end" id="invoiceTax" name="invoiceTax" placeholder="مالیات و عوارض" value="@Model.Tax.ToString("N0")" />
+                                                <input type="number" min="0" class="form-control text-end" id="invoiceTax" name="invoiceTax" placeholder="مالیات و عوارض" value="@Model.Tax.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)" />
                                                 <label for="invoiceTax" style="right:0!important; left:unset!important;">مالیات و عوارض</label>
                                             </div>
                                         </li>

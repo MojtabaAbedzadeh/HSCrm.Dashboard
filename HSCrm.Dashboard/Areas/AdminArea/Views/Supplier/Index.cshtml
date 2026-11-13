@@ -1,4 +1,4 @@
-﻿@using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Costants
 @model IEnumerable<SupplierModel>
 
 @{
@@ -18,7 +18,7 @@
 <div class="breadcrumb-wrapper breadcrumb-contacts">
     <div>
         <h1>لیست تامین کنندگان</h1>
-        <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>تامین کننده</p>
+        <p class="breadcrumbs"><span><a href="/AdminArea/Home/Index">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>تامین کننده</p>
     </div>
     <div>
         @if (User.HasPermission(Permissions.Suppliers.Create))
@@ -73,12 +73,12 @@
         </div>
     </div>
 </div>
-<div class="modal fade modal-add-contact" id="addSupplier" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+<div class="modal fade modal-add-contact" id="addSupplier" tabindex="-1" role="dialog" aria-labelledby="addSupplierModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <form id="frmSupplier">
                 <div class="modal-header px-4">
-                    <h5 class="modal-title" id="exampleModalCenterTitle">تعریف تامین کننده جدید</h5>
+                    <h5 class="modal-title" id="addSupplierModalTitle">تعریف تامین کننده جدید</h5>
                 </div>
                 <div class="modal-body px-4">
                     <div class="row mb-2">
@@ -103,7 +103,7 @@
                         <input hidden class="form-control text-end" id="CreateById" name="CreateById" value="@ViewBag.UserId">
                         <input hidden class="form-control text-end" id="TenantId" name="TenantId" value="@ViewBag.TenantId">
                         <div class="col-lg-12 alert" style="color:red">
-                            <span class="text-danger" id="spnValidate"></span>
+                            <span class="text-danger" id="spnValidateAddSupplier"></span>
                         </div>
                     </div>
                 </div>
@@ -117,12 +117,12 @@
         </div>
     </div>
 </div>
-<div class="modal fade modal-add-contact" id="editSupplier" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+<div class="modal fade modal-add-contact" id="editSupplier" tabindex="-1" role="dialog" aria-labelledby="editSupplierModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <form id="frmEditSupplier">
                 <div class="modal-header px-4">
-                    <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش تامین کننده</h5>
+                    <h5 class="modal-title" id="editSupplierModalTitle">ویرایش تامین کننده</h5>
                 </div>
                 <div class="modal-body px-4">
                     <div class="row mb-2">
@@ -146,9 +146,9 @@
                             </div>
                         </div>
                         <input hidden class="form-control text-end" id="ModifiedByIdU" name="ModifiedByIdU" value="@ViewBag.UserId">
-                        <input hidden class="form-control text-end" id="TenantIdU" name="TenantIdU" value="2">
+                        <input hidden class="form-control text-end" id="TenantIdU" name="TenantIdU" value="@ViewBag.TenantId">
                         <div class="col-lg-12 alert" style="color:red">
-                            <span class="text-danger" id="spnValidate"></span>
+                            <span class="text-danger" id="spnValidateEditSupplier"></span>
                         </div>
                     </div>
                 </div>

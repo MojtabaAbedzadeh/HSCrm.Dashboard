@@ -1,4 +1,5 @@
-﻿@using HSCrm.Dashboard.Costants
+@using HSCrm.BussinessLagic.Tools
+@using HSCrm.Dashboard.Costants
 @model IEnumerable<PaymentModel>
 
 @{
@@ -46,7 +47,7 @@
         <h1>لیست پرداخت‌ها</h1>
         <p class="breadcrumbs">
             <span>
-                <a href="index.html">خانه</a>
+                <a href="/AdminArea/Home/Index">خانه</a>
             </span> 
             <span>
                 <i class="mdi mdi-chevron-left"></i>
@@ -95,11 +96,11 @@
                                 {
                                     <tr>
                                         <td>@item.Title</td>
-                                        <td>@item.Amount</td>
-                                        <td>@item.PaymentDate</td>
+                                        <td>@item.Amount.ToString("N0")</td>
+                                        <td>@ConvertDate.ConvertMiladiToShamsi(item.PaymentDate, "yyyy/MM/dd")</td>
                                         <td>@item.Method</td>
-                                        <td>@item.ReferenceNo</td>
-                                        <td>@item.ReferenceNo</td>
+                                        <td>@(item.ReferenceNo ?? "-")</td>
+                                        <td>@(item.PurchaseInvoiceId.HasValue ? $"فاکتور خرید #{item.PurchaseInvoiceId}" : item.ExpenseId.HasValue ? $"هزینه #{item.ExpenseId}" : "-")</td>
                                         <td>
                                             <div class="btn-group mb-1">
                                                 <button type="button" class="btn btn-outline-success">اطلاعات</button>
@@ -109,13 +110,9 @@
                                                 @if (ViewBag.FiscalYearStatus == "0")
                                                 {
                                                     <div class="dropdown-menu">
-                                                        @if (User.HasPermission(Permissions.Products.Edit))
+                                                        @if (User.HasPermission(Permissions.Payments.Edit))
                                                         {
-                                                            <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
-                                                        }
-                                                        @if (User.HasPermission(Permissions.Products.Delete))
-                                                        {
-                                                            <a class="dropdown-item" href="#" onclick="">حذف</a>
+                                                            <a class="dropdown-item" href="/AdminArea/Accounting/Vouchers?refType=3&refId=@item.Id">سند حسابداری</a>
                                                         }
                                                     </div>
                                                 }
@@ -171,8 +168,9 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label">تاریخ پرداخت</label>
-                            <input type="date" class="form-control" id="PaymentDate" name="PaymentDate" />
+                            <label class="form-label">تاریخ پرداخت (شمسی)</label>
+                            <input type="text" class="form-control" id="PaymentDateFa" autocomplete="off" />
+                            <input type="hidden" id="PaymentDate" name="PaymentDate" />
                         </div>
 
                         <div class="col-md-4">
@@ -191,11 +189,18 @@
                         </div>
 
                         <div class="col-md-6">
+                            <label class="form-label">حساب بانکی / صندوق</label>
+                            <select class="form-select" id="BankAccountId" name="BankAccountId">
+                                <option value="">انتخاب حساب بانکی / صندوق...</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
                             <label class="form-label">شماره مرجع</label>
                             <input type="text" class="form-control" id="ReferenceNo" name="ReferenceNo" />
                         </div>
 
-                        <div class="col-md-6 d-flex align-items-end gap-2">
+                        <div class="col-md-12 d-flex justify-content-end gap-2">
                             <button type="button" id="btnClearReference" class="btn btn-outline-secondary">
                                 پاک کردن مرجع
                             </button>
@@ -239,7 +244,8 @@
 
     <script>
         $(document).ready(function () {
-            // بستن Datepicker و تبدیل اتوماتیک به میلادی
+            const nowPd = new persianDate();
+            $("#PaymentDateFa").val(nowPd.toLocale('en').format('YYYY/MM/DD'));
             $("#PaymentDateFa").persianDatepicker({
                 format: 'YYYY/MM/DD',
                 autoClose: true,
@@ -425,26 +431,8 @@
             });
 
             form.addEventListener("submit", function (e) {
-                const hasPurchase = purchaseInvoiceIdInput.value.trim() !== "";
-                const hasExpense = expenseIdInput.value.trim() !== "";
-
-                if (hasPurchase === hasExpense) {
-                    e.preventDefault();
-                    SwalHelper.warning("فقط یکی از مرجع‌ها (فاکتور خرید یا هزینه) باید انتخاب شود.", "اطلاعات ناقص");
-                    return;
-                }
-
-                if (!document.getElementById("PaymentDate").value) {
-                    e.preventDefault();
-                    SwalHelper.warning("لطفاً تاریخ پرداخت را وارد کنید.", "اطلاعات ناقص");
-                    return;
-                }
-
-                if (!document.getElementById("Amount").value) {
-                    e.preventDefault();
-                    SwalHelper.warning("لطفاً مبلغ پرداختی را وارد کنید.", "اطلاعات ناقص");
-                    return;
-                }
+                e.preventDefault();
+                savePayment();
             });
 
             const today = new Date();
@@ -486,12 +474,13 @@
         
         document.addEventListener("DOMContentLoaded", async function () {
             try {
-                const bankRes = await fetch(`${window.apiRoot}/BankAccount/GetAll`, { headers: getAuthHeaders() });
+                const bankRes = await fetch(`${baseAddress}/BankAccount/GetAll`, { headers: getAuthHeaders() });
                 const bankJson = await bankRes.json();
                 const banks = bankJson.data || [];
                 const bankSel = document.getElementById("BankAccountId");
                 if (bankSel && banks.length > 0) {
-                    bankSel.innerHTML = banks.map(b => `<option value="${b.id}" ${b.isDefault ? 'selected' : ''}>${b.title}</option>`).join('');
+                    bankSel.innerHTML = '<option value="">انتخاب حساب بانکی / صندوق...</option>' +
+                        banks.map(b => `<option value="${b.id}" ${b.isDefault ? 'selected' : ''}>${b.bankName || b.title || 'حساب'}${b.accountNumber ? ' - ' + b.accountNumber : ''}</option>`).join('');
                 }
             } catch (e) { console.error(e); }
         });

@@ -1,4 +1,4 @@
-﻿using HSCrm.Dashboard.Costants;
+using HSCrm.Dashboard.Costants;
 using HSCrm.Dashboard.Models;
 using HSCrm.Dashboard.Services.Interface;
 using System.Security.Claims;
@@ -296,6 +296,14 @@ namespace HSCrm.Dashboard.Services
                     Icon = "mdi mdi-calendar-check",
                     Url = "/AdminArea/FiscalYear/Index",
                     PermissionKey = Permissions.FiscalYears.View
+                },
+                new SidebarMenuItem
+                {
+                    Key = "company_settings",
+                    Title = "تنظیمات شرکت",
+                    Icon = "mdi mdi-cog-outline",
+                    Url = "/AdminArea/Settings/Index",
+                    PermissionKey = Permissions.Tenants.View
                 }
             };
         }

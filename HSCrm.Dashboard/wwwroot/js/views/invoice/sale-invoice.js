@@ -1,10 +1,13 @@
-﻿// ================================
+// ================================
 // Helpers
 // ================================
 const ApiAddress = window.AppContext.apiAddress || '';
 const TId = window.AppContext.tenantId || '';
 const UId = window.AppContext.userId || '';
 var Token = window.AppContext.token || '';
+
+let currentNumberingMode = 'Hybrid';
+let defaultVatPercent = 0;
 
 $(document).ready(function () {
     $.ajaxSetup({
@@ -24,16 +27,27 @@ $(document).ready(function () {
         }
     });
 
-    // Auto-fetch next invoice number suggestion from pattern engine
+    // Auto-fetch next invoice number suggestion & company settings from backend
     if ($('#invoiceNumber').length) {
         $.ajax({
             url: (ApiAddress.endsWith('/') ? ApiAddress : ApiAddress + '/') + 'SalesInvoice/GetNextInvoiceNumber',
             type: 'GET',
             headers: Token ? { 'Authorization': `Bearer ${Token}` } : {},
             success: function (res) {
-                const nextNum = res?.nextInvoiceNumber || res?.NextInvoiceNumber;
-                if (nextNum) {
-                    $('#invoiceNumber').attr('placeholder', `شماره خودکار: ${nextNum}`);
+                const payload = res?.data ?? res;
+                const nextNum = payload?.nextInvoiceNumber || payload?.NextInvoiceNumber || '';
+                currentNumberingMode = payload?.numberingMode || 'Hybrid';
+                defaultVatPercent = parseFloat(payload?.defaultVatPercent || 0) || 0;
+
+                if (currentNumberingMode === 'Auto') {
+                    $('#invoiceNumber').prop('readonly', true);
+                    if (nextNum) {
+                        $('#invoiceNumber').val(nextNum).attr('placeholder', `شماره خودکار: ${nextNum}`);
+                    }
+                } else if (currentNumberingMode === 'Manual') {
+                    $('#invoiceNumber').prop('readonly', false).val('').attr('placeholder', 'شماره فاکتور را به صورت دستی وارد کنید');
+                } else if (nextNum) {
+                    $('#invoiceNumber').prop('readonly', false).attr('placeholder', `شماره خودکار: ${nextNum}`);
                     if (!$('#invoiceNumber').val()) {
                         $('#invoiceNumber').val(nextNum);
                     }
@@ -64,7 +78,7 @@ function clearProductForm() {
     $('#productCount').val(0);
     $('#sellPrice').val('');
     $('#discount').val(0);
-    $('#tax').val(0);
+    $('#tax').val(0).data('manualEdit', false);
     $('#rowSum').val(0);
 }
 
@@ -245,8 +259,13 @@ function calculateRowSum() {
     const qty = parseFloat($('#productCount').val()) || 0;
     const price = unFormatPrice($('#sellPrice').val());
     const discount = unFormatPrice($('#discount').val());
-    const tax = unFormatPrice($('#tax').val());
 
+    let tax = unFormatPrice($('#tax').val());
+    if (defaultVatPercent > 0 && $('#tax').data('manualEdit') !== true) {
+        const taxable = Math.max((qty * price) - discount, 0);
+        tax = Math.round(taxable * defaultVatPercent / 100);
+        $('#tax').val(formatPrice(tax));
+    }
     let sum = (qty * price) - discount + tax;
 
     if (sum < 0) {
@@ -256,6 +275,9 @@ function calculateRowSum() {
     $('#rowSum').val(formatPrice(sum));
 }
 
+$('#tax').on('input', function () {
+    $(this).data('manualEdit', true);
+});
 $('#productCount, #sellPrice, #discount, #tax').on('keyup change', calculateRowSum);
 
 // ================================
@@ -480,7 +502,10 @@ function validateInvoiceForm() {
         return false;
     }
 
-    // شماره فاکتور اختیاری است؛ در صورت خالی بودن بر اساس الگوی سازمان تولید می‌شود
+    if (currentNumberingMode === 'Manual' && !($('#invoiceNumber').val() || '').trim()) {
+        SwalHelper.error("در حالت شماره‌گذاری دستی، وارد کردن شماره فاکتور الزامی است", "خطا");
+        return false;
+    }
 
     if (!$('#invoiceDate').val()) {
         swal.fire({

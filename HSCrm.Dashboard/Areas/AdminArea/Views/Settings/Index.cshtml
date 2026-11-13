@@ -1,0 +1,520 @@
+@using HSCrm.Dashboard.Costants
+@{
+    ViewData["Title"] = "تنظیمات جامع شرکت";
+    ViewData["selected"] = "company_settings";
+    string apiAddress = (ViewBag.ApiAddress?.ToString() ?? string.Empty).TrimEnd('/');
+    bool canEdit = User.HasPermission(Permissions.Tenants.Edit) || User.IsInRole("Owner");
+}
+
+@section styles {
+    <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
+}
+
+<div class="breadcrumb-wrapper d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>تنظیمات جامع شرکت</h1>
+        <p class="breadcrumbs mb-0">
+            <span><a href="/AdminArea/Home/Index">خانه</a></span>
+            <span><i class="mdi mdi-chevron-left"></i></span>
+            <span>تنظیمات شرکت</span>
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary" id="btnReloadSettings">
+            <i class="mdi mdi-refresh me-1"></i>بارگذاری مجدد
+        </button>
+        @if (canEdit)
+        {
+            <button type="button" class="btn btn-primary" id="btnSaveSettingsTop">
+                <i class="mdi mdi-content-save me-1"></i>ذخیره تنظیمات
+            </button>
+        }
+    </div>
+</div>
+
+<form id="companySettingsForm" autocomplete="off">
+    <div class="row g-4">
+        <!-- کارت ۱: مشخصات و هویت بصری شرکت -->
+        <div class="col-lg-6">
+            <div class="card card-default shadow-sm h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="mdi mdi-domain me-1 text-primary"></i>مشخصات و برندینگ شرکت
+                    </h5>
+                    <span class="badge bg-secondary font-monospace" id="badgeTenantCode">-</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label for="TenantTitle" class="form-label fw-bold">عنوان شرکت <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="TenantTitle" required placeholder="نام رسمی شرکت یا مجموعه" />
+                        </div>
+                        <div class="col-md-4">
+                            <label for="Currency" class="form-label fw-bold">واحد پول پایه</label>
+                            <select class="form-select" id="Currency">
+                                <option value="IRR">ریال (IRR)</option>
+                                <option value="IRT">تومان (IRT)</option>
+                                <option value="USD">دلار (USD)</option>
+                                <option value="EUR">یورو (EUR)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="CompanyPhone" class="form-label fw-bold">تلفن تماس</label>
+                            <input type="text" class="form-control" id="CompanyPhone" dir="ltr" placeholder="021-88000000" />
+                        </div>
+                        <div class="col-md-6">
+                            <label for="CompanyEmail" class="form-label fw-bold">ایمیل شرکت</label>
+                            <input type="email" class="form-control" id="CompanyEmail" dir="ltr" placeholder="info@company.ir" />
+                        </div>
+
+                        <div class="col-md-12">
+                            <label for="TaxId" class="form-label fw-bold">شناسه ملی / کد اقتصادی</label>
+                            <input type="text" class="form-control" id="TaxId" dir="ltr" placeholder="کد اقتصادی یا شناسه ملی شرکت" />
+                        </div>
+
+                        <div class="col-md-12">
+                            <label for="Address" class="form-label fw-bold">نشانی شرکت</label>
+                            <textarea class="form-control" id="Address" rows="2" placeholder="آدرس کامل جهت درج در چاپ فاکتورها"></textarea>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold d-block">لوگوی شرکت (جهت نمایش در هدر و چاپ فاکتور)</label>
+                            <div class="d-flex align-items-center gap-3 p-3 border rounded bg-light">
+                                <div class="text-center" style="min-width: 96px;">
+                                    <img id="companyLogoPreview"
+                                         src=""
+                                         alt="لوگوی شرکت"
+                                         class="img-thumbnail d-none"
+                                         style="max-width: 96px; max-height: 96px; object-fit: contain; background: #fff;" />
+                                    <div id="companyLogoPlaceholder" class="border rounded d-flex align-items-center justify-content-center text-muted small bg-white" style="width: 96px; height: 96px;">
+                                        بدون لوگو
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <input type="hidden" id="LogoUrl" />
+                                    @if (canEdit)
+                                    {
+                                        <div class="input-group input-group-sm mb-2">
+                                            <input type="file" class="form-control" id="companyLogoFile" accept=".png,.jpg,.jpeg,image/png,image/jpeg" />
+                                            <button type="button" class="btn btn-outline-primary" id="btnUploadLogo">
+                                                <i class="mdi mdi-upload me-1"></i>آپلود لوگو
+                                            </button>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">فرمت‌های مجاز: PNG، JPG، JPEG (حداکثر ۲ مگابایت)</small>
+                                            <button type="button" class="btn btn-link btn-sm text-danger p-0" id="btnClearLogo">حذف لوگو</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-muted">فقط کاربران دارای مجوز ویرایش می‌توانند لوگو را تغییر دهند.</small>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- کارت ۲: تنظیمات مالی، انبار و قفل اسناد -->
+        <div class="col-lg-6">
+            <div class="card card-default shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="mdi mdi-finance me-1 text-success"></i>تنظیمات مالی، انبار و چاپ اسناد
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="DefaultVatPercent" class="form-label fw-bold">درصد ارزش افزوده پیش‌فرض (%)</label>
+                            <input type="number" class="form-control" id="DefaultVatPercent" min="0" max="100" step="0.1" value="0" dir="ltr" />
+                            <small class="text-muted">در فرم‌های جدید فروش و خرید به صورت خودکار اعمال می‌شود.</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="DefaultCostingMethod" class="form-label fw-bold">روش پیش‌فرض قیمت‌گذاری انبار</label>
+                            <select class="form-select" id="DefaultCostingMethod">
+                                <option value="1">میانگین موزون متحرک (Weighted Average)</option>
+                                <option value="2">اولین ورودی، اولین خروجی (FIFO)</option>
+                            </select>
+                            <small class="text-muted">در محاسبه بهای تمام‌شده (COGS) فاکتورها استفاده می‌شود.</small>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label for="DocumentLockDateFa" class="form-label fw-bold">تاریخ قفل اسناد (جلوگیری از ثبت/ویرایش قبل از این تاریخ)</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="DocumentLockDateFa" placeholder="مثال: 1404/01/01 (خالی = بدون قفل)" dir="ltr" />
+                                <input type="hidden" id="DocumentLockDateIso" />
+                                @if (canEdit)
+                                {
+                                    <button type="button" class="btn btn-outline-secondary" id="btnClearLockDate" title="حذف تاریخ قفل">
+                                        <i class="mdi mdi-close"></i> پاک کردن
+                                    </button>
+                                }
+                            </div>
+                            <small class="text-muted">ثبت، ویرایش یا تایید فاکتورها، هزینه‌ها و اسناد مربوط به این تاریخ و پیش از آن مسدود می‌شود.</small>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label for="InvoiceFooterText" class="form-label fw-bold">متن پاورقی چاپ فاکتورها</label>
+                            <textarea class="form-control" id="InvoiceFooterText" rows="5" placeholder="مثال: اجناس فروخته‌شده با شرایط گارانتی شرکت تحویل گردید. شماره شبا و توضیحات تکمیلی..."></textarea>
+                            <small class="text-muted">این متن در پایین نسخه چاپی A4 فاکتورهای فروش نمایش داده می‌شود.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- کارت ۳: الگوها و حالت شماره‌گذاری فاکتورها -->
+        <div class="col-12">
+            <div class="card card-default shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="mdi mdi-counter me-1 text-info"></i>سیاست شماره‌گذاری و الگوهای خودکار فاکتورها
+                    </h5>
+                    <div style="min-width: 280px;">
+                        <select class="form-select form-select-sm" id="InvoiceNumberingMode">
+                            <option value="Hybrid">حالت ترکیبی (Hybrid): پیشنهاد خودکار + امکان ویرایش دستی</option>
+                            <option value="Auto">حالت تمام‌خودکار (Auto): تولید قطعی توسط سرور</option>
+                            <option value="Manual">حالت دستی (Manual): ورود اجباری شماره توسط کاربر</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info small mb-4">
+                        <strong>متغیرهای مجاز در الگوها:</strong>
+                        <span class="badge bg-white text-dark border mx-1 font-monospace">{PREFIX}</span> پیشوند سند،
+                        <span class="badge bg-white text-dark border mx-1 font-monospace">{YEAR}</span> سال ۴ رقمی شمسی،
+                        <span class="badge bg-white text-dark border mx-1 font-monospace">{YY}</span> سال ۲ رقمی شمسی،
+                        <span class="badge bg-white text-dark border mx-1 font-monospace">{MONTH}</span> ماه ۲ رقمی،
+                        <span class="badge bg-white text-dark border mx-1 font-monospace">{DAY}</span> روز ۲ رقمی،
+                        <span class="badge bg-white text-dark border mx-1 font-monospace">{SEQ:4}</span> شمارنده ۴ رقمی،
+                        <span class="badge bg-white text-dark border mx-1 font-monospace">{TENANT}</span> کد شرکت
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6 col-xl-3">
+                            <label for="SalesInvoicePattern" class="form-label fw-bold">الگوی فاکتور فروش</label>
+                            <input type="text" class="form-control font-monospace pattern-input" id="SalesInvoicePattern" data-prefix="INV" data-preview="#salesPatternPreview" dir="ltr" value="INV-{YEAR}-{SEQ:4}" />
+                            <div class="mt-2 small text-muted">
+                                پیش‌نمایش: <span class="badge bg-primary font-monospace" id="salesPatternPreview" dir="ltr">-</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-xl-3">
+                            <label for="PurchaseInvoicePattern" class="form-label fw-bold">الگوی فاکتور خرید</label>
+                            <input type="text" class="form-control font-monospace pattern-input" id="PurchaseInvoicePattern" data-prefix="PINV" data-preview="#purchasePatternPreview" dir="ltr" value="PINV-{YEAR}-{SEQ:4}" />
+                            <div class="mt-2 small text-muted">
+                                پیش‌نمایش: <span class="badge bg-success font-monospace" id="purchasePatternPreview" dir="ltr">-</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-xl-3">
+                            <label for="SalesReturnPattern" class="form-label fw-bold">الگوی برگشت از فروش</label>
+                            <input type="text" class="form-control font-monospace pattern-input" id="SalesReturnPattern" data-prefix="SRI" data-preview="#salesReturnPatternPreview" dir="ltr" value="SRI-{YEAR}-{SEQ:4}" />
+                            <div class="mt-2 small text-muted">
+                                پیش‌نمایش: <span class="badge bg-warning text-dark font-monospace" id="salesReturnPatternPreview" dir="ltr">-</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-xl-3">
+                            <label for="PurchaseReturnPattern" class="form-label fw-bold">الگوی برگشت از خرید</label>
+                            <input type="text" class="form-control font-monospace pattern-input" id="PurchaseReturnPattern" data-prefix="PRI" data-preview="#purchaseReturnPatternPreview" dir="ltr" value="PRI-{YEAR}-{SEQ:4}" />
+                            <div class="mt-2 small text-muted">
+                                پیش‌نمایش: <span class="badge bg-danger font-monospace" id="purchaseReturnPatternPreview" dir="ltr">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (canEdit)
+                    {
+                        <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary px-4" id="btnSaveSettingsBottom">
+                                <i class="mdi mdi-content-save me-1"></i>ذخیره تغییرات تنظیمات شرکت
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section AdminScripts {
+    <script src="~/lib/persiandate/persian-date.js"></script>
+    <script src="~/lib/persiandate/persian-datepicker.js"></script>
+
+    <script>
+        (function () {
+            const apiBase = '@apiAddress'.replace(/\/+$/, '');
+            const apiOrigin = apiBase.replace(/\/api$/i, '');
+            const authToken = '@ViewBag.Token';
+            const canEditSettings = @(canEdit ? "true" : "false");
+            let currentTenantCode = 'T';
+
+            function getAuthHeaders(includeJson) {
+                const headers = {
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + authToken
+                };
+                if (includeJson) {
+                    headers['Content-Type'] = 'application/json';
+                }
+                return headers;
+            }
+
+            function resolveAssetUrl(relativeOrFull) {
+                if (!relativeOrFull) return '';
+                if (/^https?:\/\//i.test(relativeOrFull)) return relativeOrFull;
+                return apiOrigin + (relativeOrFull.startsWith('/') ? relativeOrFull : '/' + relativeOrFull);
+            }
+
+            function setLogoPreview(logoUrl) {
+                const img = $('#companyLogoPreview');
+                const placeholder = $('#companyLogoPlaceholder');
+                $('#LogoUrl').val(logoUrl || '');
+                if (logoUrl && logoUrl.trim().length > 0) {
+                    img.attr('src', resolveAssetUrl(logoUrl.trim())).removeClass('d-none');
+                    placeholder.addClass('d-none');
+                } else {
+                    img.attr('src', '').addClass('d-none');
+                    placeholder.removeClass('d-none');
+                }
+            }
+
+            function formatPatternPreview(pattern, prefix) {
+                const raw = (pattern && pattern.trim()) ? pattern.trim() : `${prefix}-{YEAR}-{SEQ:4}`;
+                let pYear = '1404', pYy = '04', pMonth = '01', pDay = '01';
+                try {
+                    const pd = new persianDate().toLocale('en');
+                    pYear = String(pd.year()).padStart(4, '0');
+                    pYy = pYear.slice(-2);
+                    pMonth = String(pd.month()).padStart(2, '0');
+                    pDay = String(pd.date()).padStart(2, '0');
+                } catch (e) { }
+
+                let out = raw
+                    .replace(/\{PREFIX\}/gi, prefix)
+                    .replace(/\{YEAR\}/gi, pYear)
+                    .replace(/\{YY\}/gi, pYy)
+                    .replace(/\{MONTH\}/gi, pMonth)
+                    .replace(/\{DAY\}/gi, pDay)
+                    .replace(/\{TENANT\}/gi, currentTenantCode || 'T');
+
+                out = out.replace(/\{SEQ(?::(\d+))?\}/gi, function (_, lenStr) {
+                    const pad = lenStr ? Math.min(Math.max(parseInt(lenStr, 10) || 1, 1), 10) : 1;
+                    return '1'.padStart(pad, '0');
+                });
+                return out;
+            }
+
+            function refreshAllPreviews() {
+                $('.pattern-input').each(function () {
+                    const $el = $(this);
+                    const prefix = $el.data('prefix') || 'INV';
+                    const target = $el.data('preview');
+                    if (target) {
+                        $(target).text(formatPatternPreview($el.val(), prefix));
+                    }
+                });
+            }
+
+            function initLockDatePicker() {
+                $('#DocumentLockDateFa').persianDatepicker({
+                    format: 'YYYY/MM/DD',
+                    autoClose: true,
+                    initialValue: false,
+                    onSelect: function (unix) {
+                        try {
+                            const g = new persianDate(unix).toCalendar('gregorian').toLocale('en').format('YYYY-MM-DD');
+                            $('#DocumentLockDateIso').val(g);
+                        } catch (e) {
+                            $('#DocumentLockDateIso').val('');
+                        }
+                    }
+                });
+            }
+
+            async function loadCompanySettings() {
+                try {
+                    const res = await fetch(`${apiBase}/Tenant/GetCompanySettings`, {
+                        method: 'GET',
+                        headers: getAuthHeaders(false)
+                    });
+                    const json = await res.json();
+                    if (!res.ok || !json || json.status === false || !json.data) {
+                        SwalHelper.error((json && json.message) || 'خطا در دریافت تنظیمات شرکت');
+                        return;
+                    }
+
+                    const d = json.data;
+                    currentTenantCode = d.tenantCode || 'T';
+                    $('#badgeTenantCode').text(currentTenantCode);
+                    $('#TenantTitle').val(d.tenantTitle || '');
+                    $('#Currency').val(d.currency || 'IRR');
+                    $('#CompanyPhone').val(d.companyPhone || '');
+                    $('#CompanyEmail').val(d.companyEmail || '');
+                    $('#TaxId').val(d.taxId || '');
+                    $('#Address').val(d.address || '');
+                    setLogoPreview(d.logoUrl || '');
+
+                    $('#InvoiceNumberingMode').val(d.invoiceNumberingMode || 'Hybrid');
+                    $('#SalesInvoicePattern').val(d.salesInvoicePattern || 'INV-{YEAR}-{SEQ:4}');
+                    $('#PurchaseInvoicePattern').val(d.purchaseInvoicePattern || 'PINV-{YEAR}-{SEQ:4}');
+                    $('#SalesReturnPattern').val(d.salesReturnPattern || 'SRI-{YEAR}-{SEQ:4}');
+                    $('#PurchaseReturnPattern').val(d.purchaseReturnPattern || 'PRI-{YEAR}-{SEQ:4}');
+
+                    $('#DefaultVatPercent').val(d.defaultVatPercent ?? 0);
+                    $('#DefaultCostingMethod').val(String(d.defaultCostingMethod ?? 1));
+                    $('#InvoiceFooterText').val(d.invoiceFooterText || '');
+
+                    if (d.documentLockDate) {
+                        $('#DocumentLockDateIso').val(String(d.documentLockDate).substring(0, 10));
+                        $('#DocumentLockDateFa').val(d.documentLockDateShamsi || '');
+                    } else {
+                        $('#DocumentLockDateIso').val('');
+                        $('#DocumentLockDateFa').val('');
+                    }
+
+                    refreshAllPreviews();
+                    if (d.salesInvoicePreview) $('#salesPatternPreview').text(d.salesInvoicePreview);
+                    if (d.purchaseInvoicePreview) $('#purchasePatternPreview').text(d.purchaseInvoicePreview);
+                    if (d.salesReturnPreview) $('#salesReturnPatternPreview').text(d.salesReturnPreview);
+                    if (d.purchaseReturnPreview) $('#purchaseReturnPatternPreview').text(d.purchaseReturnPreview);
+
+                    if (!canEditSettings) {
+                        $('#companySettingsForm input, #companySettingsForm select, #companySettingsForm textarea').prop('disabled', true);
+                    }
+                } catch (err) {
+                    console.error('Load settings error:', err);
+                }
+            }
+
+            async function uploadCompanyLogo() {
+                const fileInput = document.getElementById('companyLogoFile');
+                const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+                if (!file) {
+                    SwalHelper.warning('لطفاً ابتدا فایل تصویر لوگوی شرکت را انتخاب کنید.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const res = await fetch(`${apiBase}/Tenant/UploadCompanyLogo`, {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + authToken },
+                        body: formData
+                    });
+                    const json = await res.json();
+                    if (!res.ok || !json || json.status === false) {
+                        SwalHelper.error((json && json.message) || 'خطا در آپلود لوگو');
+                        return;
+                    }
+                    const logoUrl = json.data ? (json.data.logoUrl || '') : '';
+                    setLogoPreview(logoUrl);
+                    fileInput.value = '';
+                    SwalHelper.success(json.message || 'لوگوی شرکت با موفقیت بارگذاری شد.');
+                } catch (err) {
+                    console.error('Upload logo error:', err);
+                }
+            }
+
+            async function saveCompanySettings() {
+                const title = ($('#TenantTitle').val() || '').trim();
+                if (!title) {
+                    SwalHelper.warning('عنوان شرکت الزامی است.');
+                    $('#TenantTitle').focus();
+                    return;
+                }
+
+                const vat = parseFloat($('#DefaultVatPercent').val());
+                if (isNaN(vat) || vat < 0 || vat > 100) {
+                    SwalHelper.warning('درصد ارزش افزوده پیش‌فرض باید بین ۰ تا ۱۰۰ باشد.');
+                    return;
+                }
+
+                const lockText = ($('#DocumentLockDateFa').val() || '').trim();
+                let lockPayload = ($('#DocumentLockDateIso').val() || '').trim();
+                if (!lockText) {
+                    lockPayload = '';
+                } else if (!lockPayload) {
+                    lockPayload = lockText;
+                }
+
+                const payload = {
+                    tenantTitle: title,
+                    currency: $('#Currency').val(),
+                    taxId: ($('#TaxId').val() || '').trim(),
+                    companyPhone: ($('#CompanyPhone').val() || '').trim(),
+                    companyEmail: ($('#CompanyEmail').val() || '').trim(),
+                    address: ($('#Address').val() || '').trim(),
+                    logoUrl: $('#LogoUrl').val() || '',
+                    invoiceNumberingMode: $('#InvoiceNumberingMode').val(),
+                    salesInvoicePattern: ($('#SalesInvoicePattern').val() || '').trim(),
+                    purchaseInvoicePattern: ($('#PurchaseInvoicePattern').val() || '').trim(),
+                    salesReturnPattern: ($('#SalesReturnPattern').val() || '').trim(),
+                    purchaseReturnPattern: ($('#PurchaseReturnPattern').val() || '').trim(),
+                    defaultVatPercent: vat,
+                    invoiceFooterText: ($('#InvoiceFooterText').val() || '').trim(),
+                    defaultCostingMethod: parseInt($('#DefaultCostingMethod').val(), 10) || 1,
+                    documentLockDate: lockPayload || null
+                };
+
+                try {
+                    const res = await fetch(`${apiBase}/Tenant/UpdateCompanySettings`, {
+                        method: 'PUT',
+                        headers: getAuthHeaders(true),
+                        body: JSON.stringify(payload)
+                    });
+                    const json = await res.json();
+                    if (!res.ok || !json || json.status === false) {
+                        SwalHelper.error((json && json.message) || 'خطا در ذخیره تنظیمات شرکت');
+                        return;
+                    }
+                    SwalHelper.success('تنظیمات شرکت با موفقیت ذخیره شد.');
+                    await loadCompanySettings();
+                } catch (err) {
+                    console.error('Save settings error:', err);
+                }
+            }
+
+            $(document).ready(function () {
+                initLockDatePicker();
+                loadCompanySettings();
+
+                $('.pattern-input').on('input change', refreshAllPreviews);
+
+                $('#DocumentLockDateFa').on('input', function () {
+                    if (!$(this).val().trim()) {
+                        $('#DocumentLockDateIso').val('');
+                    }
+                });
+
+                $('#btnClearLockDate').on('click', function () {
+                    $('#DocumentLockDateFa').val('');
+                    $('#DocumentLockDateIso').val('');
+                });
+
+                $('#btnClearLogo').on('click', function () {
+                    setLogoPreview('');
+                });
+
+                $('#btnUploadLogo').on('click', uploadCompanyLogo);
+                $('#btnReloadSettings').on('click', loadCompanySettings);
+                $('#btnSaveSettingsTop').on('click', saveCompanySettings);
+
+                $('#companySettingsForm').on('submit', function (e) {
+                    e.preventDefault();
+                    if (canEditSettings) {
+                        saveCompanySettings();
+                    }
+                });
+            });
+        })();
+    </script>
+}

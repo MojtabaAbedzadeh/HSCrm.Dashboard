@@ -1,4 +1,4 @@
-﻿@using HSCrm.BussinessLagic.Tools
+@using HSCrm.BussinessLagic.Tools
 @using HSCrm.Dashboard.Costants
 @model IEnumerable<SalesInvoiceModel>
 
@@ -17,8 +17,8 @@
 }
 <div class="breadcrumb-wrapper breadcrumb-contacts">
     <div>
-        <h1>لیست مشتریان</h1>
-        <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>فاکتور فروش</p>
+        <h1>لیست فاکتورهای فروش</h1>
+        <p class="breadcrumbs"><span><a href="/AdminArea/Home/Index">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>فاکتور فروش</p>
     </div>
     @if (ViewBag.FiscalYearStatus == "0")
     {
@@ -63,8 +63,8 @@
                                     <tr>
                                         <td>@item.Number</td>
                                         <td>@item.IssueDate.ToString("yyyy/MM/dd")</td>
-                                        <td>@item.Project.ProjectTitle</td>
-                                        <td>@item.Project.Customer.Name</td>
+                                        <td>@(item.Project?.ProjectTitle ?? "-")</td>
+                                        <td>@(item.Project?.Customer?.Name ?? "-")</td>
                                         <td>
                                             <span class="badge @(item.Status == 1 ? "bg-success" : "bg-info")">
                                                 @(item.Status == 1 ? "فاکتور نهایی" : "پیش فاکتور")
@@ -111,7 +111,7 @@
                                                                 <i class="mdi mdi-book-open-page-variant me-1"></i>
                                                                 مشاهده سند حسابداری
                                                             </a>
-                                                            <a class="dropdown-item text-dark" href="javascript:void(0)" onclick="openSalesInvoicePrintModal('@item.Id', '@item.Number', '@ConvertDate.ConvertMiladiToShamsi(item.IssueDate, "yyyy/MM/dd")', '@item.Project.ProjectTitle', '@item.Project.ProjectTitle', '@item.Total')">
+                                                            <a class="dropdown-item text-dark" href="javascript:void(0)" onclick="openSalesInvoicePrintModal('@item.Id', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Number ?? ""))', '@ConvertDate.ConvertMiladiToShamsi(item.IssueDate, "yyyy/MM/dd")', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Project?.Customer?.Name ?? "-"))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Project?.ProjectTitle ?? "-"))', '@item.Total')">
                                                                 <i class="mdi mdi-printer me-1"></i>
                                                                 نمایش ریز اقلام و چاپ رسمی (A4)
                                                             </a>
@@ -151,9 +151,12 @@
             <div class="modal-body p-4" id="officialInvoicePrintArea">
                 <div class="border border-2 border-dark p-4 rounded">
                     <div class="d-flex justify-content-between align-items-center border-bottom border-dark pb-3 mb-3">
-                        <div>
-                            <h4 class="fw-bold mb-1">صورت‌حساب فروش کالا و خدمات</h4>
-                            <div class="text-muted small">سامانه جامع مالی و حسابداری HSCrm</div>
+                        <div class="d-flex align-items-center gap-3">
+                            <img id="prCompanyLogo" src="" alt="لوگو" style="max-height:56px; display:none;" />
+                            <div>
+                                <h4 class="fw-bold mb-1" id="prCompanyName">صورت‌حساب فروش کالا و خدمات</h4>
+                                <div class="text-muted small" id="prCompanySubtitle">سامانه جامع مالی و حسابداری</div>
+                            </div>
                         </div>
                         <div class="text-end font-monospace">
                             <div><strong>شماره فاکتور:</strong> <span id="prInvNumber">-</span></div>
@@ -184,6 +187,7 @@
                             </tr>
                         </tfoot>
                     </table>
+                    <div id="prInvoiceFooter" class="alert alert-light border small text-muted mb-3" style="display:none;"></div>
                     <div class="row mt-5 pt-4 text-center small">
                         <div class="col-4"><div class="border-top border-dark pt-2">مهر و امضای فروشنده</div></div>
                         <div class="col-4"><div class="border-top border-dark pt-2">تایید واحد مالی و حسابداری</div></div>
@@ -201,13 +205,41 @@
         document.getElementById('prInvCustomer').textContent = customer || '-';
         document.getElementById('prInvProject').textContent = project || '-';
         document.getElementById('prInvTotal').textContent = Number(total || 0).toLocaleString('fa-IR');
+        document.getElementById('prCompanyLogo').style.display = 'none';
+        document.getElementById('prCompanyName').textContent = 'صورت‌حساب فروش کالا و خدمات';
+        document.getElementById('prCompanySubtitle').textContent = 'سامانه جامع مالی و حسابداری';
+        document.getElementById('prInvoiceFooter').style.display = 'none';
 
         const tbody = document.getElementById('prInvItemsBody');
         tbody.innerHTML = '<tr><td colspan="7" class="py-3 text-muted">در حال دریافت ریز اقلام فاکتور از سرور...</td></tr>';
         new bootstrap.Modal(document.getElementById('printOfficialSalesInvoiceModal')).show();
 
-        fetch('@ApiAddress' + 'SalesInvoice/GetById?id=' + id, {
-            headers: { 'Authorization': 'Bearer ' + '@User.FindFirstValue("Token")' }
+        const apiBase = '@ApiAddress'.endsWith('/') ? '@ApiAddress' : '@ApiAddress/';
+        const authHeader = { 'Authorization': 'Bearer ' + '@User.FindFirstValue("Token")' };
+
+        fetch(apiBase + 'Tenant/GetCompanySettings', { headers: authHeader })
+            .then(r => r.ok ? r.json() : null)
+            .then(res => {
+                const s = res ? (res.data || res) : null;
+                if (!s) return;
+                if (s.companyName || s.name) {
+                    document.getElementById('prCompanyName').textContent = s.companyName || s.name;
+                    document.getElementById('prCompanySubtitle').textContent = 'صورت‌حساب رسمی فروش کالا و خدمات' + (s.economicCode ? (' | کد اقتصادی: ' + s.economicCode) : '');
+                }
+                if (s.logoPath) {
+                    const logoEl = document.getElementById('prCompanyLogo');
+                    logoEl.src = s.logoPath.startsWith('http') ? s.logoPath : (apiBase.replace(/\/api\/?$/i, '/') + s.logoPath.replace(/^\/+/, ''));
+                    logoEl.style.display = 'block';
+                }
+                if (s.invoiceFooterText) {
+                    const footerEl = document.getElementById('prInvoiceFooter');
+                    footerEl.textContent = s.invoiceFooterText;
+                    footerEl.style.display = 'block';
+                }
+            }).catch(() => {});
+
+        fetch(apiBase + 'SalesInvoice/GetById?invoiceId=' + id, {
+            headers: authHeader
         })
         .then(r => r.json())
         .then(res => {
@@ -224,20 +256,27 @@
                     <td class="font-monospace fw-bold">${Number(total || 0).toLocaleString('fa-IR')}</td>
                 </tr>`;
             } else {
-                tbody.innerHTML = items.map((it, idx) => `
+                tbody.innerHTML = items.map((it, idx) => {
+                    const title = it.product?.productTitle || it.productTitle || it.productName || ('کالای #' + it.productId);
+                    const qty = it.quantity || it.count || 1;
+                    const unit = it.unitPriceSell ?? it.unitPrice ?? it.price ?? 0;
+                    const disc = it.discount ?? 0;
+                    const taxVal = it.tax ?? it.vatAmount ?? 0;
+                    const rowTotal = it.lineTotal ?? it.totalPrice ?? it.rowSum ?? ((qty * unit) - disc + taxVal);
+                    return `
                     <tr>
                         <td>${idx + 1}</td>
-                        <td>${it.productTitle || it.productName || ('کالای #' + it.productId)}</td>
-                        <td class="font-monospace">${it.quantity || it.count || 1}</td>
-                        <td class="font-monospace">${Number(it.unitPrice || it.price || 0).toLocaleString('fa-IR')}</td>
-                        <td class="font-monospace">${Number(it.discount || 0).toLocaleString('fa-IR')}</td>
-                        <td class="font-monospace">${Number(it.tax || it.vatAmount || 0).toLocaleString('fa-IR')}</td>
-                        <td class="font-monospace fw-bold">${Number(it.totalPrice || it.rowSum || total || 0).toLocaleString('fa-IR')}</td>
-                    </tr>
-                `).join('');
+                        <td>${title}</td>
+                        <td class="font-monospace">${qty}</td>
+                        <td class="font-monospace">${Number(unit).toLocaleString('fa-IR')}</td>
+                        <td class="font-monospace">${Number(disc).toLocaleString('fa-IR')}</td>
+                        <td class="font-monospace">${Number(taxVal).toLocaleString('fa-IR')}</td>
+                        <td class="font-monospace fw-bold">${Number(rowTotal).toLocaleString('fa-IR')}</td>
+                    </tr>`;
+                }).join('');
             }
         })
-        .catch(err => {
+        .catch(() => {
             tbody.innerHTML = '<tr><td colspan="7" class="py-3 text-danger text-center">خطا در بارگذاری اقلام فاکتور از سرور.</td></tr>';
             SwalHelper.error("خطا در بارگذاری ریز اقلام فاکتور از سرور.");
         });
@@ -486,18 +525,7 @@
                     }
                 },
                 error: function (err) {
-
-                    swal({
-                        title: "خطا",
-                        text: err.responseText || "خطایی در ارتباط با سرور رخ داده است!",
-                        type: 'error',
-                        showCancelButton: false,
-                        allowOutsideClick: false,
-                        confirmButtonColor: "green",
-                        confirmButtonText: "باشه",
-                        timer: 1500,
-                    });
-
+                    SwalHelper.error(err.responseText || "خطایی در ارتباط با سرور رخ داده است!");
                 }
             });
         }
@@ -606,10 +634,11 @@ function loadInvoicePatterns() {
         type: 'GET',
         headers: { 'Authorization': 'Bearer @ViewBag.Token' },
         success: function(res) {
-            $('#patternSales').val(res.salesInvoicePattern || 'INV-{YEAR}-{SEQ:4}');
-            $('#patternPurchase').val(res.purchaseInvoicePattern || 'PINV-{YEAR}-{SEQ:4}');
-            $('#patternSalesReturn').val(res.salesReturnPattern || 'SRI-{YEAR}-{SEQ:4}');
-            $('#patternPurchaseReturn').val(res.purchaseReturnPattern || 'PRI-{YEAR}-{SEQ:4}');
+            const d = res?.data ?? res ?? {};
+            $('#patternSales').val(d.salesInvoicePattern || 'INV-{YEAR}-{SEQ:4}');
+            $('#patternPurchase').val(d.purchaseInvoicePattern || 'PINV-{YEAR}-{SEQ:4}');
+            $('#patternSalesReturn').val(d.salesReturnPattern || 'SRI-{YEAR}-{SEQ:4}');
+            $('#patternPurchaseReturn').val(d.purchaseReturnPattern || 'PRI-{YEAR}-{SEQ:4}');
             updatePatternPreviews();
         },
         error: function() {

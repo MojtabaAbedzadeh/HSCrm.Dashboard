@@ -1,4 +1,4 @@
-﻿@model HSCrm.Models.ModelDto.ManageRolePermissionsDto
+@model HSCrm.Models.ModelDto.ManageRolePermissionsDto
 
 @{
     var groupedPermissions = Model.Permissions.GroupBy(x => x.Category).OrderBy(x => x.Key);
@@ -73,6 +73,7 @@
                                             <div class="d-flex form-check permission-check">
                                                 <input class="input-check form-check-input permission-checkbox m-0 cat_@index"
                                                        type="checkbox"
+                                                       id="perm_@permission.PermissionId"
                                                        name="SelectedPermissionIds"
                                                        value="@permission.PermissionId"
                                                        @(permission.IsSelected ? "checked" : "")

@@ -1,4 +1,4 @@
-﻿@model IEnumerable<WarehousesModel>
+@model IEnumerable<WarehousesModel>
 
 @{
     ViewData["AdminTitle"] = "انبارها";
@@ -17,7 +17,7 @@
 <div class="breadcrumb-wrapper breadcrumb-contacts">
     <div>
         <h1>لیست انبارها</h1>
-        <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>انبار</p>
+        <p class="breadcrumbs"><span><a href="/AdminArea/Home/Index">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>انبار</p>
     </div>
     @if (ViewBag.FiscalYearStatus == "0")
     {
@@ -87,12 +87,12 @@
         </div>
     </div>
 </div>
-<div class="modal fade modal-add-contact" id="addWarehouse" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+<div class="modal fade modal-add-contact" id="addWarehouse" tabindex="-1" role="dialog" aria-labelledby="addWarehouseModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <form id="frmWarehouse">
                 <div class="modal-header px-4">
-                    <h5 class="modal-title" id="exampleModalCenterTitle">تعریف انبار جدید</h5>
+                    <h5 class="modal-title" id="addWarehouseModalTitle">تعریف انبار جدید</h5>
                 </div>
                 <div class="modal-body px-4">
                     <div class="row mb-2">
@@ -104,7 +104,7 @@
                         </div>
                         <div class="col-lg-6" style="margin-bottom:8px;">
                             <div class="form-check" style="margin:auto;">
-                                <input style="font-size:13px;" type="checkbox" class="form-check-input chk-date-type" id="IsActive">
+                                <input style="font-size:13px;" type="checkbox" class="form-check-input chk-date-type" id="IsActive" checked>
                                 <label for="IsActive" class="lbl-date-change">وضعیت انبار</label>
                             </div>
                         </div>
@@ -117,7 +117,7 @@
                         <input hidden class="form-control text-end" id="CreateById" name="CreateById" value="@ViewBag.UserId">
                         <input hidden class="form-control text-end" id="TenantId" name="TenantId" value="@ViewBag.TenantId">
                         <div class="col-lg-12 alert" style="color:red">
-                            <span class="text-danger" id="spnValidate"></span>
+                            <span class="text-danger" id="spnValidateAddWarehouse"></span>
                         </div>
                     </div>
                 </div>
@@ -131,12 +131,12 @@
         </div>
     </div>
 </div>
-<div class="modal fade modal-add-contact" id="editWarehouse" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+<div class="modal fade modal-add-contact" id="editWarehouse" tabindex="-1" role="dialog" aria-labelledby="editWarehouseModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <form id="frmEditWarehouse">
                 <div class="modal-header px-4">
-                    <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش انبار</h5>
+                    <h5 class="modal-title" id="editWarehouseModalTitle">ویرایش انبار</h5>
                 </div>
                 <div class="modal-body px-4">
                     <div class="row mb-2">
@@ -162,7 +162,7 @@
                         <input hidden class="form-control text-end" id="ModifiedByIdE" name="ModifiedByIdE" value="@ViewBag.UserId">
                         <input hidden class="form-control text-end" id="TenantIdE" name="TenantIdE" value="@ViewBag.TenantId">
                         <div class="col-lg-12 alert" style="color:red">
-                            <span class="text-danger" id="spnValidate"></span>
+                            <span class="text-danger" id="spnValidateEditWarehouse"></span>
                         </div>
                     </div>
                 </div>
@@ -187,6 +187,7 @@
             }
 
             var formData = new FormData($("#frmWarehouse")[0]);
+            formData.set("IsActive", $("#IsActive").is(":checked"));
             $.ajax({
                 type: 'POST',
                 url: '@ApiAddress' + 'Warehouse/CreateWarehouse',
@@ -201,7 +202,7 @@
                     SwalHelper.handleResponse(xhr, "انبار جدید با موفقیت ثبت شد!", function () {
                         $('#addWarehouse').modal('hide');
                         $('#Title').val("");
-                        $('#IsActive').val("");
+                        $('#IsActive').prop('checked', true);
                         $('#Address').val("");
                         window.location.reload();
                     });

@@ -1,4 +1,4 @@
-﻿@using System.Security.Claims
+@using System.Security.Claims
 @using HSCrm.Dashboard.Costants
 @{
     ViewData["Title"] = "فاکتورهای برگشت از خرید";
@@ -57,11 +57,11 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-3">
                         <label class="form-label fw-bold">شماره فاکتور برگشتی <span class="text-danger">*</span></label>
-                        <input type="text" id="prNumber" class="form-control" value="PRN-2001" dir="ltr" />
+                        <input type="text" id="prNumber" class="form-control" placeholder="شماره فاکتور برگشتی" dir="ltr" />
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-bold">تاریخ برگشت (شمسی) <span class="text-danger">*</span></label>
-                        <input type="text" id="prDate" class="form-control" value="1403/08/05" dir="ltr" />
+                        <input type="text" id="prDate" class="form-control" value="@HSCrm.BussinessLagic.Tools.ConvertDate.ConvertMiladiToShamsi(DateTime.Now, "yyyy/MM/dd")" dir="ltr" />
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-bold">تأمین‌کننده <span class="text-danger">*</span></label>
@@ -99,6 +99,8 @@
     <script>
         const apiBase = '@apiAddress'.replace(/\/+$/, '');
         let products = [];
+        let prNumberingMode = 'Hybrid';
+        let prDefaultVat = 0;
 
         function getAuthHeaders() {
             const headers = {
@@ -116,7 +118,7 @@
         async function initPurchaseReturns() {
             try {
                 const [supRes, whRes, prodRes] = await Promise.all([
-                    fetch(`${apiBase}/Supplier/GetSuppliers`, { headers: getAuthHeaders() }),
+                    fetch(`${apiBase}/Supplier/GetByTenant`, { headers: getAuthHeaders() }),
                     fetch(`${apiBase}/Warehouse/GetWarehouses`, { headers: getAuthHeaders() }),
                     fetch(`${apiBase}/Product/GetProducts`, { headers: getAuthHeaders() })
                 ]);
@@ -125,10 +127,33 @@
                 products = (await prodRes.json()).data || [];
 
                 document.getElementById('prSupplierId').innerHTML = sups.map(s => `<option value="${s.id}">${s.supplierFullName}</option>`).join('');
-                document.getElementById('prWarehouseId').innerHTML = whs.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+                document.getElementById('prWarehouseId').innerHTML = whs.map(w => `<option value="${w.id}">${w.title || w.name || ('انبار #' + w.id)}</option>`).join('');
             } catch (e) { console.error(e); }
 
             loadPurchaseReturns();
+        }
+
+        async function loadNextPurchaseReturnNumber() {
+            const numInput = document.getElementById('prNumber');
+            try {
+                const res = await fetch(`${apiBase}/PurchaseReturnInvoice/GetNextInvoiceNumber`, { headers: getAuthHeaders() });
+                const json = await res.json();
+                const d = json.data || json || {};
+                prNumberingMode = d.numberingMode || 'Hybrid';
+                prDefaultVat = parseFloat(d.defaultVatPercent || 0) || 0;
+                const nextNum = d.nextInvoiceNumber || '';
+                if (prNumberingMode === 'Auto') {
+                    numInput.readOnly = true;
+                    numInput.value = nextNum;
+                } else if (prNumberingMode === 'Manual') {
+                    numInput.readOnly = false;
+                    numInput.value = '';
+                    numInput.placeholder = 'شماره فاکتور را دستی وارد کنید';
+                } else {
+                    numInput.readOnly = false;
+                    numInput.value = nextNum;
+                }
+            } catch (e) { console.error(e); }
         }
 
         async function loadPurchaseReturns() {
@@ -150,12 +175,13 @@
                         ? '<span class="badge bg-danger">ابطال شده</span>'
                         : '<span class="badge bg-warning text-dark">پیش‌نویس</span>';
 
+                    const dateVal = r.issueDate || r.returnDate;
                     return `
                         <tr>
                             <td class="fw-bold font-monospace" dir="ltr">${r.number}</td>
-                            <td>${r.returnDate ? new Date(r.returnDate).toLocaleDateString('fa-IR') : ''}</td>
-                            <td>${r.supplier?.supplierFullName || `تأمین‌کننده #${r.supplierId}`}</td>
-                            <td>${r.warehouse?.name || `انبار #${r.warehouseId}`}</td>
+                            <td>${dateVal ? new Date(dateVal).toLocaleDateString('fa-IR') : ''}</td>
+                            <td>${r.supplierFullName || r.supplier?.supplierFullName || `تأمین‌کننده #${r.supplierId}`}</td>
+                            <td>${r.warehouseTitle || r.warehouse?.title || r.warehouse?.name || `انبار #${r.warehouseId}`}</td>
                             <td class="text-end font-monospace fw-bold" dir="ltr">${formatNum(r.total)}</td>
                             <td>${statusBadge}</td>
                             <td>
@@ -170,7 +196,8 @@
             }
         }
 
-        function openCreatePurchaseReturnModal() {
+        async function openCreatePurchaseReturnModal() {
+            await loadNextPurchaseReturnNumber();
             document.getElementById('prItemsBody').innerHTML = '';
             addPrItemRow();
             new bootstrap.Modal(document.getElementById('createPurchaseReturnModal')).show();
@@ -178,19 +205,32 @@
 
         function addPrItemRow() {
             const tr = document.createElement('tr');
-            const prodOpts = products.map(p => `<option value="${p.id}">${p.productName}</option>`).join('');
+            const prodOpts = products.map(p => `<option value="${p.id}">${p.productTitle || p.productName || ('کالا #' + p.id)}</option>`).join('');
             tr.innerHTML = `
                 <td><select class="form-select form-select-sm pr-prod">${prodOpts}</select></td>
                 <td><input type="number" class="form-control form-control-sm pr-qty" value="1" min="1" dir="ltr" /></td>
-                <td><input type="number" class="form-control form-control-sm pr-price" value="1000000" min="0" dir="ltr" /></td>
+                <td><input type="number" class="form-control form-control-sm pr-price" value="0" min="0" dir="ltr" /></td>
                 <td><input type="number" class="form-control form-control-sm pr-disc" value="0" min="0" dir="ltr" /></td>
                 <td><input type="number" class="form-control form-control-sm pr-tax" value="0" min="0" dir="ltr" /></td>
                 <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()">×</button></td>
             `;
+            const recalcTax = () => {
+                if (prDefaultVat <= 0) return;
+                const q = parseFloat(tr.querySelector('.pr-qty').value) || 0;
+                const pr = parseFloat(tr.querySelector('.pr-price').value) || 0;
+                const d = parseFloat(tr.querySelector('.pr-disc').value) || 0;
+                tr.querySelector('.pr-tax').value = Math.round(Math.max((q * pr) - d, 0) * prDefaultVat / 100);
+            };
+            tr.querySelectorAll('.pr-qty, .pr-price, .pr-disc').forEach(el => el.addEventListener('input', recalcTax));
             document.getElementById('prItemsBody').appendChild(tr);
         }
 
         async function submitPurchaseReturn() {
+            const invoiceNumber = document.getElementById('prNumber').value.trim();
+            if (prNumberingMode === 'Manual' && !invoiceNumber) {
+                swal.fire({ title: 'خطا', text: 'در حالت شماره‌گذاری دستی، وارد کردن شماره فاکتور الزامی است.', icon: 'warning', confirmButtonText: 'باشه' });
+                return;
+            }
             const items = [];
             document.querySelectorAll('#prItemsBody tr').forEach(tr => {
                 items.push({
@@ -202,10 +242,12 @@
                 });
             });
             const payload = {
-                number: document.getElementById('prNumber').value.trim(),
-                returnDateShamsi: document.getElementById('prDate').value.trim(),
+                invoiceNumber: invoiceNumber || null,
+                issueDate: document.getElementById('prDate').value.trim(),
                 supplierId: Number(document.getElementById('prSupplierId').value),
                 warehouseId: Number(document.getElementById('prWarehouseId').value),
+                tenantId: Number(localStorage.getItem('TenantId') || '@ViewBag.TenantId' || 0),
+                status: 0,
                 items: items
             };
             try {
@@ -237,8 +279,23 @@
         }
 
         async function cancelPurchaseReturn(id) {
+            const promptRes = await swal.fire({
+                title: 'ابطال فاکتور برگشتی',
+                input: 'text',
+                inputLabel: 'دلیل ابطال را وارد کنید',
+                inputPlaceholder: 'علت ابطال فاکتور...',
+                showCancelButton: true,
+                confirmButtonText: 'تأیید ابطال',
+                cancelButtonText: 'انصراف',
+                inputValidator: (v) => !v || !v.trim() ? 'ذکر دلیل ابطال الزامی است' : undefined
+            });
+            if (!promptRes.isConfirmed && !promptRes.value) return;
             try {
-                const res = await fetch(`${apiBase}/PurchaseReturnInvoice/${id}/Cancel`, { method: 'POST', headers: getAuthHeaders() });
+                const res = await fetch(`${apiBase}/PurchaseReturnInvoice/${id}/Cancel`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(promptRes.value.trim())
+                });
                 const json = await res.json();
                 if (!res.ok || json.status === false) throw new Error(json.message || 'خطا در ابطال');
                 await swal.fire({ title: 'ابطال موفق', text: json.message, icon: 'success', confirmButtonText: 'باشه' });

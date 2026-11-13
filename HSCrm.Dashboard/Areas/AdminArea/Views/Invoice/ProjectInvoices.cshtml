@@ -1,4 +1,4 @@
-﻿@using HSCrm.BussinessLagic.Tools
+@using HSCrm.BussinessLagic.Tools
 @using HSCrm.Dashboard.Costants
 @model IEnumerable<SalesInvoiceModel>
 
@@ -21,14 +21,14 @@
 <div class="breadcrumb-wrapper breadcrumb-contacts">
     <div>
         <h1>لیست فاکتورها</h1>
-        <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>فاکتور</p>
+        <p class="breadcrumbs"><span><a href="/AdminArea/Home/Index">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>فاکتور</p>
     </div>
     @if (ViewBag.FiscalYearStatus == "0")
     {
         <div>
             @if (User.HasPermission(Permissions.SalesInvoices.Create))
             {
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExpense">افزودن فاکتور</button>
+                <a class="btn btn-primary" href="/adminarea/invoice/AddSaleInvoice">افزودن فاکتور فروش</a>
             }
         </div>
     }
@@ -65,8 +65,8 @@
                                     <tr>
                                         <td>@item.Number</td>
                                         <td>@ConvertDate.ConvertMiladiToShamsi(item.IssueDate, "yyyy/MM/dd")</td>
-                                        <td>@item.Project.ProjectTitle</td>
-                                        <td>@item.Project.ProjectTitle</td>
+                                        <td>@(item.Project?.ProjectTitle ?? "-")</td>
+                                        <td>@(item.Project?.Customer?.Name ?? "-")</td>
                                         <td>
                                             <span class="badge @(item.Status == 1 ? "bg-success" : "bg-info")">
                                                 @(item.Status == 1 ? "فاکتور نهایی" : "پیش فاکتور")
@@ -82,24 +82,23 @@
                                                 @if (ViewBag.FiscalYearStatus == "0")
                                                 {
                                                     <div class="dropdown-menu">
-                                                        @if (User.HasPermission(Permissions.SalesInvoices.Edit))
+                                                        @if (User.HasPermission(Permissions.SalesInvoices.Create) && item.Status == 0)
                                                         {
-                                                            <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
+                                                            <a class="dropdown-item text-primary" href="javascript:void(0)" onclick="confirmInvoice('@item.Id')">
+                                                                <i class="mdi mdi-file"></i>
+                                                                تبدیل به فاکتور نهایی
+                                                            </a>
                                                         }
-                                                        @if (User.HasPermission(Permissions.SalesInvoices.Delete))
+                                                        else if (item.Status == 1)
                                                         {
-                                                            <a class="dropdown-item" href="#" onclick="deleteExpense(@item.Id)">حذف</a>
-                                                        }
-                                                        @if (User.HasPermission(Permissions.SalesInvoices.Create))
-                                                        {
-                                                            @if (item.Status == 0)
-                                                            {
-                                                                <div class="dropdown-divider"></div>
-                                                                <a class="dropdown-item text-primary" href="javascript:void(0)" onclick="confirmInvoice('@item.Id')">
-                                                                    <i class="mdi mdi-file"></i>
-                                                                    تبدیل به فاکتور نهایی
-                                                                </a>
-                                                            }
+                                                            <a class="dropdown-item text-success" href="/AdminArea/Receipt/Index?invoiceId=@item.Id">
+                                                                <i class="mdi mdi-cash-plus me-1"></i>
+                                                                ثبت دریافت وجه / چک
+                                                            </a>
+                                                            <a class="dropdown-item text-warning" href="/AdminArea/ReturnInvoice/SalesReturn?invoiceId=@item.Id">
+                                                                <i class="mdi mdi-keyboard-return me-1"></i>
+                                                                ثبت برگشت از فروش
+                                                            </a>
                                                         }
                                                     </div>
                                                 }
@@ -402,7 +401,8 @@
         window.AppContext = {
             apiAddress: '@ViewBag.ApiAddress',
             tenantId: '@ViewBag.TenantId',
-            userId: '@ViewBag.UserId'
+            userId: '@ViewBag.UserId',
+            token: '@ViewBag.Token'
         };
     </script>
     <script src="~/js/views/invoice/sale-invoice.js"></script>

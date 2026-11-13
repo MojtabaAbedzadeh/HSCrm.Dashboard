@@ -1,4 +1,4 @@
-﻿@using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Costants
 @model IEnumerable<ProductModel>
 
 @{
@@ -40,8 +40,8 @@
 
 <div class="breadcrumb-wrapper breadcrumb-contacts">
     <div>
-        <h1>لیست مشتریان</h1>
-        <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>محصول</p>
+        <h1>لیست محصولات</h1>
+        <p class="breadcrumbs"><span><a href="/AdminArea/Home/Index">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>محصول</p>
     </div>
     @if (ViewBag.FiscalYearStatus == "0")
     {
@@ -102,11 +102,11 @@
                                                     <div class="dropdown-menu">
                                                         @if (User.HasPermission(Permissions.ProductPrices.Create))
                                                         {
-                                                            <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.ProductId, '@item.ProductTitle')">قیمت جدید</a>
+                                                            <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.ProductId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ProductTitle ?? ""))')">قیمت جدید</a>
                                                         }
                                                         @if (User.HasPermission(Permissions.ProductPrices.View))
                                                         {
-                                                            <a class="dropdown-item" href="#" onclick="productPriceHistory(@item.ProductId, '@item.ProductTitle')">تاریخچه قیمت</a>
+                                                            <a class="dropdown-item" href="#" onclick="productPriceHistory(@item.ProductId, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ProductTitle ?? ""))')">تاریخچه قیمت</a>
                                                         }
                                                         <hr />
                                                         @if (User.HasPermission(Permissions.Products.Edit))
@@ -137,12 +137,12 @@
 </div>
 @if (ViewBag.FiscalYearStatus == "0")
 {
-    <div class="modal fade modal-add-contact" id="addProduct" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal fade modal-add-contact" id="addProduct" tabindex="-1" role="dialog" aria-labelledby="addProductModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
                 <form id="frmProduct">
                     <div class="modal-header px-4">
-                        <h5 class="modal-title" id="exampleModalCenterTitle">تعریف محصول جدید</h5>
+                        <h5 class="modal-title" id="addProductModalTitle">تعریف محصول جدید</h5>
                     </div>
                     <div class="modal-body px-4">
                         <div class="row mb-2">
@@ -160,14 +160,14 @@
                             </div>
                             <div class="col-lg-4" style="margin-bottom:8px;">
                                 <div class="form-check" style="margin:auto;">
-                                    <input style="font-size:13px;" type="checkbox" class="form-check-input chk-date-type" id="IsActive">
+                                    <input style="font-size:13px;" type="checkbox" class="form-check-input chk-date-type" id="IsActive" checked>
                                     <label for="IsActive" class="lbl-date-change">فعال</label>
                                 </div>
                             </div>
                             <input id="TenantId" name="TenantId" value="@valTenantId" hidden>
                             <input id="UserId" name="UserId" value="@valUserId" hidden>
                             <div class="col-lg-12 alert" style="color:red">
-                                <span class="text-danger" id="spnValidate"></span>
+                                <span class="text-danger" id="spnValidateAddProduct"></span>
                             </div>
                         </div>
                     </div>
@@ -181,12 +181,12 @@
             </div>
         </div>
     </div>
-    <div class="modal fade modal-add-contact" id="editProduct" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal fade modal-add-contact" id="editProduct" tabindex="-1" role="dialog" aria-labelledby="editProductModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
                 <form id="frmEditProduct">
                     <div class="modal-header px-4">
-                        <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش محصول</h5>
+                        <h5 class="modal-title" id="editProductModalTitle">ویرایش محصول</h5>
                     </div>
                     <div class="modal-body px-4">
                         <div class="row mb-2">
@@ -224,12 +224,12 @@
             </div>
         </div>
     </div>
-    <div class="modal fade modal-add-contact" id="addNewPriceModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal fade modal-add-contact" id="addNewPriceModal" tabindex="-1" role="dialog" aria-labelledby="priceModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
                 <form id="frmPrice">
                     <div class="modal-header px-4">
-                        <h5 class="modal-title" id="ProductTitle"></h5>
+                        <h5 class="modal-title" id="priceModalTitle"></h5>
                     </div>
                     <div class="modal-body px-4">
                         <div class="row mb-2">
@@ -247,16 +247,16 @@
                             </div>
                             <div class="col-lg-6">
                                 <div class="form-group">
-                                    <label for="ActionDate">تاریخ اعمال</label>
+                                    <label for="EffectiveFrom">تاریخ اعمال</label>
                                     <input autocomplete="off" class="form-control persian-date" id="EffectiveFrom" name="EffectiveFrom">
                                 </div>
                             </div>
-                            <input id="UserId" name="UserId" value="@ViewBag.UserId" hidden />
+                            <input id="UserIdPrice" name="UserId" value="@ViewBag.UserId" hidden />
                             <input id="FiscalYearId" name="FiscalYearId" value="@ViewBag.FiscalYearId" hidden />
-                            <input id="TenantId" name="TenantId" value="@ViewBag.TenantId" hidden />
+                            <input id="TenantIdPrice" name="TenantId" value="@ViewBag.TenantId" hidden />
                             <input id="ProId" name="ProId" hidden />
                             <div class="col-lg-12 alert" style="color:red">
-                                <span class="text-danger" id="spnValidate"></span>
+                                <span class="text-danger" id="spnValidatePrice"></span>
                             </div>
                         </div>
                     </div>
@@ -268,7 +268,7 @@
             </div>
         </div>
     </div>
-    <div class="modal fade modal-add-contact" id="productPriceHistoryModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal fade modal-add-contact" id="productPriceHistoryModal" tabindex="-1" role="dialog" aria-labelledby="productPriceHistory" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header px-4">
@@ -319,8 +319,8 @@
     <!--Show add price modal-->
     <script>
         function showInsertPriceModel(productId, productTitle) {
-            $("#ProductId").val(productId);
-            $("#productTitle").text('درج قیمت برای ' + productTitle);
+            $("#ProId").val(productId);
+            $("#priceModalTitle").text('درج قیمت برای ' + productTitle);
             $("#addNewPriceModal").modal('show');
         }
     </script>
@@ -354,7 +354,7 @@
                     SwalHelper.handleResponse(xhr, "ثبت محصول با موفقیت انجام شد!", function () {
                         $('#addProduct').modal('hide');
                         $('#ProductTitle').val("");
-                        $('#chkActive').val("");
+                        $('#IsActive').prop('checked', true);
                         $('#ProductUnit').val("");
                         window.location.reload();
                     });
@@ -438,8 +438,8 @@
             e.preventDefault();
             var buyPrice = $("#BuyPrice").val();
             var sellPrice = $("#SellPrice").val();
-            var actionDate = $("#ActionDate").val();
-            if (!buyPrice || !sellPrice || !actionDate) {
+            var effectiveFrom = $("#EffectiveFrom").val();
+            if (!buyPrice || !sellPrice || !effectiveFrom) {
                 SwalHelper.warning("لطفاً قیمت خرید، قیمت فروش و تاریخ اعمال را به صورت کامل وارد نمایید!");
                 return false;
             }
@@ -503,6 +503,38 @@
                 error: function () {
                     SwalHelper.error("خطا در بارگذاری تاریخچه قیمت محصول.");
                 }
+            });
+        }
+
+        function deletePrice(id) {
+            swal.fire({
+                title: "حذف قیمت",
+                text: "آیا از حذف این رکورد قیمت اطمینان دارید؟",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#6c757d",
+                confirmButtonText: "بله، حذف شود",
+                cancelButtonText: "انصراف"
+            }).then(function (result) {
+                if (!result.isConfirmed && !result.value) return;
+                $.ajax({
+                    type: 'DELETE',
+                    url: '@ApiAddress' + 'ProductPrice/DeletePrice/' + id,
+                    dataType: 'json',
+                    headers: {
+                        "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
+                    },
+                    success: function (xhr) {
+                        SwalHelper.handleResponse(xhr, "قیمت با موفقیت حذف شد.", function () {
+                            window.location.reload();
+                        });
+                    },
+                    error: function (xhr) {
+                        var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در حذف قیمت";
+                        SwalHelper.error(msg);
+                    }
+                });
             });
         }
     </script>

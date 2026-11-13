@@ -1,4 +1,4 @@
-﻿@using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Costants
 @using static HSCrm.Common.PublicTools.Enums
 @model IEnumerable<PurchaseInvoiceModel>
 @{
@@ -24,7 +24,7 @@
         <h1>لیست فاکتورهای خرید</h1>
         <p class="breadcrumbs">
             <span>
-                <a href="index.html">خانه</a>
+                <a href="/AdminArea/Home/Index">خانه</a>
             </span>
             <span>
                 <i class="mdi mdi-chevron-left"></i>
@@ -187,7 +187,7 @@
                                     <tr>
                                         <td>@item.Number</td>
                                         <td>@item.IssueDate.ToString("yyyy/MM/dd")</td>
-                                        <td>@item.Supplier.SupplierFullName</td>
+                                        <td>@(item.Supplier?.SupplierFullName ?? "-")</td>
                                         <td class="text-primary font-weight-bold">@item.Total.ToString("N0")</td>
                                         <td class="text-success">@item.PaidAmount.ToString("N0")</td>
                                         <td class="text-danger">@item.RemainingAmount.ToString("N0")</td>
@@ -395,7 +395,7 @@
                 order: [[1, 'desc']],
                 columnDefs: [
                     {
-                        targets: [5],
+                        targets: [8],
                         orderable: false
                     }
                 ],

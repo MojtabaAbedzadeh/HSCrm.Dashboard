@@ -1,4 +1,4 @@
-﻿@using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Costants
 @model IEnumerable<ProjectModel>
 
 @{
@@ -7,8 +7,11 @@
 
     string ApiAddress = ViewBag.ApiAddress;
 
-    List<CustomersDropDown> lstCustomer = ViewBag.Customers;
-    lstCustomer.Insert(0, new CustomersDropDown { DrId = "0", DrName = "انتخاب مشتری" });
+    List<CustomersDropDown> lstCustomer = ViewBag.Customers ?? new List<CustomersDropDown>();
+    if (!lstCustomer.Any(c => c.DrId == "0"))
+    {
+        lstCustomer.Insert(0, new CustomersDropDown { DrId = "0", DrName = "انتخاب مشتری" });
+    }
 }
 
 @section styles {
@@ -21,7 +24,7 @@
 <div class="breadcrumb-wrapper breadcrumb-contacts">
     <div>
         <h1>لیست پروژه‌ها</h1>
-        <p class="breadcrumbs"><span><a href="index.html">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>پروژه</p>
+        <p class="breadcrumbs"><span><a href="/AdminArea/Home/Index">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>پروژه</p>
     </div>
     @if (ViewBag.FiscalYearStatus == "0")
     {
@@ -63,8 +66,8 @@
                                 {
                                     <tr>
                                         <td>@item.ProjectTitle</td>
-                                        <td>@item.Customer.Name</td>
-                                        <td>@item.Customer.Phone</td>
+                                        <td>@(item.Customer?.Name ?? "-")</td>
+                                        <td>@(item.Customer?.Phone ?? "-")</td>
                                         <td>@item.ProjectLocation</td>
                                         <td>
                                             <span class="badge @(item.Status == "Active" ? "bg-success" : "bg-danger")">
@@ -73,7 +76,7 @@
                                         </td>
                                         <td>
                                             <div class="btn-group mb-1">
-                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="openProjectProfitabilityModal(@item.Id, '@item.ProjectTitle', '@(item.Customer?.Name ?? "")')">
+                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="openProjectProfitabilityModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ProjectTitle ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Customer?.Name ?? ""))')">
                                                     <i class="mdi mdi-finance me-1"></i>کارنامه سود و زیان پروژه
                                                 </button>
                                                 <button type="button" class="btn btn-outline-success">اطلاعات</button>
@@ -120,12 +123,12 @@
 </div>
 @if (ViewBag.FiscalYearStatus == "0")
 {
-    <div class="modal fade modal-add-contact" id="addProject" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal fade modal-add-contact" id="addProject" tabindex="-1" role="dialog" aria-labelledby="addProjectModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
                 <form id="frmProject">
                     <div class="modal-header px-4">
-                        <h5 class="modal-title" id="exampleModalCenterTitle">تعریف پروژه جدید</h5>
+                        <h5 class="modal-title" id="addProjectModalTitle">تعریف پروژه جدید</h5>
                     </div>
                     <div class="modal-body px-4">
                         <div class="row mb-2">
@@ -153,9 +156,9 @@
                                 </div>
                             </div>
                             <input hidden class="form-control text-end" id="CreateById" name="CreateById" value="@ViewBag.UserId">
-                            <input hidden class="form-control text-end" id="TenantId" name="TenantId" value="1">
+                            <input hidden class="form-control text-end" id="TenantId" name="TenantId" value="@ViewBag.TenantId">
                             <div class="col-lg-12 alert" style="color:red">
-                                <span class="text-danger" id="spnValidate"></span>
+                                <span class="text-danger" id="spnValidateAddProject"></span>
                             </div>
                         </div>
                     </div>
@@ -169,12 +172,12 @@
             </div>
         </div>
     </div>
-    <div class="modal fade modal-add-contact" id="editProject" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal fade modal-add-contact" id="editProject" tabindex="-1" role="dialog" aria-labelledby="editProjectModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
                 <form id="frmEditProject">
                     <div class="modal-header px-4">
-                        <h5 class="modal-title" id="exampleModalCenterTitle">ویرایش پروژه</h5>
+                        <h5 class="modal-title" id="editProjectModalTitle">ویرایش پروژه</h5>
                     </div>
                     <div class="modal-body px-4">
                         <div class="row mb-2">
@@ -204,7 +207,7 @@
                             </div>
                             <input hidden class="form-control text-end" id="ModifiedById" name="ModifiedById" value="@ViewBag.UserId">
                             <div class="col-lg-12 alert" style="color:red">
-                                <span class="text-danger" id="spnValidate"></span>
+                                <span class="text-danger" id="spnValidateEditProject"></span>
                             </div>
                         </div>
                     </div>
@@ -453,7 +456,7 @@
                 },
                 success: function (xhr) {
                     SwalHelper.handleResponse(xhr, "ویرایش پروژه با موفقیت انجام شد!", function () {
-                        $('#EditProject').modal('hide');
+                        $('#editProject').modal('hide');
                         window.location.reload();
                     });
                 },

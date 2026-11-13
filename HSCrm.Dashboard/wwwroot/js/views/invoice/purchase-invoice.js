@@ -1,13 +1,53 @@
+// ================================
+// Helpers
+// ================================
+
+const ApiAddress = (window.AppContext && window.AppContext.apiAddress) || '';
+const TId = (window.AppContext && window.AppContext.tenantId) || '';
+const UId = (window.AppContext && window.AppContext.userId) || '';
+const Token = (window.AppContext && window.AppContext.token) || '';
+
+let currentNumberingMode = 'Hybrid';
+let defaultVatPercent = 0;
+
 $(document).ready(function () {
+    $.ajaxSetup({
+        beforeSend: function (xhr) {
+            if (Token) {
+                xhr.setRequestHeader("Authorization", `Bearer ${Token}`);
+            }
+        }
+    });
+
+    $('.persian-date').persianDatepicker({
+        format: 'YYYY/MM/DD',
+        autoClose: true,
+        calendarSwitch: {
+            "enabled": false,
+            "format": "MMMM"
+        }
+    });
+
     if ($('#invoiceNumber').length && !$('#InvoiceId').val()) {
         $.ajax({
             url: (ApiAddress.endsWith('/') ? ApiAddress : ApiAddress + '/') + 'PurchaseInvoice/GetNextInvoiceNumber',
             type: 'GET',
             headers: Token ? { 'Authorization': `Bearer ${Token}` } : {},
             success: function (res) {
-                const nextNum = res?.nextInvoiceNumber || res?.NextInvoiceNumber;
-                if (nextNum) {
-                    $('#invoiceNumber').attr('placeholder', `شماره خودکار: ${nextNum}`);
+                const payload = res?.data ?? res;
+                const nextNum = payload?.nextInvoiceNumber || payload?.NextInvoiceNumber || '';
+                currentNumberingMode = payload?.numberingMode || 'Hybrid';
+                defaultVatPercent = parseFloat(payload?.defaultVatPercent || 0) || 0;
+
+                if (currentNumberingMode === 'Auto') {
+                    $('#invoiceNumber').prop('readonly', true);
+                    if (nextNum) {
+                        $('#invoiceNumber').val(nextNum).attr('placeholder', `شماره خودکار: ${nextNum}`);
+                    }
+                } else if (currentNumberingMode === 'Manual') {
+                    $('#invoiceNumber').prop('readonly', false).val('').attr('placeholder', 'شماره فاکتور را به صورت دستی وارد کنید');
+                } else if (nextNum) {
+                    $('#invoiceNumber').prop('readonly', false).attr('placeholder', `شماره خودکار: ${nextNum}`);
                     if (!$('#invoiceNumber').val()) {
                         $('#invoiceNumber').val(nextNum);
                     }
@@ -20,29 +60,23 @@ $(document).ready(function () {
     }
 });
 
-﻿// ================================
-// Helpers
-// ================================
-
-const ApiAddress = AppContext.apiAddress;
-const TId = AppContext.tenantId;
-const UId = AppContext.userId;
-const Token = AppContext.token;
-
-$(document).ready(function () {
-    $('.persian-date').persianDatepicker({
-        format: 'YYYY/MM/DD',
-        autoClose: true,
-        calendarSwitch: {
-            "enabled": false,
-            "format": "MMMM"
-        },
-    });
-})
+function normalizeNumber(value) {
+    if (value === null || value === undefined) {
+        return 0;
+    }
+    let text = String(value)
+        .replace(/[۰-۹]/g, digit => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+        .replace(/[٠-٩]/g, digit => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+        .replace(/,/g, "")
+        .replace(/٬/g, "")
+        .replace(/\s/g, "");
+    const result = parseFloat(text);
+    return isNaN(result) ? 0 : result;
+}
 
 function formatPrice(value) {
-    if (!value) return '0';
-    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    const number = normalizeNumber(value);
+    return number.toLocaleString("en-US", { maximumFractionDigits: 2 });
 }
 function unFormatPrice(value) {
     if (!value) return 0;
@@ -50,10 +84,11 @@ function unFormatPrice(value) {
 }
 function clearProductForm() {
     $('#ProductTitle').val('');
+    $('#ProductId').val('');
     $('#productCount').val(0);
     $('#buyPrice').val('');
     $('#discount').val(0);
-    $('#tax').val(0);
+    $('#tax').val(0).data('manualEdit', false);
     $('#rowSum').val(0);
 }
 // ================================
@@ -233,12 +268,20 @@ function calculateRowSum() {
     const qty = parseFloat($('#productCount').val()) || 0;
     const price = unFormatPrice($('#buyPrice').val());
     const discount = unFormatPrice($('#discount').val());
-    const tax = unFormatPrice($('#tax').val());
+    let tax = unFormatPrice($('#tax').val());
+    if (defaultVatPercent > 0 && $('#tax').data('manualEdit') !== true) {
+        const taxable = Math.max((qty * price) - discount, 0);
+        tax = Math.round(taxable * defaultVatPercent / 100);
+        $('#tax').val(formatPrice(tax));
+    }
     let sum = (qty * price) - discount + tax;
     if (sum < 0) sum = 0;
     $('#rowSum').val(formatPrice(sum));
 }
 
+$('#tax').on('input', function () {
+    $(this).data('manualEdit', true);
+});
 $('#productCount, #buyPrice, #discount, #tax').on('keyup change', calculateRowSum);
 
 // ================================
@@ -328,24 +371,9 @@ $(document).on('click', '.btnRemove', function () {
     $(this).closest('tr').remove();
     calculateInvoiceSum();
 });
-// ================================
-// Invoice Total (Front - Display Only)
-// ================================
-function calculateInvoiceSum() {
-    let total = 0;
-
-    $('#tblBody tr').each(function () {
-        total += unFormatPrice($(this).find('td:eq(7)').text());
-    });
-
-    total -= unFormatPrice($('#invoiceDiscount').val());
-    total += unFormatPrice($('#invoiceTax').val());
-
-    if (total < 0) total = 0;
-
-    $('#invoiceSumPrice').val(formatPrice(total));
-}
-$('#invoiceDiscount, #invoiceTax').on('keyup change', calculateInvoiceSum);
+$('#invoiceDiscount, #invoiceTax').on('keyup change', function () {
+    calculateInvoiceSum();
+});
 // ================================
 // Submit Invoice (Proforma / Final)
 // ================================
@@ -408,61 +436,37 @@ $('#btnRegInvoice').on('click', function () {
 function validateInvoiceForm() {
 
     // نوع فاکتور
-    if (!$('#InvoiceType').val()) {
-        swal.fire({
-            title: "خطا",
-            text: "نوع فاکتور را انتخاب کنید",
-            icon: "error",
-            confirmButtonColor: "green",
-            showConfirmButton: true,
-            timer: 1500,
-            allowOutsideClick: false
-        });
+    if ($('#InvoiceType').length && !$('#InvoiceType').val()) {
+        SwalHelper.error("نوع فاکتور را انتخاب کنید", "خطا");
+        return false;
+    }
+
+    // تأمین‌کننده
+    if (!$('#SupplierId').val() || parseInt($('#SupplierId').val(), 10) === 0) {
+        SwalHelper.error("تامین‌کننده را انتخاب کنید", "خطا");
         return false;
     }
 
     // انبار
-    if (!$('#WarehouseId').val() || parseInt($('#WarehouseId').val()) === 0) {
-        swal.fire({
-            title: "خطا",
-            text: "انبار را انتخاب کنید",
-            icon: "error",
-            confirmButtonColor: "green",
-            showConfirmButton: true,
-            timer: 1500,
-            allowOutsideClick: false
-        });
+    if (!$('#WarehouseId').val() || parseInt($('#WarehouseId').val(), 10) === 0) {
+        SwalHelper.error("انبار را انتخاب کنید", "خطا");
         return false;
     }
 
-    // شماره فاکتور
-    // شماره فاکتور اختیاری است؛ در صورت خالی بودن بر اساس الگو ساخته می‌شود
+    if (currentNumberingMode === 'Manual' && !($('#invoiceNumber').val() || '').trim()) {
+        SwalHelper.error("در حالت شماره‌گذاری دستی، وارد کردن شماره فاکتور الزامی است", "خطا");
+        return false;
+    }
 
     // تاریخ فاکتور
     if (!$('#invoiceDate').val()) {
-        swal.fire({
-            title: "خطا",
-            text: "تاریخ فاکتور را انتخاب کنید",
-            icon: "error",
-            confirmButtonColor: "green",
-            showConfirmButton: true,
-            timer: 1500,
-            allowOutsideClick: false
-        });
+        SwalHelper.error("تاریخ فاکتور را انتخاب کنید", "خطا");
         return false;
     }
 
     // حداقل یک آیتم
-    if ($('#tblBody tr').length === 0) {
-        swal.fire({
-            title: "خطا",
-            text: "حداقل یک کالا باید به فاکتور اضافه شود",
-            icon: "error",
-            confirmButtonColor: "green",
-            showConfirmButton: true,
-            timer: 1500,
-            allowOutsideClick: false
-        });
+    if ($('#tblBody tr').length === 0 || ($('#tblBody tr').length === 1 && $('#tblBody tr#empty-row').length === 1)) {
+        SwalHelper.error("حداقل یک کالا باید به فاکتور اضافه شود", "خطا");
         return false;
     }
 
@@ -485,52 +489,7 @@ $(document).on('blur keyup', '.edit-qty', function (e) {
     calculateInvoiceSum();
 });
 
-"use strict";
-
-/*
-|--------------------------------------------------------------------------
-| توابع عمومی مبلغ
-|--------------------------------------------------------------------------
-*/
-
-function normalizeNumber(value) {
-    if (value === null || value === undefined) {
-        return 0;
-    }
-
-    let text = String(value);
-
-    // تبدیل ارقام فارسی و عربی به انگلیسی
-    text = text
-        .replace(/[۰-۹]/g, function (digit) {
-            return String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit));
-        })
-        .replace(/[٠-٩]/g, function (digit) {
-            return String("٠١٢٣٤٥٦٧٨٩".indexOf(digit));
-        });
-
-    // حذف جداکننده هزارگان و فاصله
-    text = text
-        .replace(/,/g, "")
-        .replace(/٬/g, "")
-        .replace(/\s/g, "");
-
-    const result = parseFloat(text);
-
-    if (isNaN(result)) {
-        return 0;
-    }
-
-    return result;
-}
-
-function formatPrice(value) {
-    const number = normalizeNumber(value);
-
-    return number.toLocaleString("en-US", {
-        maximumFractionDigits: 2
-    });
-}
+/* normalizeNumber & formatPrice are defined at top of file */
 
 /*
 |--------------------------------------------------------------------------
@@ -869,17 +828,31 @@ $('#btnUpdateInvoice').on('click', function () {
     const payment = validatePayment();
     if (!payment.isValid) return;
 
-    const issueDateValue = "2026-08-09";
+    const rawIssueDate = ($('#invoiceDate').val() || '').trim()
+        .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+        .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+    let issueDateValue = new Date().toISOString().split('T')[0];
+    if (rawIssueDate) {
+        const parts = rawIssueDate.split('/');
+        if (parts.length === 3 && parseInt(parts[0], 10) < 1900 && typeof persianDate !== 'undefined') {
+            issueDateValue = new persianDate([parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2], 10)])
+                .toCalendar('gregorian')
+                .toLocale('en')
+                .format('YYYY-MM-DD');
+        } else {
+            issueDateValue = rawIssueDate.replaceAll('/', '-');
+        }
+    }
 
     // ۳. ساخت آبجکت نهایی (مطابق با مدل Update در بک‌اند)
     const model = {
-        InvoiceId: parseInt($('#InvoiceId').val(), 10), // حتماً در ویو این فیلد مخفی را داشته باشید
+        InvoiceId: parseInt($('#InvoiceId').val(), 10),
         SupplierId: parseInt($('#SupplierId').val(), 10),
         WarehouseId: parseInt($('#WarehouseId').val(), 10),
         TenantId: TId,
         InvoiceNumber: $('#invoiceNumber').val(),
         IssueDate: issueDateValue,
-        Status: $('#InvoiceStatus').val(),
+        Status: parseInt($('#InvoiceStatus').val(), 10) || 0,
         InvoiceDiscount: unFormatPrice($('#invoiceDiscount').val()) || 0,
         InvoiceTax: unFormatPrice($('#invoiceTax').val()) || 0,
         PurchaserId: UId,
@@ -911,8 +884,7 @@ $('#btnUpdateInvoice').on('click', function () {
                     timer: 1500,
                     allowOutsideClick: false
                 }).then(function () {
-                    // هدایت به لیست فاکتورها پس از موفقیت
-                    window.location.href = '/AdminArea/PurchaseInvoice/Index';
+                    window.location.href = '/AdminArea/Invoice/PurchaseInvoice';
                 });
 
                 return;
