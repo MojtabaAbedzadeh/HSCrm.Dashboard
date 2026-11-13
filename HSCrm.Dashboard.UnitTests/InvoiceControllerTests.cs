@@ -74,6 +74,7 @@ namespace HSCrm.Dashboard.UnitTests
             var apiResponse = new ApiResponse<List<PurchaseInvoiceModel>>
             {
                 Status = true,
+                Message = "موفق",
                 Data = invoices
             };
 
