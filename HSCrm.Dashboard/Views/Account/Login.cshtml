@@ -1,4 +1,4 @@
-﻿@using HSCrm.Models.ModelDto
+@using HSCrm.Models.ModelDto
 @{
     ViewData["Title"] = "فرم ورود";
 }
@@ -40,7 +40,7 @@
                             <button type="button" onclick="location.reload()" class="btn btn-link btn-block">تغییر کاربر</button>
                         </div>
 
-                        <div id="errorMsg" class="alert mt-3" style="display:none; color:red; text-align:center;"></div>
+                        <div id="errorMsg" class="alert mt-3" style="display:@(ViewBag.ErrorMessage != null ? "block" : "none"); color:red; text-align:center;">@ViewBag.ErrorMessage</div>
                     </div>
                 </form>
             </div>
