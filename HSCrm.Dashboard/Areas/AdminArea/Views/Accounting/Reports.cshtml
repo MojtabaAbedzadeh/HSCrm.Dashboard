@@ -1,4 +1,4 @@
-﻿@using System.Security.Claims
+@using System.Security.Claims
 @using HSCrm.Dashboard.Costants
 @{
     ViewData["Title"] = "تراز آزمایشی، دفتر معین و صورت سود و زیان";
@@ -303,10 +303,14 @@
                 const res = await fetch(`${apiBase}/Accounting/ProfitAndLoss`, { headers: getAuthHeaders() });
                 const json = await res.json();
                 const d = json.data || {};
-                document.getElementById('pnlNetSales').textContent = formatNum(d.netSalesRevenue || d.totalRevenue || 0);
-                document.getElementById('pnlCogs').textContent = formatNum(d.totalCostOfGoodsSold || 0);
-                document.getElementById('pnlExpenses').textContent = formatNum(d.totalOperatingExpenses || 0);
-                document.getElementById('pnlNetProfit').textContent = formatNum(d.netProfitOrLoss || 0);
+                const netSales = d.totalSalesRevenue ?? d.netSalesRevenue ?? d.totalRevenue ?? 0;
+                const cogs = d.totalPurchasesAndCost ?? d.totalCostOfGoodsSold ?? 0;
+                const expenses = d.totalOperatingExpenses ?? 0;
+                const netProfit = d.netProfit ?? d.netProfitOrLoss ?? ((netSales - cogs) - expenses);
+                document.getElementById('pnlNetSales').textContent = formatNum(netSales);
+                document.getElementById('pnlCogs').textContent = formatNum(cogs);
+                document.getElementById('pnlExpenses').textContent = formatNum(expenses);
+                document.getElementById('pnlNetProfit').textContent = formatNum(netProfit);
             } catch (err) { console.error(err); }
         }
 

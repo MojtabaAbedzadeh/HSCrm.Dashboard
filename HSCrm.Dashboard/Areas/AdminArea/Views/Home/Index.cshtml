@@ -273,7 +273,7 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
             try {
                 const [pnlRes, bankRes, chequeRes, custAgingRes, suppAgingRes] = await Promise.all([
                     fetch(`${dashApiBase}/Accounting/ProfitAndLoss`, { headers }).then(r => r.json()).catch(() => ({ data: null })),
-                    fetch(`${dashApiBase}/BankAccount/GetAll?tenantId=${dashTenantId}`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
+                    fetch(`${dashApiBase}/BankAccount/BalancesSummary`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
                     fetch(`${dashApiBase}/Cheque/GetAll`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
                     fetch(`${dashApiBase}/Accounting/AgingReport?partyType=1&includeChequeAccounts=true`, { headers }).then(r => r.json()).catch(() => ({ data: null })),
                     fetch(`${dashApiBase}/Accounting/AgingReport?partyType=2&includeChequeAccounts=true`, { headers }).then(r => r.json()).catch(() => ({ data: null }))
@@ -281,11 +281,11 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
 
                 // 1. P&L KPIs
                 const pnl = pnlRes.data || {};
-                const netSales = pnl.netSales ?? pnl.totalRevenue ?? 0;
-                const cogs = pnl.costOfGoodsSold ?? pnl.totalCogs ?? 0;
+                const netSales = pnl.totalSalesRevenue ?? pnl.netSales ?? pnl.totalRevenue ?? 0;
+                const cogs = pnl.totalPurchasesAndCost ?? pnl.costOfGoodsSold ?? pnl.totalCogs ?? 0;
                 const grossProfit = pnl.grossProfit ?? (netSales - cogs);
                 const expenses = pnl.totalOperatingExpenses ?? pnl.totalExpenses ?? 0;
-                const netIncome = pnl.netIncome ?? (grossProfit - expenses);
+                const netIncome = pnl.netProfit ?? pnl.netIncome ?? (grossProfit - expenses);
                 const marginPct = netSales > 0 ? Math.round((grossProfit / netSales) * 100) : 0;
 
                 document.getElementById('kpiNetSales').textContent = fmtNum(netSales);

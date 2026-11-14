@@ -161,10 +161,33 @@
                             <input type="hidden" id="PurchaseInvoiceId" name="PurchaseInvoiceId" />
                             <input type="hidden" id="ExpenseId" name="ExpenseId" />
                             <input type="hidden" id="ReferenceTypeHidden" name="ReferenceType" />
+                            <input type="hidden" id="PaySupplierId" />
+                            <input type="hidden" id="PayProjectId" />
 
                             <div id="referenceSuggestions"
                                  class="list-group position-absolute shadow-sm"
                                  style="z-index: 1050; display:none; max-height: 280px; width: 500px; overflow:auto;"></div>
+                        </div>
+
+                        <!-- Settlement Summary Box -->
+                        <div class="col-12 d-none" id="paySettlementSummary">
+                            <div class="alert alert-light border mb-0 py-2 px-3">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div>
+                                        <span class="text-muted small">مبلغ کل:</span>
+                                        <strong class="font-monospace ms-1" id="paySumTotal">0</strong> ریال
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small">پرداخت‌شده (نقدی + چک):</span>
+                                        <strong class="text-success font-monospace ms-1" id="paySumPaid">0</strong> ریال
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small">مانده قابل پرداخت:</span>
+                                        <strong class="text-danger font-monospace ms-1" id="paySumRemaining">0</strong> ریال
+                                    </div>
+                                    <span id="paySumStatusBadge" class="badge bg-secondary">—</span>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="col-md-4">
@@ -189,15 +212,50 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label class="form-label">حساب بانکی / صندوق</label>
+                            <label class="form-label" id="payBankLabel">حساب بانکی / صندوق</label>
                             <select class="form-select" id="BankAccountId" name="BankAccountId">
                                 <option value="">انتخاب حساب بانکی / صندوق...</option>
                             </select>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-6" id="PayReferenceNoGroup">
                             <label class="form-label">شماره مرجع</label>
                             <input type="text" class="form-control" id="ReferenceNo" name="ReferenceNo" />
+                        </div>
+
+                        <!-- Payable Cheque Fields (Visible when Method === 'Check') -->
+                        <div class="col-12 d-none" id="PayChequeFields">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="fw-bold text-primary mb-2">
+                                    <i class="mdi mdi-checkbook me-1"></i>مشخصات چک پرداختنی (ثبت در اسناد پرداختنی تجاری و لینک به مرجع)
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">شماره سریال چک <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="PayChequeNumber" dir="ltr" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">شناسه ۱۶ رقمی صیادی</label>
+                                        <input type="text" class="form-control" id="PaySayadiId" maxlength="20" dir="ltr" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">نام بانک صادرکننده <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="PayChequeBankName" placeholder="مثال: ملت، سامان..." />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">نام / کد شعبه</label>
+                                        <input type="text" class="form-control" id="PayChequeBranchName" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">تاریخ سررسید چک (شمسی) <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="PayChequeDueDateFa" dir="ltr" autocomplete="off" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">توضیحات چک</label>
+                                        <input type="text" class="form-control" id="PayChequeDescription" />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="col-md-12 d-flex justify-content-end gap-2">
@@ -259,6 +317,13 @@
                 }
             });
 
+            const duePd = new persianDate().add('days', 30);
+            $("#PayChequeDueDateFa").val(duePd.toLocale('en').format('YYYY/MM/DD'));
+            $("#PayChequeDueDateFa").persianDatepicker({
+                format: 'YYYY/MM/DD',
+                autoClose: true
+            });
+
             // هماهنگی فیلدهای مرجع فاکتورها و هزینه‌ها
             $(document).on('input', '.ref-input', function () {
                 const id = $(this).attr('id');
@@ -300,15 +365,65 @@
                 suggestionsBox.style.display = "none";
             }
 
+            function payFormatNum(n) {
+                return Number(n || 0).toLocaleString('en-US');
+            }
+
+            function payStatusMeta(status) {
+                if (status === 2 || status === 'Paid') return { text: 'تسویه کامل', cls: 'bg-success' };
+                if (status === 1 || status === 'Partial') return { text: 'تسویه جزئی', cls: 'bg-warning text-dark' };
+                return { text: 'پرداخت‌نشده', cls: 'bg-danger' };
+            }
+
+            async function loadPaySettlementSummary(type, id) {
+                const box = document.getElementById("paySettlementSummary");
+                if (!box || !type || !id) {
+                    if (box) box.classList.add("d-none");
+                    return;
+                }
+                const endpoint = type === "purchaseInvoice"
+                    ? `${baseAddress}/PurchaseInvoice/SettlementSummary/${id}`
+                    : `${baseAddress}/Expense/SettlementSummary/${id}`;
+                try {
+                    const res = await fetch(endpoint, { headers: getAuthHeaders() });
+                    if (!res.ok) {
+                        box.classList.add("d-none");
+                        return;
+                    }
+                    const s = await res.json();
+                    document.getElementById("paySumTotal").textContent = payFormatNum(s.totalAmount);
+                    document.getElementById("paySumPaid").textContent = payFormatNum(s.paidAmount);
+                    document.getElementById("paySumRemaining").textContent = payFormatNum(s.remainingAmount);
+                    const meta = payStatusMeta(s.settlementStatus);
+                    const badge = document.getElementById("paySumStatusBadge");
+                    badge.textContent = meta.text;
+                    badge.className = "badge " + meta.cls;
+                    box.classList.remove("d-none");
+
+                    const amountEl = document.getElementById("Amount");
+                    if (amountEl) {
+                        amountEl.value = s.remainingAmount > 0 ? s.remainingAmount : "";
+                    }
+                } catch (e) {
+                    console.error("SettlementSummary fetch failed:", e);
+                    box.classList.add("d-none");
+                }
+            }
+
             function clearReferenceValues() {
                 purchaseInvoiceIdInput.value = "";
                 expenseIdInput.value = "";
                 referenceTypeHidden.value = "";
+                document.getElementById("PaySupplierId").value = "";
+                document.getElementById("PayProjectId").value = "";
+                document.getElementById("paySettlementSummary")?.classList.add("d-none");
             }
 
             function setReference(item) {
                 searchInput.value = item.title;
                 referenceTypeHidden.value = item.type;
+                document.getElementById("PaySupplierId").value = item.supplierId || "";
+                document.getElementById("PayProjectId").value = item.projectId || "";
 
                 if (item.type === "purchaseInvoice") {
                     purchaseInvoiceIdInput.value = item.id;
@@ -319,6 +434,7 @@
                 }
 
                 hideSuggestions();
+                loadPaySettlementSummary(item.type, item.id);
             }            
 
             clearBtn.addEventListener("click", function () {
@@ -398,9 +514,11 @@
                                     class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
                                     data-id="${item.id}"
                                     data-type="${escapeHtml(item.type)}"
-                                    data-title="${escapeHtml(item.title)}">
+                                    data-title="${escapeHtml(item.title)}"
+                                    data-supplier-id="${item.supplierId || ''}"
+                                    data-project-id="${item.projectId || ''}">
                                 <span>${escapeHtml(item.title)}</span>
-                                <small class="text-muted">${escapeHtml(item.type)}</small>
+                                <small class="text-muted">${escapeHtml(item.type === 'purchaseInvoice' ? 'فاکتور خرید' : 'هزینه')}</small>
                             </button>
                         `).join("");
 
@@ -411,7 +529,9 @@
                                 setReference({
                                     id: btn.dataset.id,
                                     type: btn.dataset.type,
-                                    title: btn.dataset.title
+                                    title: btn.dataset.title,
+                                    supplierId: btn.dataset.supplierId,
+                                    projectId: btn.dataset.projectId
                                 });
                             });
                         });
@@ -480,10 +600,48 @@
                 const bankSel = document.getElementById("BankAccountId");
                 if (bankSel && banks.length > 0) {
                     bankSel.innerHTML = '<option value="">انتخاب حساب بانکی / صندوق...</option>' +
-                        banks.map(b => `<option value="${b.id}" ${b.isDefault ? 'selected' : ''}>${b.bankName || b.title || 'حساب'}${b.accountNumber ? ' - ' + b.accountNumber : ''}</option>`).join('');
+                        banks.map(b => `<option value="${b.id}" data-bank-name="${b.bankName || b.title || ''}" ${b.isDefault ? 'selected' : ''}>${b.bankName || b.title || 'حساب'}${b.accountNumber ? ' - ' + b.accountNumber : ''}</option>`).join('');
                 }
             } catch (e) { console.error(e); }
+
+            function togglePayChequeFields() {
+                const isCheck = document.getElementById("Method")?.value === "Check";
+                document.getElementById("PayChequeFields")?.classList.toggle("d-none", !isCheck);
+                document.getElementById("PayReferenceNoGroup")?.classList.toggle("d-none", isCheck);
+                const lbl = document.getElementById("payBankLabel");
+                if (lbl) {
+                    lbl.textContent = isCheck ? "حساب بانکی دسته چک شرکت" : "حساب بانکی / صندوق";
+                }
+                if (isCheck) {
+                    const bankSelEl = document.getElementById("BankAccountId");
+                    const selectedOpt = bankSelEl?.options[bankSelEl.selectedIndex];
+                    const bName = selectedOpt?.dataset?.bankName || "";
+                    const chqBankEl = document.getElementById("PayChequeBankName");
+                    if (chqBankEl && !chqBankEl.value.trim() && bName) {
+                        chqBankEl.value = bName;
+                    }
+                }
+            }
+
+            document.getElementById("Method")?.addEventListener("change", togglePayChequeFields);
+            document.getElementById("BankAccountId")?.addEventListener("change", function () {
+                if (document.getElementById("Method")?.value === "Check") {
+                    const selectedOpt = this.options[this.selectedIndex];
+                    const bName = selectedOpt?.dataset?.bankName || "";
+                    const chqBankEl = document.getElementById("PayChequeBankName");
+                    if (chqBankEl && bName) chqBankEl.value = bName;
+                }
+            });
+            togglePayChequeFields();
         });
+
+        function payToLatinDigits(str) {
+            if (!str) return "";
+            return String(str)
+                .replace(/[۰-۹]/g, d => String.fromCharCode(d.charCodeAt(0) - 1728))
+                .replace(/[٠-٩]/g, d => String.fromCharCode(d.charCodeAt(0) - 1584))
+                .trim();
+        }
 
         async function savePayment() {
             const purchaseInvoiceIdElement = document.getElementById("PurchaseInvoiceId");
@@ -562,7 +720,13 @@
 
             const bankAccountEl = document.getElementById("BankAccountId");
             const bankAccountId = bankAccountEl && bankAccountEl.value ? Number.parseInt(bankAccountEl.value, 10) : null;
-            const payload = {
+            const supplierIdRaw = document.getElementById("PaySupplierId")?.value;
+            const projectIdRaw = document.getElementById("PayProjectId")?.value;
+            const supplierId = supplierIdRaw ? Number.parseInt(supplierIdRaw, 10) : null;
+            const projectId = projectIdRaw ? Number.parseInt(projectIdRaw, 10) : null;
+
+            let targetUrl = `${window.paymentApiBase}/Create`;
+            let payload = {
                 salesInvoiceId: null,
                 purchaseInvoiceId: purchaseInvoiceId,
                 expenseId: expenseId,
@@ -572,6 +736,44 @@
                 method: method,
                 referenceNo: referenceNo
             };
+
+            if (method === "Check") {
+                const chequeNumber = document.getElementById("PayChequeNumber")?.value.trim() || "";
+                const sayadiId = payToLatinDigits(document.getElementById("PaySayadiId")?.value) || null;
+                const bankName = document.getElementById("PayChequeBankName")?.value.trim() || "";
+                const branchName = document.getElementById("PayChequeBranchName")?.value.trim() || null;
+                const issueDateShamsi = payToLatinDigits(document.getElementById("PaymentDateFa")?.value);
+                const dueDateShamsi = payToLatinDigits(document.getElementById("PayChequeDueDateFa")?.value);
+                const chqDesc = document.getElementById("PayChequeDescription")?.value.trim() || null;
+
+                if (!chequeNumber || !bankName || !issueDateShamsi || !dueDateShamsi) {
+                    swal.fire({
+                        title: "اطلاعات چک پرداختنی",
+                        text: "شماره چک، نام بانک صادرکننده، تاریخ صدور و تاریخ سررسید الزامی است.",
+                        icon: "warning",
+                        confirmButtonText: "متوجه شدم"
+                    });
+                    return;
+                }
+
+                targetUrl = `${baseAddress}/Cheque/Create`;
+                payload = {
+                    type: 2,
+                    chequeNumber: chequeNumber,
+                    sayadiId: sayadiId,
+                    amount: amount,
+                    issueDateShamsi: issueDateShamsi,
+                    dueDateShamsi: dueDateShamsi,
+                    bankName: bankName,
+                    branchName: branchName,
+                    supplierId: supplierId,
+                    projectId: projectId,
+                    bankAccountId: bankAccountId,
+                    purchaseInvoiceId: purchaseInvoiceId,
+                    expenseId: expenseId,
+                    description: chqDesc
+                };
+            }
 
             const saveButton =
                 document.querySelector(
@@ -586,7 +788,7 @@
                 }
 
                 const response = await fetch(
-                    `${window.paymentApiBase}/Create`,
+                    targetUrl,
                     {
                         method: "POST",
                         headers: getAuthHeaders(),
@@ -641,7 +843,7 @@
 
                         await swal.fire({
             title: "ثبت موفق",
-            text: "پرداخت با موفقیت ثبت شد!",
+            text: (result && result.message) ? result.message : "پرداخت با موفقیت ثبت شد!",
             icon: "success",
             showConfirmButton: true,
             confirmButtonText: "باشه"
@@ -663,7 +865,12 @@
                 document.getElementById("PurchaseInvoiceId").value = "";
                 document.getElementById("ExpenseId").value = "";
                 document.getElementById("ReferenceTypeHidden").value = "";
+                document.getElementById("PaySupplierId").value = "";
+                document.getElementById("PayProjectId").value = "";
                 document.getElementById("referenceSearch").value = "";
+                document.getElementById("paySettlementSummary")?.classList.add("d-none");
+                document.getElementById("PayChequeFields")?.classList.add("d-none");
+                document.getElementById("PayReferenceNoGroup")?.classList.remove("d-none");
 
                 const suggestionsBox =
                     document.getElementById("referenceSuggestions");

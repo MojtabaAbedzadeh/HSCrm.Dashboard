@@ -1,9 +1,13 @@
-﻿@using System.Security.Claims
+@using System.Security.Claims
 @using HSCrm.Dashboard.Costants
 @{
     ViewData["Title"] = "دریافت‌ها و واریزی‌های مشتریان";
     ViewData["selected"] = "receipts_list";
     string apiAddress = ViewBag.ApiAddress?.ToString() ?? "";
+}
+
+@section styles {
+    <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
 }
 
 <div class="breadcrumb-wrapper breadcrumb-contacts">
@@ -12,12 +16,12 @@
         <p class="breadcrumbs">
             <span><a href="/AdminArea/Home/Index">خانه</a></span>
             <span><i class="mdi mdi-chevron-left"></i></span>
-            دریافت‌ها و واریز به بانک
+            دریافت‌ها و واریز به بانک / چک دریافتنی
         </p>
     </div>
     <div>
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addReceiptModal">
-            <i class="mdi mdi-plus me-1"></i>ثبت دریافت وجه جدید از مشتری
+            <i class="mdi mdi-plus me-1"></i>ثبت دریافت جدید (وجه / چک)
         </button>
     </div>
 </div>
@@ -29,7 +33,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>شناسه</th>
-                        <th>فاکتور فروش</th>
+                        <th>فاکتور فروش / مشتری</th>
                         <th>مبلغ دریافتی (ریال)</th>
                         <th>تاریخ دریافت</th>
                         <th>روش دریافت</th>
@@ -47,31 +51,41 @@
 
 <!-- Modal: Add Receipt -->
 <div class="modal fade" id="addReceiptModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">ثبت دریافت وجه از مشتری (+ صدور خودکار سند حسابداری)</h5>
+                <h5 class="modal-title">ثبت دریافت از مشتری (نقدی/حواله یا چک دریافتنی + سند خودکار)</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="frmAddReceipt">
+                <form id="frmAddReceipt" autocomplete="off">
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label fw-bold">انتخاب فاکتور فروش <span class="text-danger">*</span></label>
                             <select id="recSalesInvoiceId" class="form-select" required></select>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold">واریز به حساب بانکی / صندوق شرکت <span class="text-danger">*</span></label>
-                            <select id="recBankAccountId" class="form-select" required></select>
+
+                        <!-- Invoice Settlement Summary Box -->
+                        <div class="col-12 d-none" id="recSettlementSummary">
+                            <div class="alert alert-light border mb-0 py-2 px-3">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div>
+                                        <span class="text-muted small">مبلغ کل فاکتور:</span>
+                                        <strong class="font-monospace ms-1" id="recSumTotal">0</strong> ریال
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small">دریافت‌شده (نقدی + چک):</span>
+                                        <strong class="text-success font-monospace ms-1" id="recSumPaid">0</strong> ریال
+                                    </div>
+                                    <div>
+                                        <span class="text-muted small">مانده قابل دریافت:</span>
+                                        <strong class="text-danger font-monospace ms-1" id="recSumRemaining">0</strong> ریال
+                                    </div>
+                                    <span id="recSumStatusBadge" class="badge bg-secondary">—</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">مبلغ دریافتی (ریال) <span class="text-danger">*</span></label>
-                            <input type="number" id="recAmount" class="form-control" min="1" required dir="ltr" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold">تاریخ دریافت <span class="text-danger">*</span></label>
-                            <input type="date" id="recDate" class="form-control" required />
-                        </div>
+
                         <div class="col-md-6">
                             <label class="form-label fw-bold">روش دریافت</label>
                             <select id="recMethod" class="form-select">
@@ -79,26 +93,85 @@
                                 <option value="CardToCard">کارت به کارت</option>
                                 <option value="POS">دستگاه کارتخوان (POS)</option>
                                 <option value="Cash">نقدی</option>
+                                <option value="Cheque">چک دریافتنی (از مشتری)</option>
                             </select>
                         </div>
+
+                        <div class="col-md-6" id="recBankAccountGroup">
+                            <label class="form-label fw-bold" id="recBankLabel">واریز به حساب بانکی / صندوق شرکت <span class="text-danger">*</span></label>
+                            <select id="recBankAccountId" class="form-select"></select>
+                        </div>
+
                         <div class="col-md-6">
+                            <label class="form-label fw-bold">مبلغ دریافتی (ریال) <span class="text-danger">*</span></label>
+                            <input type="number" id="recAmount" class="form-control" min="1" step="0.01" required dir="ltr" />
+                        </div>
+
+                        <div class="col-md-6" id="recDateGroup">
+                            <label class="form-label fw-bold">تاریخ دریافت <span class="text-danger">*</span></label>
+                            <input type="date" id="recDate" class="form-control" required />
+                        </div>
+
+                        <div class="col-md-6" id="recRefNoGroup">
                             <label class="form-label fw-bold">شماره پیگیری / فیش</label>
                             <input type="text" id="recRefNo" class="form-control" dir="ltr" />
+                        </div>
+
+                        <!-- Cheque Fields (Visible when recMethod === 'Cheque') -->
+                        <div class="col-12 d-none" id="recChequeFields">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="fw-bold text-primary mb-2">
+                                    <i class="mdi mdi-checkbook me-1"></i>مشخصات چک دریافتنی (ثبت در صندوق اسناد دریافتنی و لینک به فاکتور)
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">شماره سریال چک <span class="text-danger">*</span></label>
+                                        <input type="text" id="recChequeNumber" class="form-control" dir="ltr" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">شناسه ۱۶ رقمی صیادی</label>
+                                        <input type="text" id="recSayadiId" class="form-control" maxlength="20" dir="ltr" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">نام بانک صادرکننده (مشتری) <span class="text-danger">*</span></label>
+                                        <input type="text" id="recChequeBankName" class="form-control" placeholder="مثال: ملت، ملی، تجارت..." />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">نام / کد شعبه</label>
+                                        <input type="text" id="recChequeBranchName" class="form-control" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">نام صاحب حساب / صادرکننده</label>
+                                        <input type="text" id="recChequeDrawerName" class="form-control" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label fw-bold">تاریخ دریافت (شمسی) <span class="text-danger">*</span></label>
+                                        <input type="text" id="recChequeIssueDateFa" class="form-control" dir="ltr" autocomplete="off" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label fw-bold">تاریخ سررسید (شمسی) <span class="text-danger">*</span></label>
+                                        <input type="text" id="recChequeDueDateFa" class="form-control" dir="ltr" autocomplete="off" />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
-                <button type="button" class="btn btn-primary" onclick="saveReceipt()">ثبت دریافت و صدور سند</button>
+                <button type="button" class="btn btn-primary" id="btnSaveReceipt" onclick="saveReceipt()">ثبت دریافت و صدور سند</button>
             </div>
         </div>
     </div>
 </div>
 
 @section AdminScripts {
+    <script src="~/lib/persiandate/persian-date.js"></script>
+    <script src="~/lib/persiandate/persian-datepicker.js"></script>
     <script>
         const apiBase = '@apiAddress'.replace(/\/+$/, '');
+        let salesInvoicesCache = [];
 
         function getAuthHeaders() {
             const headers = {
@@ -113,6 +186,75 @@
 
         function formatNum(n) { return Number(n || 0).toLocaleString('en-US'); }
 
+        function toLatinDigits(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/[۰-۹]/g, d => String.fromCharCode(d.charCodeAt(0) - 1728))
+                .replace(/[٠-٩]/g, d => String.fromCharCode(d.charCodeAt(0) - 1584))
+                .trim();
+        }
+
+        function getSettlementStatusMeta(status) {
+            if (status === 2 || status === 'Paid') return { text: 'تسویه کامل', cls: 'bg-success' };
+            if (status === 1 || status === 'Partial') return { text: 'تسویه جزئی', cls: 'bg-warning text-dark' };
+            return { text: 'پرداخت‌نشده', cls: 'bg-danger' };
+        }
+
+        function toggleReceiptMethodFields() {
+            const method = document.getElementById('recMethod').value;
+            const isCheque = method === 'Cheque';
+            document.getElementById('recChequeFields').classList.toggle('d-none', !isCheque);
+            document.getElementById('recDateGroup').classList.toggle('d-none', isCheque);
+            document.getElementById('recRefNoGroup').classList.toggle('d-none', isCheque);
+            document.getElementById('recBankLabel').innerHTML = isCheque
+                ? 'حساب بانکی جهت واگذاری آتی (اختیاری)'
+                : 'واریز به حساب بانکی / صندوق شرکت <span class="text-danger">*</span>';
+            document.getElementById('btnSaveReceipt').textContent = isCheque
+                ? 'ثبت چک دریافتنی و صدور سند'
+                : 'ثبت دریافت و صدور سند';
+
+            if (isCheque) {
+                const invId = Number(document.getElementById('recSalesInvoiceId').value);
+                const inv = salesInvoicesCache.find(x => x.id === invId);
+                const drawerEl = document.getElementById('recChequeDrawerName');
+                if (drawerEl && !drawerEl.value.trim() && inv?.project?.customer?.name) {
+                    drawerEl.value = inv.project.customer.name;
+                }
+            }
+        }
+
+        async function loadSalesInvoiceSettlement(salesInvoiceId) {
+            const box = document.getElementById('recSettlementSummary');
+            if (!salesInvoiceId) {
+                box.classList.add('d-none');
+                return;
+            }
+            try {
+                const res = await fetch(`${apiBase}/SalesInvoice/SettlementSummary/${salesInvoiceId}`, { headers: getAuthHeaders() });
+                if (!res.ok) {
+                    box.classList.add('d-none');
+                    return;
+                }
+                const s = await res.json();
+                document.getElementById('recSumTotal').textContent = formatNum(s.totalAmount);
+                document.getElementById('recSumPaid').textContent = formatNum(s.paidAmount);
+                document.getElementById('recSumRemaining').textContent = formatNum(s.remainingAmount);
+                const meta = getSettlementStatusMeta(s.settlementStatus);
+                const badge = document.getElementById('recSumStatusBadge');
+                badge.textContent = meta.text;
+                badge.className = 'badge ' + meta.cls;
+                box.classList.remove('d-none');
+
+                const amountEl = document.getElementById('recAmount');
+                if (amountEl) {
+                    amountEl.value = s.remainingAmount > 0 ? s.remainingAmount : '';
+                }
+            } catch (e) {
+                console.error(e);
+                box.classList.add('d-none');
+            }
+        }
+
         async function initReceipts() {
             document.getElementById('recDate').value = new Date().toISOString().split('T')[0];
             try {
@@ -124,12 +266,20 @@
                 const receipts = (await recRes.json()).data || [];
                 const invoices = (await invRes.json()).data || [];
                 const banks = (await bankRes.json()).data || [];
+                salesInvoicesCache = invoices;
 
-                document.getElementById('recSalesInvoiceId').innerHTML =
-                    invoices.map(inv => `<option value="${inv.id}">فاکتور #${inv.number} - ${inv.project?.customer?.name || ''} (${formatNum(inv.total)} ریال)</option>`).join('');
+                const invSelect = document.getElementById('recSalesInvoiceId');
+                invSelect.innerHTML = invoices.length === 0
+                    ? '<option value="">فاکتور فروشی یافت نشد</option>'
+                    : invoices.map(inv => `<option value="${inv.id}">فاکتور #${inv.number} - ${inv.project?.customer?.name || 'بدون مشتری'} (${formatNum(inv.total)} ریال)</option>`).join('');
 
                 document.getElementById('recBankAccountId').innerHTML =
+                    '<option value="">انتخاب حساب بانکی...</option>' +
                     banks.map(b => `<option value="${b.id}" ${b.isDefault ? 'selected' : ''}>${b.title}</option>`).join('');
+
+                if (invSelect.value) {
+                    loadSalesInvoiceSettlement(Number(invSelect.value));
+                }
 
                 const tbody = document.getElementById('receiptsTableBody');
                 if (receipts.length === 0) {
@@ -138,7 +288,10 @@
                     tbody.innerHTML = receipts.map(r => `
                         <tr>
                             <td>#${r.id}</td>
-                            <td class="fw-bold">فاکتور #${r.salesInvoiceId}</td>
+                            <td class="fw-bold">
+                                فاکتور #${r.salesInvoiceNumber || r.salesInvoiceId || '—'}
+                                ${r.customerName ? `<div class="small text-muted fw-normal">${r.customerName}</div>` : ''}
+                            </td>
                             <td class="fw-bold text-success font-monospace" dir="ltr">${formatNum(r.amount)}</td>
                             <td>${r.receiptDate ? new Date(r.receiptDate).toLocaleDateString('fa-IR') : ''}</td>
                             <td>${r.method || ''}</td>
@@ -151,18 +304,78 @@
         }
 
         async function saveReceipt() {
-            const payload = {
-                salesInvoiceId: Number(document.getElementById('recSalesInvoiceId').value),
-                bankAccountId: Number(document.getElementById('recBankAccountId').value) || null,
-                amount: Number(document.getElementById('recAmount').value),
-                receiptDate: document.getElementById('recDate').value,
-                method: document.getElementById('recMethod').value,
-                referenceNo: document.getElementById('recRefNo').value.trim() || null
-            };
-            if (!payload.salesInvoiceId || payload.amount <= 0) {
-                swal.fire({ title: 'هشدار', text: 'انتخاب فاکتور و مبلغ معتبر الزامی است.', icon: 'warning', confirmButtonText: 'باشه' });
+            const salesInvoiceId = Number(document.getElementById('recSalesInvoiceId').value);
+            const bankAccountId = Number(document.getElementById('recBankAccountId').value) || null;
+            const amount = Number(document.getElementById('recAmount').value);
+            const method = document.getElementById('recMethod').value;
+            const inv = salesInvoicesCache.find(x => x.id === salesInvoiceId);
+
+            if (!salesInvoiceId || !Number.isFinite(amount) || amount <= 0) {
+                swal.fire({ title: 'هشدار', text: 'انتخاب فاکتور فروش و مبلغ معتبر الزامی است.', icon: 'warning', confirmButtonText: 'باشه' });
                 return;
             }
+
+            if (method === 'Cheque') {
+                const chequeNumber = document.getElementById('recChequeNumber').value.trim();
+                const bankName = document.getElementById('recChequeBankName').value.trim();
+                const issueDateShamsi = toLatinDigits(document.getElementById('recChequeIssueDateFa').value);
+                const dueDateShamsi = toLatinDigits(document.getElementById('recChequeDueDateFa').value);
+                if (!chequeNumber || !bankName || !issueDateShamsi || !dueDateShamsi) {
+                    swal.fire({ title: 'هشدار', text: 'شماره چک، نام بانک صادرکننده، تاریخ دریافت و تاریخ سررسید الزامی است.', icon: 'warning', confirmButtonText: 'باشه' });
+                    return;
+                }
+
+                const chequePayload = {
+                    type: 1,
+                    chequeNumber: chequeNumber,
+                    sayadiId: toLatinDigits(document.getElementById('recSayadiId').value) || null,
+                    amount: amount,
+                    issueDateShamsi: issueDateShamsi,
+                    dueDateShamsi: dueDateShamsi,
+                    bankName: bankName,
+                    branchName: document.getElementById('recChequeBranchName').value.trim() || null,
+                    drawerName: document.getElementById('recChequeDrawerName').value.trim() || null,
+                    customerId: inv?.project?.customerId || null,
+                    projectId: inv?.projectId || null,
+                    bankAccountId: bankAccountId,
+                    salesInvoiceId: salesInvoiceId,
+                    description: `دریافت چک بابت فاکتور فروش #${inv?.number || salesInvoiceId}`
+                };
+
+                try {
+                    const res = await fetch(`${apiBase}/Cheque/Create`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify(chequePayload)
+                    });
+                    const json = await res.json();
+                    if (!res.ok || json.status === false) throw new Error(json.message || 'خطا در ثبت چک دریافتنی');
+                    await swal.fire({ title: 'ثبت موفق', text: json.message || 'چک دریافتنی ثبت شد و سند حسابداری صادر گردید.', icon: 'success', confirmButtonText: 'باشه' });
+                    bootstrap.Modal.getInstance(document.getElementById('addReceiptModal'))?.hide();
+                    document.getElementById('frmAddReceipt').reset();
+                    document.getElementById('recMethod').value = 'BankTransfer';
+                    toggleReceiptMethodFields();
+                    initReceipts();
+                } catch (err) {
+                    swal.fire({ title: 'خطا', text: err.message, icon: 'error', confirmButtonText: 'باشه' });
+                }
+                return;
+            }
+
+            if (!bankAccountId) {
+                swal.fire({ title: 'هشدار', text: 'لطفاً حساب بانکی یا صندوق مقصد را انتخاب کنید.', icon: 'warning', confirmButtonText: 'باشه' });
+                return;
+            }
+
+            const payload = {
+                salesInvoiceId: salesInvoiceId,
+                customerId: inv?.project?.customerId || null,
+                bankAccountId: bankAccountId,
+                amount: amount,
+                receiptDate: document.getElementById('recDate').value,
+                method: method,
+                referenceNo: document.getElementById('recRefNo').value.trim() || null
+            };
             try {
                 const res = await fetch(`${apiBase}/Receipt/Create`, {
                     method: 'POST',
@@ -171,7 +384,7 @@
                 });
                 const json = await res.json();
                 if (!res.ok || json.status === false) throw new Error(json.message || 'خطا در ثبت دریافت');
-                await swal.fire({ title: 'ثبت موفق', text: 'دریافت ثبت شد و سند حسابداری واریز به بانک صادر گردید.', icon: 'success', confirmButtonText: 'باشه' });
+                await swal.fire({ title: 'ثبت موفق', text: json.message || 'دریافت ثبت شد و سند حسابداری واریز به بانک صادر گردید.', icon: 'success', confirmButtonText: 'باشه' });
                 bootstrap.Modal.getInstance(document.getElementById('addReceiptModal'))?.hide();
                 initReceipts();
             } catch (err) {
@@ -179,6 +392,25 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', initReceipts);
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof persianDate !== 'undefined') {
+                const todayShamsi = new persianDate().toLocale('en').format('YYYY/MM/DD');
+                const dueShamsi = new persianDate().add('days', 30).toLocale('en').format('YYYY/MM/DD');
+                $('#recChequeIssueDateFa').val(todayShamsi).persianDatepicker({ format: 'YYYY/MM/DD', autoClose: true });
+                $('#recChequeDueDateFa').val(dueShamsi).persianDatepicker({ format: 'YYYY/MM/DD', autoClose: true });
+            }
+
+            document.getElementById('recSalesInvoiceId').addEventListener('change', function () {
+                loadSalesInvoiceSettlement(Number(this.value));
+            });
+            document.getElementById('recMethod').addEventListener('change', toggleReceiptMethodFields);
+            document.getElementById('addReceiptModal').addEventListener('shown.bs.modal', function () {
+                const invId = Number(document.getElementById('recSalesInvoiceId').value);
+                if (invId) loadSalesInvoiceSettlement(invId);
+                toggleReceiptMethodFields();
+            });
+
+            initReceipts();
+        });
     </script>
 }
