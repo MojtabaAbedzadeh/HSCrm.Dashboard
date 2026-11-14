@@ -268,7 +268,8 @@
                     return;
                 }
 
-                tbody.innerHTML = rows.map(tx => {
+                const displayRows = [...rows].reverse();
+                tbody.innerHTML = displayRows.map(tx => {
                     const dStr = tx.voucherDate ? new Date(tx.voucherDate).toLocaleDateString('fa-IR') : '';
                     const bal = tx.runningBalance || 0;
                     const diag = bal > 0 ? '<span class="text-primary fw-bold">بد</span>' : bal < 0 ? '<span class="text-warning fw-bold">بس</span>' : '<span class="text-muted">تسویه</span>';

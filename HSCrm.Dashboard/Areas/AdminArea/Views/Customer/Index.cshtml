@@ -42,6 +42,8 @@
                                     <th>شماره همراه</th>
                                     <th>ایمیل</th>
                                     <th>آدرس</th>
+                                    <th class="text-end">مانده بدهی (ریال)</th>
+                                    <th class="text-end">چک در جریان (ریال)</th>
                                     <th>فعالیت</th>
                                 </tr>
                             </thead>
@@ -53,8 +55,11 @@
                                         <td>@item.Phone</td>
                                         <td>@item.Email</td>
                                         <td>@item.Address</td>
+                                        <td class="text-end font-monospace cust-bal-cell" data-cust-id="@item.Id" dir="ltr"><span class="text-muted small">...</span></td>
+                                        <td class="text-end font-monospace cust-chq-cell" data-cust-id="@item.Id" dir="ltr"><span class="text-muted small">...</span></td>
                                         <td>
                                             <div class="btn-group mb-1">
+                                                <a class="btn btn-outline-primary btn-sm" href="/AdminArea/Accounting/AgingAndStatements?partyType=1&partyId=@item.Id" title="صورت‌حساب ۳۶۰، فاکتورها و چک‌ها">۳۶۰</a>
                                                 <a class="btn btn-outline-success" href="@("customerprofile?customerId=" + item.Id)">پروفایل</a>
                                                 <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static">
                                                     <span class="sr-only">پروفایل</span>
@@ -355,5 +360,50 @@
                 }
             });
         });
+    </script>
+    <script>
+        (function () {
+            const apiBase = '@ApiAddress'.replace(/\/+$/, '');
+            const token = '@User.FindFirstValue("Token")';
+            if (!apiBase || !token) return;
+
+            fetch(apiBase + '/Customer/GetBalances', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(r => r.json())
+            .then(res => {
+                const list = res.data || [];
+                const map = {};
+                list.forEach(x => { map[x.customerId] = x; });
+
+                document.querySelectorAll('.cust-bal-cell').forEach(cell => {
+                    const id = Number(cell.getAttribute('data-cust-id'));
+                    const row = map[id];
+                    if (!row) { cell.innerHTML = '<span class="text-muted">0</span>'; return; }
+                    const bal = Number(row.openReceivableBalance || 0);
+                    if (bal > 0) {
+                        cell.innerHTML = `<span class="fw-bold text-danger">${bal.toLocaleString('fa-IR')}</span>`;
+                    } else if (bal < 0) {
+                        cell.innerHTML = `<span class="fw-bold text-success">${Math.abs(bal).toLocaleString('fa-IR')} (بس)</span>`;
+                    } else {
+                        cell.innerHTML = '<span class="text-muted">0</span>';
+                    }
+                });
+
+                document.querySelectorAll('.cust-chq-cell').forEach(cell => {
+                    const id = Number(cell.getAttribute('data-cust-id'));
+                    const row = map[id];
+                    const chq = Number(row?.pendingChequesAmount || 0);
+                    if (chq > 0) {
+                        cell.innerHTML = `<span class="badge bg-info text-dark font-monospace">${chq.toLocaleString('fa-IR')}</span>`;
+                    } else {
+                        cell.innerHTML = '<span class="text-muted">0</span>';
+                    }
+                });
+            })
+            .catch(() => {
+                document.querySelectorAll('.cust-bal-cell, .cust-chq-cell').forEach(c => { c.textContent = '-'; });
+            });
+        })();
     </script>
 }

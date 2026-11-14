@@ -161,15 +161,15 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
                     <div class="progress-bar bg-success" style="width: 20%">جاری (۰-۳۰)</div>
                     <div class="progress-bar bg-info" style="width: 20%">۳۱-۶۰</div>
                     <div class="progress-bar bg-warning text-dark" style="width: 20%">۶۱-۹۰</div>
-                    <div class="progress-bar bg-orange" style="width: 20%; background-color:#fd7e14;">۹۱-۱۲۰</div>
-                    <div class="progress-bar bg-danger" style="width: 20%">+۱۲۰ روز</div>
+                    <div class="progress-bar bg-orange" style="width: 20%; background-color:#fd7e14;">۹۱-۱۸۰</div>
+                    <div class="progress-bar bg-danger" style="width: 20%">+۱۸۰ روز</div>
                 </div>
                 <div class="row g-2 text-center small" id="agingBucketsSummary">
                     <div class="col"><div class="p-2 rounded bg-light border"><div class="text-muted">۰ تا ۳۰ روز</div><strong class="text-success font-monospace" id="agB1">0</strong></div></div>
                     <div class="col"><div class="p-2 rounded bg-light border"><div class="text-muted">۳۱ تا ۶۰ روز</div><strong class="text-info font-monospace" id="agB2">0</strong></div></div>
                     <div class="col"><div class="p-2 rounded bg-light border"><div class="text-muted">۶۱ تا ۹۰ روز</div><strong class="text-warning font-monospace" id="agB3">0</strong></div></div>
-                    <div class="col"><div class="p-2 rounded bg-light border"><div class="text-muted">۹۱ تا ۱۲۰ روز</div><strong style="color:#fd7e14" class="font-monospace" id="agB4">0</strong></div></div>
-                    <div class="col"><div class="p-2 rounded bg-light border"><div class="text-muted">بیش از ۱۲۰ روز</div><strong class="text-danger font-monospace" id="agB5">0</strong></div></div>
+                    <div class="col"><div class="p-2 rounded bg-light border"><div class="text-muted">۹۱ تا ۱۸۰ روز</div><strong style="color:#fd7e14" class="font-monospace" id="agB4">0</strong></div></div>
+                    <div class="col"><div class="p-2 rounded bg-light border"><div class="text-muted">بیش از ۱۸۰ روز</div><strong class="text-danger font-monospace" id="agB5">0</strong></div></div>
                 </div>
             </div>
         </div>
@@ -317,15 +317,18 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
                 // 3. Customer Aging & Receivables
                 const custAging = custAgingRes.data || {};
                 const custRows = custAging.rows || [];
-                const totalRec = custAging.totalReceivableOrPayable ?? custRows.reduce((s, r) => s + (r.totalBalance || 0), 0);
+                const totalRec = custAging.grandTotalOpenBalance ?? custRows.reduce((s, r) => s + (r.totalOpenBalance || 0), 0);
+                const totalRecPendingChq = custRows.reduce((s, r) => s + (r.pendingChequesAmount || 0), 0);
                 const b1 = custAging.totalBucket0To30 ?? custRows.reduce((s, r) => s + (r.bucket0To30 || 0), 0);
                 const b2 = custAging.totalBucket31To60 ?? custRows.reduce((s, r) => s + (r.bucket31To60 || 0), 0);
                 const b3 = custAging.totalBucket61To90 ?? custRows.reduce((s, r) => s + (r.bucket61To90 || 0), 0);
-                const b4 = custAging.totalBucket91To120 ?? custRows.reduce((s, r) => s + (r.bucket91To120 || 0), 0);
-                const b5 = custAging.totalBucketOver120 ?? custRows.reduce((s, r) => s + (r.bucketOver120 || 0), 0);
+                const b4 = custAging.totalBucket91To180 ?? custRows.reduce((s, r) => s + (r.bucket91To180 || 0), 0);
+                const b5 = custAging.totalBucketOver180 ?? custRows.reduce((s, r) => s + (r.bucketOver180 || 0), 0);
 
                 document.getElementById('kpiCustomerReceivables').textContent = fmtNum(totalRec);
-                document.getElementById('kpiOverdueReceivables').textContent = `معوق +۹۰ روز: ${fmtNum(b4 + b5)}`;
+                document.getElementById('kpiOverdueReceivables').textContent = totalRecPendingChq > 0
+                    ? `معوق +۹۰: ${fmtNum(b4 + b5)} | چک در جریان: ${fmtNum(totalRecPendingChq)}`
+                    : `معوق +۹۰ روز: ${fmtNum(b4 + b5)}`;
                 document.getElementById('agB1').textContent = fmtNum(b1);
                 document.getElementById('agB2').textContent = fmtNum(b2);
                 document.getElementById('agB3').textContent = fmtNum(b3);
@@ -351,13 +354,18 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
                 if (custRows.length === 0) {
                     topCustBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">هیچ مشتری بدهکاری یافت نشد.</td></tr>';
                 } else {
-                    topCustBody.innerHTML = custRows.slice(0, 6).map(r => {
-                        const overdue = (r.bucket91To120 || 0) + (r.bucketOver120 || 0);
+                    topCustBody.innerHTML = custRows.slice(0, 8).map(r => {
+                        const overdue = (r.bucket91To180 || 0) + (r.bucketOver180 || 0);
+                        const openBal = r.totalOpenBalance || 0;
+                        const pendChq = r.pendingChequesAmount || 0;
                         return `<tr>
-                            <td class="fw-bold">${r.partyName}</td>
-                            <td class="text-end font-monospace fw-bold">${fmtNum(r.totalBalance)}</td>
+                            <td class="fw-bold">
+                                ${escapeDashHtml(r.partyName)}
+                                ${pendChq > 0 ? `<small class="d-block text-primary">چک در جریان: ${fmtNum(pendChq)}</small>` : ''}
+                            </td>
+                            <td class="text-end font-monospace fw-bold">${fmtNum(openBal)}</td>
                             <td class="text-end font-monospace ${overdue > 0 ? 'text-danger fw-bold' : 'text-muted'}">${fmtNum(overdue)}</td>
-                            <td class="text-center"><span class="badge bg-light text-dark border">${r.averageAgeDays || 0} روز</span></td>
+                            <td class="text-center"><span class="badge bg-light text-dark border">${r.weightedAverageAgeDays || 0} روز</span></td>
                             <td>
                                 <a href="/AdminArea/Accounting/AgingAndStatements?partyType=1&partyId=${r.partyId}" class="btn btn-xs btn-outline-primary">
                                     صورت‌حساب ۳۶۰
@@ -370,7 +378,7 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
                 // 4. Supplier Payables & Cheques
                 const suppAging = suppAgingRes.data || {};
                 const suppRows = suppAging.rows || [];
-                const totalPay = suppAging.totalReceivableOrPayable ?? suppRows.reduce((s, r) => s + (r.totalBalance || 0), 0);
+                const totalPay = suppAging.grandTotalOpenBalance ?? suppRows.reduce((s, r) => s + (r.totalOpenBalance || 0), 0);
                 document.getElementById('kpiSupplierPayables').textContent = fmtNum(totalPay);
 
                 const cheques = chequeRes.data || [];

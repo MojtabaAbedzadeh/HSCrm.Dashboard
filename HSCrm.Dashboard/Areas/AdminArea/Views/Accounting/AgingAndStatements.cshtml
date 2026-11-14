@@ -108,6 +108,9 @@
                 <input class="form-check-input" type="checkbox" id="chkIncludeCheques" checked onchange="reloadCurrentStatement()" />
                 <label class="form-check-label small" for="chkIncludeCheques">لحاظ آرتیکل‌های چک (1102/1107/2103)</label>
             </div>
+            <button type="button" id="btnToggleTxOrder" class="btn btn-sm btn-outline-secondary" onclick="toggleStatementOrder()">
+                <i class="mdi mdi-sort-descending me-1"></i>جدیدترین در بالا
+            </button>
         </div>
     </div>
     <div class="card-body">
@@ -140,7 +143,10 @@
             <div class="col-md-2">
                 <div class="p-2 border rounded bg-light">
                     <small class="text-muted d-block">مانده دفتری نهایی</small>
-                    <strong class="font-monospace" id="stFinalBookBalance" dir="ltr">0</strong>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <strong class="font-monospace" id="stFinalBookBalance" dir="ltr">0</strong>
+                        <span id="stFinalBalanceBadge" class="badge bg-secondary ms-1">—</span>
+                    </div>
                 </div>
             </div>
             <div class="col-md-2">
@@ -151,25 +157,98 @@
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>سند</th>
-                        <th>تاریخ شمسی</th>
-                        <th>حساب معین</th>
-                        <th>نوع عملیات</th>
-                        <th>شرح تراکنش و پروژه</th>
-                        <th class="text-end">بدهکار (ریال)</th>
-                        <th class="text-end">بستانکار (ریال)</th>
-                        <th class="text-end bg-light">مانده خطی</th>
-                        <th class="text-center bg-light">ماهیت</th>
-                    </tr>
-                </thead>
-                <tbody id="statementTableBody">
-                    <tr><td colspan="9" class="text-center py-4 text-muted">یک طرف‌حساب را از جدول بالا یا لیست انتخاب کنید.</td></tr>
-                </tbody>
-            </table>
+        <div id="proformaNoticeBanner" class="alert alert-info py-2 small d-none mb-3"></div>
+
+        <ul class="nav nav-tabs mb-3" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold" id="tabTxBtn" data-bs-toggle="tab" data-bs-target="#tabTxPane" type="button" role="tab">
+                    گردش اسناد معین <span class="badge bg-primary ms-1" id="badgeTxCount">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold" id="tabInvBtn" data-bs-toggle="tab" data-bs-target="#tabInvPane" type="button" role="tab">
+                    فاکتورها و وضعیت پرداخت / مانده <span class="badge bg-secondary ms-1" id="badgeInvCount">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold" id="tabChqBtn" data-bs-toggle="tab" data-bs-target="#tabChqPane" type="button" role="tab">
+                    چک‌های صیادی و وضعیت وصول <span class="badge bg-secondary ms-1" id="badgeChqCount">0</span>
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tabTxPane" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>سند</th>
+                                <th>تاریخ شمسی</th>
+                                <th>حساب معین</th>
+                                <th>نوع عملیات</th>
+                                <th>شرح تراکنش و پروژه</th>
+                                <th class="text-end">بدهکار (ریال)</th>
+                                <th class="text-end">بستانکار (ریال)</th>
+                                <th class="text-end bg-light">مانده خطی</th>
+                                <th class="text-center bg-light">ماهیت</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statementTableBody">
+                            <tr><td colspan="9" class="text-center py-4 text-muted">یک طرف‌حساب را از جدول بالا یا لیست انتخاب کنید.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="tabInvPane" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>شماره فاکتور</th>
+                                <th>تاریخ صدور</th>
+                                <th>پروژه</th>
+                                <th>نوع</th>
+                                <th class="text-end">مبلغ کل (ریال)</th>
+                                <th class="text-end">نقد / بانک</th>
+                                <th class="text-end">چک در جریان</th>
+                                <th class="text-end">چک وصول‌شده</th>
+                                <th class="text-end">چک برگشتی</th>
+                                <th class="text-end">مانده قابل تسویه</th>
+                                <th class="text-center">وضعیت</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statementInvoicesBody">
+                            <tr><td colspan="12" class="text-center py-4 text-muted">طرف‌حسابی انتخاب نشده است.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="tabChqPane" role="tabpanel">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>شماره چک</th>
+                                <th>شناسه صیادی</th>
+                                <th>بانک / شعبه</th>
+                                <th>بابت فاکتور</th>
+                                <th>تاریخ صدور</th>
+                                <th>تاریخ سررسید</th>
+                                <th class="text-end">مبلغ (ریال)</th>
+                                <th class="text-center">وضعیت وصول</th>
+                                <th>توضیحات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statementChequesBody">
+                            <tr><td colspan="9" class="text-center py-4 text-muted">طرف‌حسابی انتخاب نشده است.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -223,7 +302,7 @@
         async function loadAgingReport() {
             const tbody = document.getElementById('agingTableBody');
             try {
-                const res = await fetch(`${apiBase}/Accounting/AgingReport?partyType=${currentPartyType}`, { headers: getAuthHeaders() });
+                const res = await fetch(`${apiBase}/Accounting/AgingReport?partyType=${currentPartyType}&includeChequeAccounts=true`, { headers: getAuthHeaders() });
                 const json = await res.json();
                 const d = json.data || {};
                 const rows = d.rows || [];
@@ -271,8 +350,153 @@
             loadPartyStatement(partyId);
         }
 
+        let statementNewestFirst = true;
+        let lastStatementData = null;
+
+        function toggleStatementOrder() {
+            statementNewestFirst = !statementNewestFirst;
+            const btn = document.getElementById('btnToggleTxOrder');
+            if (btn) {
+                btn.innerHTML = statementNewestFirst
+                    ? '<i class="mdi mdi-sort-descending me-1"></i>جدیدترین در بالا'
+                    : '<i class="mdi mdi-sort-ascending me-1"></i>قدیمی‌ترین در بالا';
+            }
+            if (lastStatementData) renderStatementTransactions(lastStatementData);
+        }
+
         function reloadCurrentStatement() {
             if (currentPartyId) loadPartyStatement(currentPartyId);
+        }
+
+        function escHtml(s) {
+            return String(s || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function renderChequeStatusBadge(status, title) {
+            const cls = status === 3 ? 'bg-success'
+                : status === 4 ? 'bg-danger'
+                : status === 2 ? 'bg-info text-dark'
+                : status === 5 ? 'bg-secondary'
+                : status === 6 ? 'bg-dark'
+                : 'bg-warning text-dark';
+            return `<span class="badge ${cls}">${escHtml(title || 'نامشخص')}</span>`;
+        }
+
+        function renderStatementTransactions(d) {
+            const tbody = document.getElementById('statementTableBody');
+            const rawTxs = d.transactions || [];
+            document.getElementById('badgeTxCount').textContent = rawTxs.length;
+            if (rawTxs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">هیچ تراکنشی برای این طرف‌حساب ثبت نشده است.</td></tr>';
+                return;
+            }
+            const txs = statementNewestFirst ? [...rawTxs].reverse() : rawTxs;
+            tbody.innerHTML = txs.map(t => {
+                const bal = t.runningBalance || 0;
+                const diag = bal > 0 ? '<span class="text-primary fw-bold">بد</span>' : bal < 0 ? '<span class="text-warning fw-bold">بس</span>' : '<span class="text-muted">تسویه</span>';
+                return `
+                    <tr>
+                        <td class="fw-bold font-monospace text-primary">#${t.voucherNumber}</td>
+                        <td class="font-monospace">${t.voucherDateShamsi || ''}</td>
+                        <td><span class="font-monospace text-primary">${escHtml(t.accountCode)}</span> - ${escHtml(t.accountTitle)}</td>
+                        <td>${escHtml(t.referenceTypeTitle || '')}</td>
+                        <td>
+                            <div>${escHtml(t.description || '')}</div>
+                            ${t.projectTitle ? `<small class="text-muted">پروژه: ${escHtml(t.projectTitle)}</small>` : ''}
+                        </td>
+                        <td class="text-end font-monospace" dir="ltr">${formatNum(t.debit)}</td>
+                        <td class="text-end font-monospace" dir="ltr">${formatNum(t.credit)}</td>
+                        <td class="text-end font-monospace fw-bold bg-light" dir="ltr">${formatNum(Math.abs(bal))}</td>
+                        <td class="text-center bg-light">${diag}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderStatementInvoices(d) {
+            const invBody = document.getElementById('statementInvoicesBody');
+            const invs = d.invoices || [];
+            document.getElementById('badgeInvCount').textContent = invs.length;
+
+            const proformas = invs.filter(i => i.status === 0);
+            const banner = document.getElementById('proformaNoticeBanner');
+            if (proformas.length > 0) {
+                const profSum = proformas.reduce((s, i) => s + (i.totalAmount || 0), 0);
+                banner.classList.remove('d-none');
+                banner.innerHTML = `<i class="mdi mdi-information-outline me-1"></i>توجه: این طرف‌حساب دارای <strong>${proformas.length}</strong> پیش‌فاکتور (به جمع <strong>${formatNum(profSum)}</strong> ریال) است. پیش‌فاکتورها تا زمان «تبدیل به فاکتور نهایی» سند حسابداری (۱۱۰۳) صادر نمی‌کنند و در «جمع فاکتورها»ی دفتر معین لحاظ نمی‌شوند.`;
+            } else {
+                banner.classList.add('d-none');
+                banner.textContent = '';
+            }
+
+            if (invs.length === 0) {
+                invBody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-muted">هیچ فاکتوری برای این طرف‌حساب یافت نشد.</td></tr>';
+                return;
+            }
+
+            invBody.innerHTML = invs.map(i => {
+                const isFinal = i.status === 1;
+                const typeBadge = isFinal
+                    ? '<span class="badge bg-success">فاکتور نهایی</span>'
+                    : '<span class="badge bg-info text-dark">پیش‌فاکتور</span>';
+                const stBadge = !isFinal
+                    ? '<span class="badge bg-secondary">فاقد سند</span>'
+                    : i.settlementStatus === 2
+                        ? '<span class="badge bg-success">تسویه کامل</span>'
+                        : i.settlementStatus === 1
+                            ? '<span class="badge bg-warning text-dark">تسویه جزئی</span>'
+                            : '<span class="badge bg-danger">پرداخت‌نشده</span>';
+                const actionHtml = currentPartyType === 1
+                    ? (isFinal
+                        ? `<a class="btn btn-xs btn-outline-success" href="/AdminArea/Receipt/Index?invoiceId=${i.invoiceId}">ثبت دریافت</a>`
+                        : `<a class="btn btn-xs btn-outline-primary" href="/AdminArea/Invoice/SalesInvoice">نهایی‌سازی</a>`)
+                    : `<a class="btn btn-xs btn-outline-primary" href="/AdminArea/Payment/Index">پرداخت</a>`;
+
+                return `<tr>
+                    <td class="fw-bold font-monospace">${escHtml(i.invoiceNumber)}</td>
+                    <td class="font-monospace">${escHtml(i.issueDateShamsi || '')}</td>
+                    <td>${escHtml(i.projectTitle || '—')}</td>
+                    <td>${typeBadge}</td>
+                    <td class="text-end font-monospace fw-bold" dir="ltr">${formatNum(i.totalAmount)}</td>
+                    <td class="text-end font-monospace text-success" dir="ltr">${formatNum(i.cashPaidAmount)}</td>
+                    <td class="text-end font-monospace text-primary" dir="ltr">${formatNum(i.inProgressChequesAmount)}</td>
+                    <td class="text-end font-monospace text-success" dir="ltr">${formatNum(i.clearedChequesAmount)}</td>
+                    <td class="text-end font-monospace text-danger" dir="ltr">${formatNum(i.bouncedChequesAmount)}</td>
+                    <td class="text-end font-monospace fw-bold ${i.remainingAmount > 0 ? 'text-danger' : 'text-success'}" dir="ltr">${formatNum(i.remainingAmount)}</td>
+                    <td class="text-center">${stBadge}</td>
+                    <td>${actionHtml}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderStatementCheques(d) {
+            const chqBody = document.getElementById('statementChequesBody');
+            const chqs = d.cheques || [];
+            document.getElementById('badgeChqCount').textContent = chqs.length;
+
+            if (chqs.length === 0) {
+                chqBody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">هیچ چکی برای این طرف‌حساب ثبت نشده است.</td></tr>';
+                return;
+            }
+
+            chqBody.innerHTML = chqs.map(c => {
+                const invRef = c.salesInvoiceNumber || c.purchaseInvoiceNumber || '—';
+                return `<tr>
+                    <td class="fw-bold font-monospace">${escHtml(c.chequeNumber)}</td>
+                    <td class="font-monospace">${escHtml(c.sayadiId || '—')}</td>
+                    <td>${escHtml(c.bankName || '—')}${c.branchName ? ' - ' + escHtml(c.branchName) : ''}</td>
+                    <td class="font-monospace">${escHtml(invRef)}</td>
+                    <td class="font-monospace">${escHtml(c.issueDateShamsi || '')}</td>
+                    <td class="font-monospace fw-bold">${escHtml(c.dueDateShamsi || '')}</td>
+                    <td class="text-end font-monospace fw-bold" dir="ltr">${formatNum(c.amount)}</td>
+                    <td class="text-center">${renderChequeStatusBadge(c.status, c.statusTitle)}</td>
+                    <td>${escHtml(c.description || '')}</td>
+                </tr>`;
+            }).join('');
         }
 
         async function loadPartyStatement(partyId) {
@@ -289,6 +513,7 @@
                 const json = await res.json();
                 const d = json.data;
                 if (!d) throw new Error(json.message || 'اطلاعات یافت نشد');
+                lastStatementData = d;
 
                 document.getElementById('lblStatementHeader').textContent =
                     `صورت‌حساب جامع ۳۶۰ درجه: «${d.partyName}» (${d.partyTypeTitle || ''})`;
@@ -297,35 +522,18 @@
                 document.getElementById('stTotalReturns').textContent = formatNum(d.totalReturnsAmount);
                 document.getElementById('stTotalSettlements').textContent = formatNum(d.totalCashAndBankSettlements);
                 document.getElementById('stPendingCheques').textContent = formatNum(d.pendingChequesAmount);
-                document.getElementById('stFinalBookBalance').textContent = formatNum(Math.abs(d.finalBookBalance));
+                const fb = Number(d.finalBookBalance || 0);
+                document.getElementById('stFinalBookBalance').textContent = formatNum(Math.abs(fb));
+                const fbBadge = document.getElementById('stFinalBalanceBadge');
+                if (fbBadge) {
+                    fbBadge.className = 'badge ms-1 ' + (fb > 0 ? 'bg-primary' : fb < 0 ? 'bg-warning text-dark' : 'bg-success');
+                    fbBadge.textContent = fb > 0 ? 'بد' : fb < 0 ? 'بس' : 'تسویه';
+                }
                 document.getElementById('stEffectiveExposure').textContent = formatNum(d.effectiveExposureAmount);
 
-                const txs = d.transactions || [];
-                if (txs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">هیچ تراکنشی برای این طرف‌حساب ثبت نشده است.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = txs.map(t => {
-                    const bal = t.runningBalance || 0;
-                    const diag = bal > 0 ? '<span class="text-primary fw-bold">بد</span>' : bal < 0 ? '<span class="text-warning fw-bold">بس</span>' : '<span class="text-muted">تسویه</span>';
-                    return `
-                        <tr>
-                            <td class="fw-bold font-monospace text-primary">#${t.voucherNumber}</td>
-                            <td class="font-monospace">${t.voucherDateShamsi || ''}</td>
-                            <td><span class="font-monospace text-primary">${t.accountCode}</span> - ${t.accountTitle}</td>
-                            <td>${t.referenceTypeTitle || ''}</td>
-                            <td>
-                                <div>${t.description || ''}</div>
-                                ${t.projectTitle ? `<small class="text-muted">پروژه: ${t.projectTitle}</small>` : ''}
-                            </td>
-                            <td class="text-end font-monospace" dir="ltr">${formatNum(t.debit)}</td>
-                            <td class="text-end font-monospace" dir="ltr">${formatNum(t.credit)}</td>
-                            <td class="text-end font-monospace fw-bold bg-light" dir="ltr">${formatNum(Math.abs(bal))}</td>
-                            <td class="text-center bg-light">${diag}</td>
-                        </tr>
-                    `;
-                }).join('');
+                renderStatementTransactions(d);
+                renderStatementInvoices(d);
+                renderStatementCheques(d);
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">${err.message}</td></tr>`;
             }

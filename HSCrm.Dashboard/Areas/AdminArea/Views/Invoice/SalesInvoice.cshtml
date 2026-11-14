@@ -54,6 +54,8 @@
                                     <th>مشتری</th>
                                     <th>نوع فاکتور</th>
                                     <th>جمع فاکتور</th>
+                                    <th>دریافت‌شده / چک</th>
+                                    <th>مانده و وضعیت</th>
                                     <th>عملیات</th>
                                 </tr>
                             </thead>
@@ -62,7 +64,7 @@
                                 {
                                     <tr>
                                         <td>@item.Number</td>
-                                        <td>@item.IssueDate.ToString("yyyy/MM/dd")</td>
+                                        <td class="font-monospace">@ConvertDate.ConvertMiladiToShamsi(item.IssueDate, "yyyy/MM/dd")</td>
                                         <td>@(item.Project?.ProjectTitle ?? "-")</td>
                                         <td>@(item.Project?.Customer?.Name ?? "-")</td>
                                         <td>
@@ -70,7 +72,9 @@
                                                 @(item.Status == 1 ? "فاکتور نهایی" : "پیش فاکتور")
                                             </span>
                                         </td>
-                                        <td>@item.Total.ToString("N0")</td>
+                                        <td class="font-monospace fw-bold" dir="ltr">@item.Total.ToString("N0")</td>
+                                        <td class="si-paid-cell font-monospace small" data-inv-id="@item.Id" data-status="@item.Status"><span class="text-muted">...</span></td>
+                                        <td class="si-rem-cell font-monospace small" data-inv-id="@item.Id" data-status="@item.Status"><span class="text-muted">...</span></td>
                                         <td>
                                             <div class="btn-group mb-1">
                                                 <button type="button" class="btn btn-outline-success" onclick="showInvoiceDetail('@item.Id')">جزئیات</button>
@@ -691,6 +695,63 @@ function saveInvoicePatterns() {
         }
     });
 }
-</script>
 
+$(document).ready(function () {
+    const apiBase = ('@ViewBag.ApiAddress'.endsWith('/') ? '@ViewBag.ApiAddress' : '@ViewBag.ApiAddress/');
+    const token = '@ViewBag.Token';
+    if (!token) return;
+
+    fetch(apiBase + 'SalesInvoice/SettlementSummaries', {
+        headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(r => r.json())
+    .then(res => {
+        const list = res.data || [];
+        const map = {};
+        list.forEach(s => { map[s.referenceId] = s; });
+
+        document.querySelectorAll('.si-paid-cell').forEach(cell => {
+            const id = Number(cell.getAttribute('data-inv-id'));
+            const st = Number(cell.getAttribute('data-status'));
+            const s = map[id];
+            if (!s) { cell.textContent = '0'; return; }
+            if (st === 0) {
+                cell.innerHTML = '<span class="text-muted">پیش‌فاکتور</span>';
+                return;
+            }
+            const cash = Number(s.cashPaidAmount || 0);
+            const pend = Number(s.pendingChequesAmount || 0);
+            const clrd = Number(s.clearedChequesAmount || 0);
+            const bncd = Number(s.bouncedChequesAmount || 0);
+            let parts = [];
+            if (cash > 0) parts.push(`<div class="text-success">نقد/بانک: ${cash.toLocaleString('fa-IR')}</div>`);
+            if (pend > 0) parts.push(`<div class="text-primary">چک در جریان: ${pend.toLocaleString('fa-IR')}</div>`);
+            if (clrd > 0) parts.push(`<div class="text-success">چک وصول‌شده: ${clrd.toLocaleString('fa-IR')}</div>`);
+            if (bncd > 0) parts.push(`<div class="text-danger">چک برگشتی: ${bncd.toLocaleString('fa-IR')}</div>`);
+            cell.innerHTML = parts.length > 0 ? parts.join('') : '<span class="text-muted">0</span>';
+        });
+
+        document.querySelectorAll('.si-rem-cell').forEach(cell => {
+            const id = Number(cell.getAttribute('data-inv-id'));
+            const st = Number(cell.getAttribute('data-status'));
+            const s = map[id];
+            if (!s) { cell.textContent = '-'; return; }
+            if (st === 0) {
+                cell.innerHTML = '<span class="badge bg-info text-dark">در انتظار نهایی‌سازی</span>';
+                return;
+            }
+            const rem = Number(s.remainingAmount || 0);
+            const badge = s.settlementStatus === 2
+                ? '<span class="badge bg-success">تسویه کامل</span>'
+                : s.settlementStatus === 1
+                    ? '<span class="badge bg-warning text-dark">تسویه جزئی</span>'
+                    : '<span class="badge bg-danger">پرداخت‌نشده</span>';
+            cell.innerHTML = `<div class="fw-bold ${rem > 0 ? 'text-danger' : 'text-success'}" dir="ltr">${rem.toLocaleString('fa-IR')}</div>${badge}`;
+        });
+    })
+    .catch(() => {
+        document.querySelectorAll('.si-paid-cell, .si-rem-cell').forEach(c => { c.textContent = '-'; });
+    });
+});
+</script>
 }

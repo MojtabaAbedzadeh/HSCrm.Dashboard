@@ -90,10 +90,12 @@ $(document).ready(function () {
     h.length != 0 && h.popover();
     c = $("#basic-data-table");
     c.length !== 0 && c.DataTable({
+        order: [],
         dom: '<"row justify-content-between top-information"lf>rt<"row justify-content-between bottom-information"ip><"clear">'
     });
     l = $("#responsive-data-table");
     l.length !== 0 && l.DataTable({
+        order: [],
         aLengthMenu: [
             [20, 30, 50, 75, -1],
             [20, 30, 50, 75, "All"]

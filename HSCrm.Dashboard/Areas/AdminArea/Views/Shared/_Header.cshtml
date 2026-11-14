@@ -236,7 +236,7 @@
                     return d <= in7Days;
                 });
 
-                const riskyCustomers = agingRows.filter(r => (r.bucket91To120 || 0) + (r.bucketOver120 || 0) > 0);
+                const riskyCustomers = agingRows.filter(r => (r.bucket91To180 || 0) + (r.bucketOver180 || 0) > 0);
                 const totalAlerts = dueCheques.length + riskyCustomers.length;
 
                 const badge = document.getElementById('hdrAlertBadge');
@@ -269,7 +269,7 @@
                 });
 
                 riskyCustomers.slice(0, 4).forEach(r => {
-                    const overdue = (r.bucket91To120 || 0) + (r.bucketOver120 || 0);
+                    const overdue = (r.bucket91To180 || 0) + (r.bucketOver180 || 0);
                     alertHtml += `<a href="/AdminArea/Accounting/AgingAndStatements?partyType=1&partyId=${r.partyId}" class="list-group-item list-group-item-action py-2">
                         <div class="d-flex justify-content-between">
                             <strong class="text-dark">${r.partyName}</strong>
