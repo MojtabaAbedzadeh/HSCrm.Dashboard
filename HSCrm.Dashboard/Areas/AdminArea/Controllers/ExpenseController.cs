@@ -1,6 +1,7 @@
 using HSCrm.BussinessLogic.PublicMethod;
 using HSCrm.Dashboard.Controllers;
 using HSCrm.Dashboard.Costants;
+using HSCrm.Dashboard.Extensions;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Mvc;
