@@ -157,6 +157,7 @@
             </div>
         </div>
 
+        <div id="missingVoucherBanner" class="alert alert-warning py-2 small d-none mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2"></div>
         <div id="proformaNoticeBanner" class="alert alert-info py-2 small d-none mb-3"></div>
 
         <ul class="nav nav-tabs mb-3" role="tablist">
@@ -445,9 +446,9 @@
                     : '<span class="badge bg-info text-dark">پیش‌فاکتور</span>';
                 const stBadge = !isFinal
                     ? '<span class="badge bg-secondary">فاقد سند</span>'
-                    : i.settlementStatus === 2
+                    : i.settlementStatus === 3
                         ? '<span class="badge bg-success">تسویه کامل</span>'
-                        : i.settlementStatus === 1
+                        : i.settlementStatus === 2
                             ? '<span class="badge bg-warning text-dark">تسویه جزئی</span>'
                             : '<span class="badge bg-danger">پرداخت‌نشده</span>';
                 const actionHtml = currentPartyType === 1
@@ -531,11 +532,48 @@
                 }
                 document.getElementById('stEffectiveExposure').textContent = formatNum(d.effectiveExposureAmount);
 
+                const mvBanner = document.getElementById('missingVoucherBanner');
+                if (mvBanner) {
+                    if ((d.missingVoucherFinalInvoicesCount || 0) > 0) {
+                        mvBanner.classList.remove('d-none');
+                        mvBanner.innerHTML = `<div><i class="mdi mdi-alert-outline me-1"></i><strong>هشدار مغایرت سند:</strong> این طرف‌حساب دارای <strong>${d.missingVoucherFinalInvoicesCount}</strong> فاکتور نهایی (به مبلغ <strong>${formatNum(d.missingVoucherFinalInvoicesAmount)}</strong> ریال) است که سند حسابداری آن صادر نشده و به همین دلیل در مانده دفتری نیامده است.</div>
+                            <button type="button" class="btn btn-sm btn-warning fw-bold text-dark" onclick="syncMissingVouchers()">
+                                <i class="mdi mdi-sync me-1"></i>صدور خودکار سند جاافتاده
+                            </button>`;
+                    } else {
+                        mvBanner.classList.add('d-none');
+                        mvBanner.innerHTML = '';
+                    }
+                }
+
                 renderStatementTransactions(d);
                 renderStatementInvoices(d);
                 renderStatementCheques(d);
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">${err.message}</td></tr>`;
+            }
+        }
+
+
+        async function syncMissingVouchers() {
+            try {
+                const res = await fetch(`${apiBase}/Accounting/SyncMissingVouchers`, {
+                    method: 'POST',
+                    headers: getAuthHeaders()
+                });
+                const json = await res.json();
+                if (!res.ok || json.status === false) {
+                    throw new Error(json.message || 'خطا در همگام‌سازی اسناد');
+                }
+                if (window.SwalHelper && SwalHelper.success) {
+                    SwalHelper.success(json.message || 'اسناد جاافتاده با موفقیت صادر شد.');
+                }
+                await loadAgingReport();
+                if (currentPartyId) await loadPartyStatement(currentPartyId);
+            } catch (err) {
+                if (window.SwalHelper && SwalHelper.error) {
+                    SwalHelper.error(err.message);
+                }
             }
         }
 

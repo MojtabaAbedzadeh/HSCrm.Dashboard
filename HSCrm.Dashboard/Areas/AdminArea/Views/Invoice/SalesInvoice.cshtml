@@ -708,7 +708,7 @@ $(document).ready(function () {
     .then(res => {
         const list = res.data || [];
         const map = {};
-        list.forEach(s => { map[s.referenceId] = s; });
+        list.forEach(s => { const key = s.salesInvoiceId ?? s.referenceId; if (key) map[key] = s; });
 
         document.querySelectorAll('.si-paid-cell').forEach(cell => {
             const id = Number(cell.getAttribute('data-inv-id'));
@@ -741,9 +741,9 @@ $(document).ready(function () {
                 return;
             }
             const rem = Number(s.remainingAmount || 0);
-            const badge = s.settlementStatus === 2
+            const badge = s.settlementStatus === 3
                 ? '<span class="badge bg-success">تسویه کامل</span>'
-                : s.settlementStatus === 1
+                : s.settlementStatus === 2
                     ? '<span class="badge bg-warning text-dark">تسویه جزئی</span>'
                     : '<span class="badge bg-danger">پرداخت‌نشده</span>';
             cell.innerHTML = `<div class="fw-bold ${rem > 0 ? 'text-danger' : 'text-success'}" dir="ltr">${rem.toLocaleString('fa-IR')}</div>${badge}`;
