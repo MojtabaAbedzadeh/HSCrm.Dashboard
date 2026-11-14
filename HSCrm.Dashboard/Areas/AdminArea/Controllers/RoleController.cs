@@ -1,4 +1,4 @@
-﻿using HSCrm.BussinessLogic.PublicMethod;
+using HSCrm.BussinessLogic.PublicMethod;
 using HSCrm.Dashboard.Controllers;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
@@ -11,7 +11,7 @@ using System.Text;
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,Admin")]
     public class RoleController : BaseController
     {
         private readonly IConfiguration _config;

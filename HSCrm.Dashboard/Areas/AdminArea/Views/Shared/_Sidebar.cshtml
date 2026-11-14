@@ -1,4 +1,4 @@
-﻿@using HSCrm.Dashboard.Models
+@using HSCrm.Dashboard.Models
 @using HSCrm.Dashboard.Services
 @using HSCrm.Dashboard.Services.Interface
 @using Microsoft.AspNetCore.Authorization
@@ -52,8 +52,13 @@
     <div id="sidebar" class="sidebar ec-sidebar-footer">
 
         <!-- Logo -->
+        @{
+            var homeUrl = (User.IsInRole("Owner") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.HasClaim("Permission", HSCrm.Dashboard.Costants.Permissions.Payments.View))
+                ? "/AdminArea/Home/Index"
+                : "/AdminArea/Employee/Index";
+        }
         <div class="ec-brand">
-            <a href="/AdminArea/Home/Index" title="BilgiSoft">
+            <a href="@homeUrl" title="BilgiSoft">
                 <img class="ec-brand-icon" src="~/assets/img/logo/ec-site-logo.png" alt="">
                 <span class="ec-brand-name text-truncate">بیلگی سافت</span>
             </a>

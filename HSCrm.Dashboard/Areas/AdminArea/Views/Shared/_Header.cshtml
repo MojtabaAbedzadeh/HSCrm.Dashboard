@@ -1,5 +1,12 @@
-﻿@using System.Security.Claims
+@using System.Security.Claims
+@using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Extensions
 @{
+    var canViewTreasuryAlerts = User.IsInRole("Owner")
+        || User.IsInRole("Admin")
+        || User.IsInRole("SuperAdmin")
+        || User.HasPermission(Permissions.Payments.View)
+        || User.HasClaim(c => c.Type == "Permission" && (c.Value == "Permissions.Cheques.View" || c.Value == "Permissions.AccountingReports.View"));
     var userImageUrl = User.FindFirst("UserImageUrl")?.Value;
     var firstName = User.FindFirst("UserFirstName")?.Value;
     var lastName = User.FindFirst("UserLastName")?.Value;
@@ -59,6 +66,8 @@
                 </ul>
             </div>
 
+            @if (canViewTreasuryAlerts)
+            {
             <!-- زنگوله هشدار چک‌های سررسید نزدیک و مطالبات معوق -->
             <div class="dropdown notifications-menu d-inline-block me-2">
                 <button class="dropdown-toggle nav-link ec-drop position-relative btn btn-link text-dark p-1" data-bs-toggle="dropdown" aria-expanded="false" title="هشدارهای مالی و چک‌های سررسید نزدیک">
@@ -75,6 +84,7 @@
                     </div>
                 </div>
             </div>
+            }
 
             <ul class="nav navbar-nav">
                 <li class="dropdown user-menu">
@@ -98,15 +108,26 @@
                             </a>
                         </li>
                         <li>
-                            <a href="/AdminArea/FiscalYear/Index">
-                                <i class="mdi mdi-calendar-Lock"></i>مدیریت و بستن سال مالی
+                            <a href="/AdminArea/Employee/Index">
+                                <i class="mdi mdi-account-clock-outline"></i>کارتابل کارمند و کارکرد من
                             </a>
                         </li>
-                        <li>
-                            <a href="/AdminArea/Accounting/Reports">
-                                <i class="mdi mdi-finance"></i>تراز آزمایشی و سود و زیان
-                            </a>
-                        </li>
+                        @if (User.HasPermission(Permissions.FiscalYears.View))
+                        {
+                            <li>
+                                <a href="/AdminArea/FiscalYear/Index">
+                                    <i class="mdi mdi-calendar-Lock"></i>مدیریت و بستن سال مالی
+                                </a>
+                            </li>
+                        }
+                        @if (canViewTreasuryAlerts)
+                        {
+                            <li>
+                                <a href="/AdminArea/Accounting/Reports">
+                                    <i class="mdi mdi-finance"></i>تراز آزمایشی و سود و زیان
+                                </a>
+                            </li>
+                        }
                         <li class="dropdown-footer">
                             <a href="/Account/Logout"><i class="mdi mdi-logout"></i> خروج از سیستم</a>
                         </li>
@@ -220,6 +241,9 @@
                 })
                 .catch(() => {});
 
+            @if (canViewTreasuryAlerts)
+            {
+            <text>
             // ۲. بارگذاری هشدار چک‌های در آستانه سررسید (۷ روز آینده) و مطالبات معوق (+۹۰ روز)
             Promise.all([
                 fetch(`${hdrApiBase}/Cheque/GetAll`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
@@ -281,6 +305,8 @@
 
                 container.innerHTML = alertHtml;
             });
+            </text>
+            }
         });
 
         window.switchActiveFiscalYear = function (fyId, fyStatus, fyTitle) {

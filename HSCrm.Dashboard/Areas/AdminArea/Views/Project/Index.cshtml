@@ -57,6 +57,7 @@
                                     <th>مشتری</th>
                                     <th>شماره تماس مشتری</th>
                                     <th>محل پروژه</th>
+                                    <th>اعضای تیم</th>
                                     <th>وضعیت</th>
                                     <th>فعالیت</th>
                                 </tr>
@@ -69,6 +70,12 @@
                                         <td>@(item.Customer?.Name ?? "-")</td>
                                         <td>@(item.Customer?.Phone ?? "-")</td>
                                         <td>@item.ProjectLocation</td>
+                                        <td>
+                                            <span class="badge bg-info text-dark project-member-count-badge" data-project-id="@item.Id" style="cursor:pointer;"
+                                                  onclick="openProjectMembersModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ProjectTitle ?? ""))')">
+                                                0 عضو
+                                            </span>
+                                        </td>
                                         <td>
                                             <span class="badge @(item.Status == "Active" ? "bg-success" : "bg-danger")">
                                                 @(item.Status == "Active" ? "فعال" : "اتمام پروژه")
@@ -83,9 +90,9 @@
                                                 <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static">
                                                     <span class="sr-only">اطلاعات</span>
                                                 </button>
-                                                @if (ViewBag.FiscalYearStatus == "0")
-                                                {
-                                                    <div class="dropdown-menu">
+                                                <div class="dropdown-menu">
+                                                    @if (ViewBag.FiscalYearStatus == "0")
+                                                    {
                                                         @if (User.HasPermission(Permissions.Projects.Edit))
                                                         {
                                                             <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
@@ -95,20 +102,28 @@
                                                             <a class="dropdown-item" href="#">حذف</a>
                                                         }
                                                         <div class="dropdown-divider"></div>
-                                                        @if (User.HasPermission(Permissions.Expenses.View))
-                                                        {
-                                                            <a class="dropdown-item" href="/adminarea/expense/projectexpenses?projectId=@item.Id">مشاهده هزینه ها</a>
-                                                        }
-                                                        @if (User.HasPermission(Permissions.SalesInvoices.View))
-                                                        {
-                                                            <a class="dropdown-item" href="/adminarea/Invoice/ProjectInvoices?projectId=@item.Id">مشاهده فاکتورها</a>
-                                                        }
-                                                    </div>
-                                                }
-                                                else
-                                                {
-                                                    <div class="dropdown-menu"></div>
-                                                }
+                                                    }
+                                                    @if (User.HasPermission(Permissions.ProjectMembers.View) || User.HasPermission(Permissions.ProjectMembers.Manage))
+                                                    {
+                                                        <a class="dropdown-item text-primary" href="javascript:void(0)" onclick="openProjectMembersModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ProjectTitle ?? ""))')">
+                                                            <i class="mdi mdi-account-multiple-plus me-1"></i>مدیریت اعضای تیم
+                                                        </a>
+                                                    }
+                                                    @if (User.HasPermission(Permissions.WorkLogs.View))
+                                                    {
+                                                        <a class="dropdown-item text-info" href="/AdminArea/ProjectWorkLog/Index?projectId=@item.Id">
+                                                            <i class="mdi mdi-clock-outline me-1"></i>ساعات کاری پروژه
+                                                        </a>
+                                                    }
+                                                    @if (User.HasPermission(Permissions.Expenses.View))
+                                                    {
+                                                        <a class="dropdown-item" href="/adminarea/expense/projectexpenses?projectId=@item.Id">مشاهده هزینه ها</a>
+                                                    }
+                                                    @if (User.HasPermission(Permissions.SalesInvoices.View))
+                                                    {
+                                                        <a class="dropdown-item" href="/adminarea/Invoice/ProjectInvoices?projectId=@item.Id">مشاهده فاکتورها</a>
+                                                    }
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -367,6 +382,260 @@
             console.error(err);
         }
     }
+</script>
+
+
+<!-- مودال مدیریت اعضای تیم پروژه (فاز ۲) -->
+<div class="modal fade" id="projectMembersModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">
+                    <i class="mdi mdi-account-group text-primary me-1"></i>
+                    تیم پروژه: <span id="pmProjectTitle" class="text-primary"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="pmProjectId" value="0" />
+                @if (User.HasPermission(Permissions.ProjectMembers.Manage))
+                {
+                    <div class="card border mb-3 bg-light">
+                        <div class="card-body py-3">
+                            <h6 class="fw-bold mb-3 small text-dark"><i class="mdi mdi-account-plus me-1"></i>افزودن یا ویرایش عضو پروژه</h6>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label small mb-1">کاربر</label>
+                                    <select id="pmUserId" class="form-select form-select-sm">
+                                        <option value="">-- انتخاب کاربر --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small mb-1">سمت در پروژه (اختیاری)</label>
+                                    <input type="text" id="pmRole" class="form-control form-control-sm" placeholder="مثلاً: تکنسین، سرپرست" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small mb-1">نرخ ساعتی (ریال - اختیاری)</label>
+                                    <input type="number" min="0" step="1000" id="pmHourlyRate" class="form-control form-control-sm text-end" placeholder="مثلاً: 2500000" />
+                                </div>
+                                <div class="col-md-2 d-grid">
+                                    <button type="button" id="btnSaveProjectMember" class="btn btn-primary btn-sm" onclick="saveProjectMember()">
+                                        <i class="mdi mdi-content-save me-1"></i>ثبت عضو
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered table-hover align-middle small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>نام و نام خانوادگی</th>
+                                <th>نام کاربری</th>
+                                <th>سمت در پروژه</th>
+                                <th class="text-end">نرخ ساعتی (ریال)</th>
+                                <th>تاریخ عضویت</th>
+                                <th>وضعیت</th>
+                                @if (User.HasPermission(Permissions.ProjectMembers.Manage))
+                                {
+                                    <th class="text-center">عملیات</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody id="pmMembersBody">
+                            <tr><td colspan="7" class="text-center text-muted py-3">در حال بارگذاری...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const pmApiAddr = '@ApiAddress'.replace(/\/+$/, '');
+    const pmToken = '@User.FindFirstValue("Token")';
+    const pmCanManage = @((User.HasPermission(Permissions.ProjectMembers.Manage)).ToString().ToLower());
+    let pmAssignableUsersLoaded = false;
+
+    async function loadProjectMemberCounts() {
+        try {
+            const res = await fetch(`${pmApiAddr}/ProjectMember/GetMemberCounts`, {
+                headers: { 'Authorization': 'Bearer ' + pmToken }
+            });
+            if (!res.ok) return;
+            const json = await res.json();
+            const counts = json.data || {};
+            document.querySelectorAll('.project-member-count-badge').forEach(el => {
+                const pid = el.getAttribute('data-project-id');
+                const cnt = counts[pid] ?? 0;
+                el.textContent = `${cnt} عضو`;
+                el.className = `badge ${cnt > 0 ? 'bg-info text-dark' : 'bg-secondary'} project-member-count-badge`;
+            });
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function loadAssignableUsersOnce() {
+        if (!pmCanManage || pmAssignableUsersLoaded) return;
+        try {
+            const res = await fetch(`${pmApiAddr}/ProjectMember/GetAssignableUsers`, {
+                headers: { 'Authorization': 'Bearer ' + pmToken }
+            });
+            if (!res.ok) return;
+            const json = await res.json();
+            const users = json.data || [];
+            const sel = document.getElementById('pmUserId');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">-- انتخاب کاربر --</option>';
+            users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                opt.textContent = `${u.fullName} (${u.userName})`;
+                sel.appendChild(opt);
+            });
+            pmAssignableUsersLoaded = true;
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function openProjectMembersModal(projectId, projectTitle) {
+        document.getElementById('pmProjectId').value = projectId;
+        document.getElementById('pmProjectTitle').textContent = projectTitle || ('پروژه #' + projectId);
+        if (document.getElementById('pmUserId')) {
+            document.getElementById('pmUserId').value = '';
+            document.getElementById('pmRole').value = '';
+            document.getElementById('pmHourlyRate').value = '';
+        }
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('projectMembersModal'));
+        modal.show();
+        await Promise.all([loadAssignableUsersOnce(), refreshProjectMembersTable(projectId)]);
+    }
+
+    async function refreshProjectMembersTable(projectId) {
+        const body = document.getElementById('pmMembersBody');
+        body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">در حال بارگذاری...</td></tr>';
+        try {
+            const res = await fetch(`${pmApiAddr}/ProjectMember/GetByProject/${projectId}`, {
+                headers: { 'Authorization': 'Bearer ' + pmToken }
+            });
+            const json = await res.json();
+            if (!res.ok || !json.status) {
+                body.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3">${json.message || 'خطا در دریافت اعضای پروژه'}</td></tr>`;
+                return;
+            }
+            const list = json.data || [];
+            if (list.length === 0) {
+                body.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">هنوز هیچ کاربری به این پروژه تخصیص نیافته است.</td></tr>';
+                return;
+            }
+            body.innerHTML = list.map(m => {
+                const safeRole = (m.projectRole || '').replace(/'/g, "\\'");
+                const rateText = m.hourlyRate != null ? Number(m.hourlyRate).toLocaleString('fa-IR') : '-';
+                const actionsTd = pmCanManage ? `
+                    <td class="text-center text-nowrap">
+                        <button type="button" class="btn btn-outline-primary btn-xs py-0 px-2"
+                                onclick="prefillMemberForm('${m.userId}', '${safeRole}', '${m.hourlyRate ?? ''}')">ویرایش</button>
+                        <button type="button" class="btn btn-outline-danger btn-xs py-0 px-2 ms-1"
+                                onclick="removeProjectMember(${m.id})">حذف</button>
+                    </td>` : '';
+                return `<tr>
+                    <td class="fw-bold">${m.fullName}</td>
+                    <td class="font-monospace">${m.userName}</td>
+                    <td>${m.projectRole || '-'}</td>
+                    <td class="text-end font-monospace">${rateText}</td>
+                    <td>${m.joinedAtShamsi || '-'}</td>
+                    <td><span class="badge ${m.isActive ? 'bg-success' : 'bg-secondary'}">${m.isActive ? 'فعال' : 'غیرفعال'}</span></td>
+                    ${actionsTd}
+                </tr>`;
+            }).join('');
+        } catch (err) {
+            console.error(err);
+            body.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-3">خطا در ارتباط با سرور</td></tr>';
+        }
+    }
+
+    function prefillMemberForm(userId, role, hourlyRate) {
+        if (!pmCanManage) return;
+        document.getElementById('pmUserId').value = userId;
+        document.getElementById('pmRole').value = role || '';
+        document.getElementById('pmHourlyRate').value = hourlyRate !== '' ? hourlyRate : '';
+    }
+
+    async function saveProjectMember() {
+        const projectId = parseInt(document.getElementById('pmProjectId').value, 10);
+        const userId = document.getElementById('pmUserId').value;
+        const projectRole = document.getElementById('pmRole').value.trim();
+        const rateRaw = document.getElementById('pmHourlyRate').value.trim();
+        if (!userId) {
+            SwalHelper.warning("لطفاً کاربر را انتخاب نمایید.");
+            return;
+        }
+        const payload = {
+            projectId: projectId,
+            userId: userId,
+            projectRole: projectRole || null,
+            hourlyRate: rateRaw !== '' ? parseFloat(rateRaw) : null,
+            isActive: true
+        };
+        try {
+            const res = await fetch(`${pmApiAddr}/ProjectMember/AddOrUpdateMember`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + pmToken
+                },
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            if (!res.ok || !json.status) {
+                SwalHelper.error(json.message || 'خطا در ثبت عضو پروژه');
+                return;
+            }
+            document.getElementById('pmUserId').value = '';
+            document.getElementById('pmRole').value = '';
+            document.getElementById('pmHourlyRate').value = '';
+            await Promise.all([refreshProjectMembersTable(projectId), loadProjectMemberCounts()]);
+            SwalHelper.success(json.message || 'عضو پروژه با موفقیت ثبت شد.');
+        } catch (err) {
+            SwalHelper.error('خطا در ارتباط با سرور');
+        }
+    }
+
+    async function removeProjectMember(memberId) {
+        const projectId = parseInt(document.getElementById('pmProjectId').value, 10);
+        const conf = await Swal.fire({
+            title: 'حذف عضو از پروژه؟',
+            text: 'کاربر پس از حذف دیگر به این پروژه دسترسی نخواهد داشت.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'بله، حذف شود',
+            cancelButtonText: 'انصراف'
+        });
+        if (!conf.isConfirmed) return;
+        try {
+            const res = await fetch(`${pmApiAddr}/ProjectMember/RemoveMember/${memberId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + pmToken }
+            });
+            const json = await res.json();
+            if (!res.ok || !json.status) {
+                SwalHelper.error(json.message || 'خطا در حذف عضو');
+                return;
+            }
+            await Promise.all([refreshProjectMembersTable(projectId), loadProjectMemberCounts()]);
+            SwalHelper.success(json.message || 'عضو از تیم پروژه حذف شد.');
+        } catch (err) {
+            SwalHelper.error('خطا در ارتباط با سرور');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadProjectMemberCounts);
 </script>
 
 @section AdminScripts {

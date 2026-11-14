@@ -1,0 +1,449 @@
+@using HSCrm.Dashboard.Costants
+@{
+    ViewData["Title"] = "کارتابل کارمند و کارکرد من";
+    ViewData["selected"] = "employee_panel";
+
+    string ApiAddress = ViewBag.ApiAddress ?? "";
+    bool canCreateWorkLog = User.HasPermission(Permissions.WorkLogs.Create);
+    bool canEditWorkLog = User.HasPermission(Permissions.WorkLogs.Edit);
+    bool canDeleteWorkLog = User.HasPermission(Permissions.WorkLogs.Delete);
+    bool canViewWorkLogs = User.HasPermission(Permissions.WorkLogs.View);
+    bool canCreateExpense = User.HasPermission(Permissions.Expenses.Create);
+    bool canCreateSalesInvoice = User.HasPermission(Permissions.SalesInvoices.Create);
+    bool canCreatePurchaseInvoice = User.HasPermission(Permissions.PurchaseInvoices.Create);
+    bool isFyOpen = (ViewBag.FiscalYearStatus?.ToString() ?? "0") == "0";
+}
+
+@section styles {
+    <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
+}
+
+<div class="breadcrumb-wrapper d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold"><i class="mdi mdi-account-clock-outline text-primary me-1"></i>کارتابل کارمند و پروژه‌های من</h1>
+        <p class="breadcrumbs mb-0">
+            <span>مدیریت کارکرد روزانه، هزینه‌ها و فاکتورهای پروژه‌های تخصیص‌یافته</span>
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span id="empAccessBadge" class="badge bg-info text-dark px-3 py-2">در حال بررسی سطح دسترسی...</span>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="loadEmployeeDashboard()">
+            <i class="mdi mdi-refresh me-1"></i>بروزرسانی
+        </button>
+    </div>
+</div>
+
+@if (!isFyOpen)
+{
+    <div class="alert alert-primary mb-4" role="alert">
+        سال مالی انتخاب‌شده بسته است؛ ثبت اطلاعات جدید در این سال مالی غیرفعال می‌باشد.
+    </div>
+}
+
+<!-- کارت‌های خلاصه کارکرد کارمند -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="text-muted small">تعداد پروژه‌های فعال من</div>
+                <h3 class="fw-bold text-primary font-monospace mb-0" id="empProjectsCount">0</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm border-start border-4 border-success">
+            <div class="card-body">
+                <div class="text-muted small">ساعات کار تأییدشده</div>
+                <h3 class="fw-bold text-success font-monospace mb-0" id="empApprovedHours">0</h3>
+                <div class="text-muted small mt-1">جمع کل ثبت‌شده: <span id="empTotalHours">0</span> ساعت</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm border-start border-4 border-warning">
+            <div class="card-body">
+                <div class="text-muted small">ساعات در انتظار تأیید</div>
+                <h3 class="fw-bold text-warning font-monospace mb-0" id="empPendingHours">0</h3>
+                <div class="text-muted small mt-1">رد شده: <span id="empRejectedHours">0</span> ساعت</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm border-start border-4 border-info">
+            <div class="card-body">
+                <div class="text-muted small">دستمزد ساعات تأییدشده (ریال)</div>
+                <h3 class="fw-bold text-info font-monospace mb-0" id="empApprovedWage">0</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- دسترسی سریع متناسب با مجوزهای کاربر -->
+<div class="card card-default mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0 fw-bold"><i class="mdi mdi-flash-outline text-warning me-1"></i>عملیات سریع مجاز برای شما</h5>
+    </div>
+    <div class="card-body d-flex flex-wrap gap-2">
+        @if (isFyOpen && canCreateWorkLog)
+        {
+            <button type="button" class="btn btn-primary" onclick="openEmpWorkLogModal(0, 0)">
+                <i class="mdi mdi-clock-plus-outline me-1"></i>ثبت ساعت کار جدید
+            </button>
+        }
+        @if (isFyOpen && canCreateExpense)
+        {
+            <a href="/AdminArea/Expense/Index" class="btn btn-outline-danger">
+                <i class="mdi mdi-cash-minus me-1"></i>ثبت هزینه پروژه
+            </a>
+        }
+        @if (isFyOpen && canCreateSalesInvoice)
+        {
+            <a href="/AdminArea/Invoice/AddSaleInvoice" class="btn btn-outline-success">
+                <i class="mdi mdi-receipt me-1"></i>ثبت فاکتور فروش پروژه
+            </a>
+        }
+        @if (isFyOpen && canCreatePurchaseInvoice)
+        {
+            <a href="/AdminArea/Invoice/AddPurchaseInvoice" class="btn btn-outline-dark" title="ثبت فاکتور خرید استاندارد با تأمین‌کننده و انبار (بدون مشتری و پروژه)">
+                <i class="mdi mdi-cart-plus me-1"></i>ثبت فاکتور خرید (تأمین‌کننده و انبار)
+            </a>
+        }
+        @if (canViewWorkLogs)
+        {
+            <a href="/AdminArea/ProjectWorkLog/Index" class="btn btn-outline-info">
+                <i class="mdi mdi-format-list-bulleted me-1"></i>مشاهده کامل تایم‌شیت
+            </a>
+        }
+    </div>
+</div>
+
+<!-- لیست پروژه‌های تخصیص‌یافته -->
+<div class="card card-default mb-4">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold"><i class="mdi mdi-folder-account-outline text-primary me-1"></i>پروژه‌های تخصیص‌یافته به من</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle small">
+                <thead class="table-light">
+                    <tr>
+                        <th>عنوان پروژه</th>
+                        <th>مشتری</th>
+                        <th>محل پروژه</th>
+                        <th>سمت من</th>
+                        <th class="text-end">نرخ ساعتی (ریال)</th>
+                        <th class="text-center">ساعات من (تأیید / انتظار)</th>
+                        <th class="text-end">دستمزد تأییدشده (ریال)</th>
+                        <th class="text-center">عملیات سریع روی پروژه</th>
+                    </tr>
+                </thead>
+                <tbody id="empProjectsBody">
+                    <tr><td colspan="8" class="text-center text-muted py-4">در حال بارگذاری...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- آخرین ساعات کاری ثبت‌شده -->
+<div class="card card-default">
+    <div class="card-header bg-light">
+        <h5 class="mb-0 fw-bold"><i class="mdi mdi-history text-secondary me-1"></i>آخرین ساعات کاری ثبت‌شده من</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle small">
+                <thead class="table-light">
+                    <tr>
+                        <th>تاریخ</th>
+                        <th>پروژه</th>
+                        <th class="text-center">ساعت</th>
+                        <th class="text-end">دستمزد (ریال)</th>
+                        <th>شرح فعالیت</th>
+                        <th>وضعیت بررسی</th>
+                        <th class="text-center">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody id="empWorkLogsBody">
+                    <tr><td colspan="7" class="text-center text-muted py-4">در حال بارگذاری...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- مودال ثبت / ویرایش ساعت کار در کارتابل کارمند -->
+<div class="modal fade" id="empWorkLogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="empWlModalTitle">ثبت ساعت کار</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="empWlId" value="0" />
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">پروژه <span class="text-danger">*</span></label>
+                    <select id="empWlProjectId" class="form-select">
+                        <option value="">-- انتخاب پروژه --</option>
+                    </select>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">تاریخ کارکرد <span class="text-danger">*</span></label>
+                        <input type="text" id="empWlDate" class="form-control persian-date-emp text-end" autocomplete="off" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">مدت (ساعت) <span class="text-danger">*</span></label>
+                        <input type="number" id="empWlHours" class="form-control text-end" min="0.25" max="24" step="0.25" placeholder="مثلاً: 4" />
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">شرح کار انجام‌شده <span class="text-danger">*</span></label>
+                    <textarea id="empWlDesc" class="form-control" rows="3" maxlength="1000" placeholder="توضیح فعالیت انجام‌شده..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="saveEmpWorkLog()">
+                    <i class="mdi mdi-content-save me-1"></i>ثبت ساعت کار
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section AdminScripts {
+    <script src="~/lib/persiandate/persian-date.js"></script>
+    <script src="~/lib/persiandate/persian-datepicker.js"></script>
+    <script>
+        const empApiAddr = '@ApiAddress'.replace(/\/+$/, '');
+        const empToken = '@User.FindFirstValue("Token")';
+        const empCanCreateWl = @canCreateWorkLog.ToString().ToLower();
+        const empCanEditWl = @canEditWorkLog.ToString().ToLower();
+        const empCanDeleteWl = @canDeleteWorkLog.ToString().ToLower();
+        const empCanCreateExp = @canCreateExpense.ToString().ToLower();
+        const empCanCreateSale = @canCreateSalesInvoice.ToString().ToLower();
+        const empIsFyOpen = @isFyOpen.ToString().ToLower();
+        let empDashboardData = null;
+
+        function normalizeDigits(str) {
+            return (str || '').trim()
+                .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+                .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+        }
+
+        function shamsiToIso(val) {
+            const raw = normalizeDigits(val);
+            if (!raw) return '';
+            const parts = raw.split('/');
+            if (parts.length === 3 && parseInt(parts[0], 10) < 1900 && typeof persianDate !== 'undefined') {
+                return new persianDate([parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2], 10)])
+                    .toCalendar('gregorian')
+                    .toLocale('en')
+                    .format('YYYY-MM-DD');
+            }
+            return raw.replaceAll('/', '-');
+        }
+
+        async function loadEmployeeDashboard() {
+            try {
+                const res = await fetch(`${empApiAddr}/ProjectWorkLog/GetEmployeeDashboard`, {
+                    headers: { 'Authorization': 'Bearer ' + empToken }
+                });
+                const json = await res.json();
+                if (!res.ok || !json.status || !json.data) {
+                    SwalHelper.error(json.message || 'خطا در دریافت اطلاعات کارتابل');
+                    return;
+                }
+                empDashboardData = json.data;
+                renderEmployeeDashboard(empDashboardData);
+            } catch (err) {
+                console.error(err);
+                SwalHelper.error('خطا در ارتباط با سرور');
+            }
+        }
+
+        function renderEmployeeDashboard(d) {
+            const badge = document.getElementById('empAccessBadge');
+            if (d.isFullAccess) {
+                badge.textContent = 'دسترسی کامل مدیریتی (مشاهده تمام پروژه‌ها)';
+                badge.className = 'badge bg-success px-3 py-2';
+            } else {
+                badge.textContent = 'کاربر محدود پروژه (فقط پروژه‌های تخصیص‌یافته)';
+                badge.className = 'badge bg-info text-dark px-3 py-2';
+            }
+
+            document.getElementById('empProjectsCount').textContent = Number(d.assignedProjectsCount || 0).toLocaleString('fa-IR');
+            document.getElementById('empApprovedHours').textContent = Number(d.approvedHours || 0).toLocaleString('fa-IR');
+            document.getElementById('empTotalHours').textContent = Number(d.totalLoggedHours || 0).toLocaleString('fa-IR');
+            document.getElementById('empPendingHours').textContent = Number(d.pendingHours || 0).toLocaleString('fa-IR');
+            document.getElementById('empRejectedHours').textContent = Number(d.rejectedHours || 0).toLocaleString('fa-IR');
+            document.getElementById('empApprovedWage').textContent = Math.round(Number(d.approvedWageCost || 0)).toLocaleString('fa-IR');
+
+            const sel = document.getElementById('empWlProjectId');
+            sel.innerHTML = '<option value="">-- انتخاب پروژه --</option>';
+            (d.projects || []).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.projectId;
+                opt.textContent = p.projectTitle;
+                sel.appendChild(opt);
+            });
+
+            const pBody = document.getElementById('empProjectsBody');
+            if (!d.projects || d.projects.length === 0) {
+                pBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">هنوز هیچ پروژه‌ای به شما تخصیص داده نشده است. لطفاً با مدیر مجموعه هماهنگ کنید.</td></tr>';
+            } else {
+                pBody.innerHTML = d.projects.map(p => {
+                    let actions = '';
+                    if (empIsFyOpen) {
+                        if (empCanCreateWl) {
+                            actions += `<button type="button" class="btn btn-primary btn-xs py-0 px-2 me-1" onclick="openEmpWorkLogModal(0, ${p.projectId})">ثبت ساعت کار</button>`;
+                        }
+                        if (empCanCreateExp) {
+                            actions += `<a href="/AdminArea/Expense/Index?projectId=${p.projectId}" class="btn btn-outline-danger btn-xs py-0 px-2 me-1">ثبت هزینه</a>`;
+                        }
+                        if (empCanCreateSale) {
+                            actions += `<a href="/AdminArea/Invoice/AddSaleInvoice?projectId=${p.projectId}" class="btn btn-outline-success btn-xs py-0 px-2">فاکتور فروش</a>`;
+                        }
+                    }
+                    if (!actions) actions = '<span class="text-muted">-</span>';
+
+                    return `<tr>
+                        <td class="fw-bold">${p.projectTitle}</td>
+                        <td>${p.customerName || '-'}</td>
+                        <td>${p.projectLocation || '-'}</td>
+                        <td>${p.projectRole || '-'}</td>
+                        <td class="text-end font-monospace">${p.hourlyRate != null ? Number(p.hourlyRate).toLocaleString('fa-IR') : '-'}</td>
+                        <td class="text-center">
+                            <span class="badge bg-success">${Number(p.myApprovedHours || 0).toLocaleString('fa-IR')}</span>
+                            /
+                            <span class="badge bg-warning text-dark">${Number(p.myPendingHours || 0).toLocaleString('fa-IR')}</span>
+                        </td>
+                        <td class="text-end font-monospace fw-bold">${Math.round(Number(p.myApprovedWageCost || 0)).toLocaleString('fa-IR')}</td>
+                        <td class="text-center text-nowrap">${actions}</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            const wBody = document.getElementById('empWorkLogsBody');
+            const logs = d.recentWorkLogs || [];
+            if (logs.length === 0) {
+                wBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">هنوز ساعت کاری ثبت نکرده‌اید.</td></tr>';
+            } else {
+                wBody.innerHTML = logs.map(w => {
+                    let statusBadge = `<span class="badge bg-warning text-dark">${w.statusTitle || 'در انتظار تأیید'}</span>`;
+                    if (w.status === 1) statusBadge = `<span class="badge bg-success">${w.statusTitle || 'تأیید شده'}</span>`;
+                    if (w.status === 2) statusBadge = `<span class="badge bg-danger">${w.statusTitle || 'رد شده'}</span>`;
+                    const note = w.reviewNote ? `<div class="text-muted mt-1" style="font-size:11px;">یادداشت: ${w.reviewNote}</div>` : '';
+
+                    let ops = '';
+                    if (empIsFyOpen && w.status === 0) {
+                        if (empCanEditWl) ops += `<button type="button" class="btn btn-outline-primary btn-xs py-0 px-2 me-1" onclick="openEmpWorkLogModal(${w.id}, ${w.projectId})">ویرایش</button>`;
+                        if (empCanDeleteWl) ops += `<button type="button" class="btn btn-outline-danger btn-xs py-0 px-2" onclick="deleteEmpWorkLog(${w.id})">حذف</button>`;
+                    }
+                    if (!ops) ops = '<span class="text-muted">-</span>';
+
+                    return `<tr>
+                        <td class="text-nowrap">${w.workDateShamsi || '-'}</td>
+                        <td class="fw-bold">${w.projectTitle}</td>
+                        <td class="text-center font-monospace fw-bold">${Number(w.hours).toLocaleString('fa-IR')}</td>
+                        <td class="text-end font-monospace">${Math.round(Number(w.wageCost || 0)).toLocaleString('fa-IR')}</td>
+                        <td>${w.description}</td>
+                        <td>${statusBadge}${note}</td>
+                        <td class="text-center text-nowrap">${ops}</td>
+                    </tr>`;
+                }).join('');
+            }
+        }
+
+        function openEmpWorkLogModal(workLogId, projectId) {
+            document.getElementById('empWlId').value = workLogId || 0;
+            if (workLogId && workLogId > 0 && empDashboardData) {
+                const item = (empDashboardData.recentWorkLogs || []).find(x => x.id === workLogId);
+                if (!item) return;
+                document.getElementById('empWlModalTitle').textContent = 'ویرایش ساعت کار';
+                document.getElementById('empWlProjectId').value = item.projectId;
+                document.getElementById('empWlDate').value = item.workDateShamsi;
+                document.getElementById('empWlHours').value = item.hours;
+                document.getElementById('empWlDesc').value = item.description;
+            } else {
+                document.getElementById('empWlModalTitle').textContent = 'ثبت ساعت کار جدید';
+                document.getElementById('empWlProjectId').value = projectId > 0 ? String(projectId) : '';
+                document.getElementById('empWlHours').value = '';
+                document.getElementById('empWlDesc').value = '';
+            }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('empWorkLogModal')).show();
+        }
+
+        async function saveEmpWorkLog() {
+            const id = parseInt(document.getElementById('empWlId').value, 10) || 0;
+            const projectId = parseInt(document.getElementById('empWlProjectId').value, 10);
+            const workDate = shamsiToIso(document.getElementById('empWlDate').value);
+            const hours = parseFloat(document.getElementById('empWlHours').value);
+            const description = document.getElementById('empWlDesc').value.trim();
+
+            if (!projectId) { SwalHelper.warning('لطفاً پروژه را انتخاب کنید.'); return; }
+            if (!workDate) { SwalHelper.warning('لطفاً تاریخ کارکرد را وارد کنید.'); return; }
+            if (!hours || hours < 0.25 || hours > 24) { SwalHelper.warning('ساعت کار باید بین ۰٫۲۵ تا ۲۴ ساعت باشد.'); return; }
+            if (!description) { SwalHelper.warning('لطفاً شرح فعالیت را وارد کنید.'); return; }
+
+            const isEdit = id > 0;
+            const url = isEdit ? `${empApiAddr}/ProjectWorkLog/UpdateWorkLog` : `${empApiAddr}/ProjectWorkLog/CreateWorkLog`;
+            const payload = isEdit
+                ? { id, projectId, workDate, hours, description }
+                : { projectId, workDate, hours, description };
+
+            try {
+                const res = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + empToken },
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if (!res.ok || !json.status) {
+                    SwalHelper.error(json.message || 'خطا در ثبت ساعت کار');
+                    return;
+                }
+                bootstrap.Modal.getInstance(document.getElementById('empWorkLogModal'))?.hide();
+                await loadEmployeeDashboard();
+                SwalHelper.success(json.message || 'ساعت کار با موفقیت ثبت شد.');
+            } catch (err) {
+                SwalHelper.error('خطا در ارتباط با سرور');
+            }
+        }
+
+        async function deleteEmpWorkLog(id) {
+            const conf = await Swal.fire({
+                title: 'حذف ساعت کار؟',
+                text: 'این رکورد حذف خواهد شد.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'بله، حذف شود',
+                cancelButtonText: 'انصراف'
+            });
+            if (!conf.isConfirmed) return;
+            try {
+                const res = await fetch(`${empApiAddr}/ProjectWorkLog/DeleteWorkLog/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + empToken }
+                });
+                const json = await res.json();
+                if (!res.ok || !json.status) {
+                    SwalHelper.error(json.message || 'خطا در حذف ساعت کار');
+                    return;
+                }
+                await loadEmployeeDashboard();
+                SwalHelper.success(json.message || 'حذف شد.');
+            } catch (err) {
+                SwalHelper.error('خطا در ارتباط با سرور');
+            }
+        }
+
+        $(document).ready(function () {
+            $('.persian-date-emp').persianDatepicker({ format: 'YYYY/MM/DD', autoClose: true, initialValue: true, initialValueType: 'persian' });
+            loadEmployeeDashboard();
+        });
+    </script>
+}

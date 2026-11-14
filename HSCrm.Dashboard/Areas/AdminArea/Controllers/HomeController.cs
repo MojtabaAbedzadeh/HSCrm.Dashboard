@@ -1,5 +1,6 @@
-﻿using HSCrm.Dashboard.Controllers;
-using Microsoft.AspNetCore.Authorization;
+using HSCrm.Dashboard.Controllers;
+using HSCrm.Dashboard.Costants;
+using HSCrm.Dashboard.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -8,12 +9,23 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
     [Area(nameof(AdminArea))]
     public class HomeController : BaseController
     {
-        private readonly IConfiguration _config;
         public HomeController(IConfiguration config) : base(config)
         {
         }
+
         public IActionResult Index()
         {
+            var isFullAccess = User.IsInRole("Owner")
+                || User.IsInRole("Admin")
+                || User.IsInRole("SuperAdmin")
+                || User.HasPermission(Permissions.Payments.View)
+                || User.HasClaim(c => c.Type == "Permission" && c.Value == "Permissions.AccountingReports.View");
+
+            if (!isFullAccess)
+            {
+                return Redirect("/AdminArea/Employee/Index");
+            }
+
             ViewBag.FiscalYearStatus = User.FindFirstValue("FiscalYearStatus");
             return View();
         }

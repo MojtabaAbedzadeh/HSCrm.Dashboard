@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace HSCrm.Common.PublicTools
@@ -131,6 +131,13 @@ namespace HSCrm.Common.PublicTools
         {
             [Display(Name = "مشتری (حساب دریافتنی)")] Customer = 1,
             [Display(Name = "تأمین‌کننده (حساب پرداختنی)")] Supplier = 2
+        }
+
+        public enum WorkLogStatus : byte
+        {
+            [Display(Name = "در انتظار تأیید")] Pending = 0,
+            [Display(Name = "تأیید شده")] Approved = 1,
+            [Display(Name = "رد شده")] Rejected = 2
         }
     }
 }

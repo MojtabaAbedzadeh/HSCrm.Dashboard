@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["AdminTitle"] = "ثبت فاکتور";
     ViewData["selected"] = "warehouse_invoice";
     string ApiAddress = ViewBag.ApiAddress;
@@ -199,6 +199,11 @@ else
                 initialValue: true,
                 initialValueType: 'persian'
             });
+            var urlParams = new URLSearchParams(window.location.search);
+            var preProjectId = urlParams.get('projectId');
+            if (preProjectId && $('#ProjectId option[value="' + preProjectId + '"]').length > 0) {
+                $('#ProjectId').val(preProjectId);
+            }
         });        
     </script>
 

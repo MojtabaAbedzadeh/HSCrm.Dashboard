@@ -344,13 +344,14 @@
         $(document).ready(function () {
             $.ajax({
                 type: 'GET',
-                url: '@ApiAddress' + 'BankAccount/GetAll?tenantId=@ViewBag.TenantId',
+                url: '@ApiAddress' + 'BankAccount/DropdownList',
                 headers: { "Authorization": "Bearer " + "@User.FindFirstValue("Token")" },
                 success: function (res) {
                     var list = res.data || res || [];
                     list.forEach(function (b) {
-                        var title = (b.bankName || b.title || 'حساب') + (b.accountNumber ? ' - ' + b.accountNumber : '');
-                        var opt = '<option value="' + b.id + '">' + title + '</option>';
+                        var id = b.drId ?? b.id;
+                        var title = b.drName || ((b.bankName || b.title || 'حساب') + (b.accountNumber ? ' - ' + b.accountNumber : ''));
+                        var opt = '<option value="' + id + '">' + title + '</option>';
                         $('#BankAccountId').append(opt);
                         $('#BankAccountIdE').append(opt);
                     });
@@ -358,16 +359,26 @@
             });
             $.ajax({
                 type: 'GET',
-                url: '@ApiAddress' + 'Supplier/GetByTenant?tenantId=@ViewBag.TenantId',
+                url: '@ApiAddress' + 'Supplier/SupplierDropdownList?tenantId=@ViewBag.TenantId',
                 headers: { "Authorization": "Bearer " + "@User.FindFirstValue("Token")" },
                 success: function (res) {
                     var list = res.data || res || [];
                     list.forEach(function (s) {
-                        var name = s.supplierFullName || s.name || ('تأمین‌کننده #' + s.id);
-                        $('#SupplierId').append('<option value="' + s.id + '">' + name + '</option>');
+                        var id = s.drId ?? s.id;
+                        var name = s.drName || s.supplierFullName || s.name || ('تأمین‌کننده #' + id);
+                        $('#SupplierId').append('<option value="' + id + '">' + name + '</option>');
                     });
                 }
             });
+            var urlParams = new URLSearchParams(window.location.search);
+            var preProjectId = urlParams.get('projectId');
+            if (preProjectId && $('#ProjectId option[value="' + preProjectId + '"]').length > 0) {
+                $('#ProjectId').val(preProjectId);
+                if ($('#addExpense').length > 0) {
+                    var addExpModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('addExpense'));
+                    addExpModal.show();
+                }
+            }
             $('.persian-date').persianDatepicker({
                 format: 'YYYY/MM/DD',
                 autoClose: true,

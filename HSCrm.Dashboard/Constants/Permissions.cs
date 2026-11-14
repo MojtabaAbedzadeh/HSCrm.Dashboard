@@ -1,4 +1,4 @@
-﻿namespace HSCrm.Dashboard.Costants;
+namespace HSCrm.Dashboard.Costants;
 
 public static class Permissions
 {
@@ -193,5 +193,20 @@ public static class Permissions
         public const string Create = "warehouses.create";
         public const string Edit = "warehouses.edit";
         public const string Delete = "warehouses.delete";
+    }
+
+    public static class ProjectMembers
+    {
+        public const string View = "projectMembers.view";
+        public const string Manage = "projectMembers.manage";
+    }
+
+    public static class WorkLogs
+    {
+        public const string View = "workLogs.view";
+        public const string Create = "workLogs.create";
+        public const string Edit = "workLogs.edit";
+        public const string Delete = "workLogs.delete";
+        public const string Approve = "workLogs.approve";
     }
 }

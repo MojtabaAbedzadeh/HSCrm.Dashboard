@@ -34,7 +34,9 @@ namespace Automation.Dashboard.Controllers
         {
             if (HttpContext.User.Identity != null && HttpContext.User.Identity.IsAuthenticated)
             {
-                return Redirect("/AdminArea/Home");
+                var roles = HttpContext.User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value);
+                var perms = HttpContext.User.Claims.Where(c => c.Type == "Permission").Select(c => c.Value);
+                return Redirect(GetPostLoginRedirectUrl(roles, perms));
             }
             return View();
         }
@@ -162,7 +164,20 @@ namespace Automation.Dashboard.Controllers
                 principal,
                 new AuthenticationProperties { IsPersistent = true });
 
-            return Redirect("/AdminArea/Home/Index");
+            return Redirect(GetPostLoginRedirectUrl(result.Roles, result.Permissions));
+        }
+
+        private static string GetPostLoginRedirectUrl(IEnumerable<string>? roles, IEnumerable<string>? permissions)
+        {
+            var roleSet = new HashSet<string>(roles ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            if (roleSet.Contains("Owner") || roleSet.Contains("Admin") || roleSet.Contains("SuperAdmin"))
+                return "/AdminArea/Home/Index";
+
+            var permSet = new HashSet<string>(permissions ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            if (permSet.Contains("payments.view") || permSet.Contains("Permissions.AccountingReports.View"))
+                return "/AdminArea/Home/Index";
+
+            return "/AdminArea/Employee/Index";
         }
 
         public async Task<IActionResult> Logout()

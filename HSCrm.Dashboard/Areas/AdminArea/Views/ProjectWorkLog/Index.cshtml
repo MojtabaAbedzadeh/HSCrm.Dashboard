@@ -1,0 +1,598 @@
+@using HSCrm.Dashboard.Costants
+@using HSCrm.Models.ModelDto
+@{
+    ViewData["Title"] = "ساعات کاری و تایم‌شیت پروژه‌ها";
+    ViewData["selected"] = "project_worklogs";
+
+    string ApiAddress = ViewBag.ApiAddress ?? "";
+    int? selectedProjectId = ViewBag.SelectedProjectId as int?;
+    List<ProjetcsDropDown> projects = ViewBag.Projects ?? new List<ProjetcsDropDown>();
+    List<AssignableUserDto> assignableUsers = ViewBag.AssignableUsers ?? new List<AssignableUserDto>();
+
+    bool canCreate = User.HasPermission(Permissions.WorkLogs.Create);
+    bool canEdit = User.HasPermission(Permissions.WorkLogs.Edit);
+    bool canDelete = User.HasPermission(Permissions.WorkLogs.Delete);
+    bool canApprove = User.HasPermission(Permissions.WorkLogs.Approve);
+    bool isFyOpen = (ViewBag.FiscalYearStatus?.ToString() ?? "0") == "0";
+}
+
+@section styles {
+    <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
+}
+
+<div class="breadcrumb-wrapper d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold"><i class="mdi mdi-clock-outline text-primary me-1"></i>ساعات کاری و تایم‌شیت پروژه‌ها</h1>
+        <p class="breadcrumbs mb-0">
+            <span><a href="/AdminArea/Employee/Index">کارتابل کارمند</a></span>
+            <span><i class="mdi mdi-chevron-left"></i></span>
+            <span>مدیریت ساعات کاری</span>
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (isFyOpen && canCreate)
+        {
+            <button type="button" class="btn btn-primary btn-sm" onclick="openWorkLogModal(0)">
+                <i class="mdi mdi-plus me-1"></i>ثبت ساعت کار جدید
+            </button>
+        }
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="loadWorkLogs()">
+            <i class="mdi mdi-refresh me-1"></i>بروزرسانی
+        </button>
+    </div>
+</div>
+
+@if (!isFyOpen)
+{
+    <div class="alert alert-primary mb-4" role="alert">
+        سال مالی انتخاب‌شده بسته است؛ امکان ثبت، ویرایش یا تأیید ساعات کاری وجود ندارد.
+    </div>
+}
+
+<!-- کارت‌های خلاصه ساعات کاری -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm border-start border-4 border-primary">
+            <div class="card-body">
+                <div class="text-muted small">جمع ساعات ثبت‌شده</div>
+                <h4 class="fw-bold text-primary font-monospace mb-0" id="wlSumTotalHours">0</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm border-start border-4 border-success">
+            <div class="card-body">
+                <div class="text-muted small">ساعات تأییدشده</div>
+                <h4 class="fw-bold text-success font-monospace mb-0" id="wlSumApprovedHours">0</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm border-start border-4 border-warning">
+            <div class="card-body">
+                <div class="text-muted small">ساعات در انتظار تأیید</div>
+                <h4 class="fw-bold text-warning font-monospace mb-0" id="wlSumPendingHours">0</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm border-start border-4 border-info">
+            <div class="card-body">
+                <div class="text-muted small">جمع دستمزد تأییدشده (ریال)</div>
+                <h4 class="fw-bold text-info font-monospace mb-0" id="wlSumApprovedWage">0</h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- فیلترها و عملیات گروهی -->
+<div class="card card-default mb-4">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small mb-1">پروژه</label>
+                <select id="fltProjectId" class="form-select form-select-sm">
+                    <option value="">همه پروژه‌های مجاز</option>
+                    @foreach (var p in projects)
+                    {
+                        if (selectedProjectId.HasValue && p.DrId == selectedProjectId.Value.ToString())
+                        {
+                            <option value="@p.DrId" selected>@p.DrName</option>
+                        }
+                        else
+                        {
+                            <option value="@p.DrId">@p.DrName</option>
+                        }
+                    }
+                </select>
+            </div>
+            @if (assignableUsers.Any())
+            {
+                <div class="col-md-2">
+                    <label class="form-label small mb-1">کارمند</label>
+                    <select id="fltUserId" class="form-select form-select-sm">
+                        <option value="">همه کارمندان</option>
+                        @foreach (var u in assignableUsers)
+                        {
+                            <option value="@u.Id">@u.FullName (@u.UserName)</option>
+                        }
+                    </select>
+                </div>
+            }
+            <div class="col-md-2">
+                <label class="form-label small mb-1">وضعیت</label>
+                <select id="fltStatus" class="form-select form-select-sm">
+                    <option value="">همه وضعیت‌ها</option>
+                    <option value="0">در انتظار تأیید</option>
+                    <option value="1">تأیید شده</option>
+                    <option value="2">رد شده</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">از تاریخ</label>
+                <input type="text" id="fltFromDate" class="form-control form-control-sm persian-date-flt text-end" autocomplete="off" placeholder="۱۴۰۵/۰۱/۰۱" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">تا تاریخ</label>
+                <input type="text" id="fltToDate" class="form-control form-control-sm persian-date-flt text-end" autocomplete="off" placeholder="۱۴۰۵/۱۲/۲۹" />
+            </div>
+            <div class="col-md-1 d-grid">
+                <button type="button" class="btn btn-primary btn-sm" onclick="loadWorkLogs()">اعمال</button>
+            </div>
+        </div>
+
+        @if (isFyOpen && canApprove)
+        {
+            <div class="mt-3 pt-3 border-top d-flex flex-wrap align-items-center gap-2">
+                <span class="small text-muted">عملیات گروهی روی موارد «در انتظار تأیید» انتخاب‌شده:</span>
+                <button type="button" class="btn btn-success btn-sm" onclick="batchReviewSelected(true)">
+                    <i class="mdi mdi-check-all me-1"></i>تأیید گروهی
+                </button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="batchReviewSelected(false)">
+                    <i class="mdi mdi-close-circle-outline me-1"></i>رد گروهی
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- جدول ساعات کاری -->
+<div class="card card-default">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle small" id="workLogsTable">
+                <thead class="table-light">
+                    <tr>
+                        @if (isFyOpen && canApprove)
+                        {
+                            <th class="text-center" style="width: 36px;">
+                                <input type="checkbox" id="wlSelectAll" onchange="toggleSelectAllWorkLogs(this)" />
+                            </th>
+                        }
+                        <th>تاریخ</th>
+                        <th>پروژه</th>
+                        <th>کارمند</th>
+                        <th class="text-center">ساعت کار</th>
+                        <th class="text-end">نرخ ساعتی (ریال)</th>
+                        <th class="text-end">هزینه دستمزد (ریال)</th>
+                        <th>شرح فعالیت</th>
+                        <th>وضعیت</th>
+                        <th class="text-center">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody id="workLogsBody">
+                    <tr><td colspan="10" class="text-center text-muted py-4">در حال بارگذاری...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- مودال ثبت / ویرایش ساعت کار -->
+<div class="modal fade" id="workLogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="workLogModalTitle">ثبت ساعت کار</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="wlId" value="0" />
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">پروژه <span class="text-danger">*</span></label>
+                    <select id="wlProjectId" class="form-select">
+                        <option value="">-- انتخاب پروژه --</option>
+                        @foreach (var p in projects)
+                        {
+                            <option value="@p.DrId">@p.DrName</option>
+                        }
+                    </select>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">تاریخ کارکرد <span class="text-danger">*</span></label>
+                        <input type="text" id="wlWorkDate" class="form-control persian-date-modal text-end" autocomplete="off" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">مدت (ساعت) <span class="text-danger">*</span></label>
+                        <input type="number" id="wlHours" class="form-control text-end" min="0.25" max="24" step="0.25" placeholder="مثلاً: 4.5" />
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">شرح کار انجام‌شده <span class="text-danger">*</span></label>
+                    <textarea id="wlDescription" class="form-control" rows="3" maxlength="1000" placeholder="توضیح دقیق فعالیت انجام‌شده در این روز..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="saveWorkLog()">
+                    <i class="mdi mdi-content-save me-1"></i>ذخیره ساعت کار
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال بررسی مدیر (تأیید یا رد) -->
+<div class="modal fade" id="reviewWorkLogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="reviewModalTitle">بررسی ساعت کار</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="rvWorkLogId" value="0" />
+                <input type="hidden" id="rvIsApproved" value="true" />
+                <div class="alert alert-light border small mb-3" id="rvSummaryBox"></div>
+                <div class="mb-3" id="rvOverrideRateWrap">
+                    <label class="form-label small fw-bold">تغییر نرخ ساعتی برای این رکورد (اختیاری - ریال)</label>
+                    <input type="number" id="rvOverrideRate" class="form-control text-end" min="0" step="1000" placeholder="در صورت خالی ماندن، نرخ فعلی عضو پروژه اعمال می‌شود" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold" id="rvNoteLabel">یادداشت مدیر</label>
+                    <textarea id="rvNote" class="form-control" rows="2" maxlength="500" placeholder="توضیح یا علت تأیید / رد..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-sm" id="rvConfirmBtn" onclick="submitWorkLogReview()">تأیید</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section AdminScripts {
+    <script src="~/lib/persiandate/persian-date.js"></script>
+    <script src="~/lib/persiandate/persian-datepicker.js"></script>
+    <script>
+        const wlApiAddr = '@ApiAddress'.replace(/\/+$/, '');
+        const wlToken = '@User.FindFirstValue("Token")';
+        const wlCurrentUserId = '@User.FindFirstValue(ClaimTypes.NameIdentifier)';
+        const wlCanEdit = @canEdit.ToString().ToLower();
+        const wlCanDelete = @canDelete.ToString().ToLower();
+        const wlCanApprove = @canApprove.ToString().ToLower();
+        const wlIsFyOpen = @isFyOpen.ToString().ToLower();
+        let wlCachedItems = [];
+
+        function normalizeDigits(str) {
+            return (str || '').trim()
+                .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+                .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+        }
+
+        function shamsiToIso(val) {
+            const raw = normalizeDigits(val);
+            if (!raw) return '';
+            const parts = raw.split('/');
+            if (parts.length === 3 && parseInt(parts[0], 10) < 1900 && typeof persianDate !== 'undefined') {
+                return new persianDate([parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2], 10)])
+                    .toCalendar('gregorian')
+                    .toLocale('en')
+                    .format('YYYY-MM-DD');
+            }
+            return raw.replaceAll('/', '-');
+        }
+
+        function getStatusBadge(status, title) {
+            if (status === 1) return `<span class="badge bg-success">${title || 'تأیید شده'}</span>`;
+            if (status === 2) return `<span class="badge bg-danger">${title || 'رد شده'}</span>`;
+            return `<span class="badge bg-warning text-dark">${title || 'در انتظار تأیید'}</span>`;
+        }
+
+        async function loadWorkLogs() {
+            const params = new URLSearchParams();
+            const pid = document.getElementById('fltProjectId')?.value;
+            const uid = document.getElementById('fltUserId')?.value;
+            const st = document.getElementById('fltStatus')?.value;
+            const fd = shamsiToIso(document.getElementById('fltFromDate')?.value);
+            const td = shamsiToIso(document.getElementById('fltToDate')?.value);
+            if (pid) params.append('projectId', pid);
+            if (uid) params.append('userId', uid);
+            if (st !== '' && st !== undefined) params.append('status', st);
+            if (fd) params.append('fromDate', fd);
+            if (td) params.append('toDate', td);
+
+            const body = document.getElementById('workLogsBody');
+            body.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">در حال بارگذاری...</td></tr>';
+
+            try {
+                const res = await fetch(`${wlApiAddr}/ProjectWorkLog/GetWorkLogs?${params.toString()}`, {
+                    headers: { 'Authorization': 'Bearer ' + wlToken }
+                });
+                const json = await res.json();
+                if (!res.ok || !json.status) {
+                    body.innerHTML = `<tr><td colspan="10" class="text-center text-danger py-4">${json.message || 'خطا در دریافت اطلاعات'}</td></tr>`;
+                    return;
+                }
+                wlCachedItems = json.data || [];
+                renderWorkLogsTable(wlCachedItems);
+            } catch (err) {
+                console.error(err);
+                body.innerHTML = '<tr><td colspan="10" class="text-center text-danger py-4">خطا در ارتباط با سرور</td></tr>';
+            }
+        }
+
+        function renderWorkLogsTable(items) {
+            let totalH = 0, approvedH = 0, pendingH = 0, approvedWage = 0;
+            items.forEach(x => {
+                totalH += Number(x.hours || 0);
+                if (x.status === 1) {
+                    approvedH += Number(x.hours || 0);
+                    approvedWage += Number(x.wageCost || 0);
+                } else if (x.status === 0) {
+                    pendingH += Number(x.hours || 0);
+                }
+            });
+            document.getElementById('wlSumTotalHours').textContent = totalH.toLocaleString('fa-IR');
+            document.getElementById('wlSumApprovedHours').textContent = approvedH.toLocaleString('fa-IR');
+            document.getElementById('wlSumPendingHours').textContent = pendingH.toLocaleString('fa-IR');
+            document.getElementById('wlSumApprovedWage').textContent = Math.round(approvedWage).toLocaleString('fa-IR');
+
+            const body = document.getElementById('workLogsBody');
+            if (items.length === 0) {
+                body.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">هیچ سابقه ساعت کاری با فیلترهای انتخاب‌شده یافت نشد.</td></tr>';
+                return;
+            }
+
+            body.innerHTML = items.map(item => {
+                const isPending = item.status === 0;
+                const checkboxTd = (wlIsFyOpen && wlCanApprove)
+                    ? `<td class="text-center">${isPending ? `<input type="checkbox" class="wl-row-check" value="${item.id}" />` : ''}</td>`
+                    : '';
+                const reviewMeta = item.reviewNote
+                    ? `<div class="text-muted mt-1" style="font-size:11px;">یادداشت: ${item.reviewNote}</div>`
+                    : '';
+
+                let ops = '';
+                if (wlIsFyOpen) {
+                    if (isPending && wlCanEdit && (wlCanApprove || item.userId === wlCurrentUserId)) {
+                        ops += `<button type="button" class="btn btn-outline-primary btn-xs py-0 px-2 me-1" onclick="openWorkLogModal(${item.id})">ویرایش</button>`;
+                    }
+                    if (isPending && wlCanDelete && (wlCanApprove || item.userId === wlCurrentUserId)) {
+                        ops += `<button type="button" class="btn btn-outline-danger btn-xs py-0 px-2 me-1" onclick="deleteWorkLog(${item.id})">حذف</button>`;
+                    }
+                    if (isPending && wlCanApprove) {
+                        ops += `<button type="button" class="btn btn-success btn-xs py-0 px-2 me-1" onclick="openReviewModal(${item.id}, true)">تأیید</button>`;
+                        ops += `<button type="button" class="btn btn-danger btn-xs py-0 px-2" onclick="openReviewModal(${item.id}, false)">رد</button>`;
+                    }
+                }
+                if (!ops) ops = '<span class="text-muted">-</span>';
+
+                return `<tr>
+                    ${checkboxTd}
+                    <td class="text-nowrap">${item.workDateShamsi || '-'}</td>
+                    <td class="fw-bold">${item.projectTitle}</td>
+                    <td>${item.employeeName}</td>
+                    <td class="text-center font-monospace fw-bold">${Number(item.hours).toLocaleString('fa-IR')}</td>
+                    <td class="text-end font-monospace">${Number(item.hourlyRateSnapshot || 0).toLocaleString('fa-IR')}</td>
+                    <td class="text-end font-monospace fw-bold text-dark">${Number(item.wageCost || 0).toLocaleString('fa-IR')}</td>
+                    <td>${item.description}</td>
+                    <td>${getStatusBadge(item.status, item.statusTitle)}${reviewMeta}</td>
+                    <td class="text-center text-nowrap">${ops}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function toggleSelectAllWorkLogs(master) {
+            document.querySelectorAll('.wl-row-check').forEach(cb => cb.checked = master.checked);
+        }
+
+        function openWorkLogModal(id) {
+            document.getElementById('wlId').value = id || 0;
+            if (id && id > 0) {
+                const item = wlCachedItems.find(x => x.id === id);
+                if (!item) return;
+                document.getElementById('workLogModalTitle').textContent = 'ویرایش ساعت کار';
+                document.getElementById('wlProjectId').value = item.projectId;
+                document.getElementById('wlWorkDate').value = item.workDateShamsi;
+                document.getElementById('wlHours').value = item.hours;
+                document.getElementById('wlDescription').value = item.description;
+            } else {
+                document.getElementById('workLogModalTitle').textContent = 'ثبت ساعت کار جدید';
+                const fltPid = document.getElementById('fltProjectId')?.value || '';
+                document.getElementById('wlProjectId').value = fltPid;
+                document.getElementById('wlHours').value = '';
+                document.getElementById('wlDescription').value = '';
+            }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('workLogModal')).show();
+        }
+
+        async function saveWorkLog() {
+            const id = parseInt(document.getElementById('wlId').value, 10) || 0;
+            const projectId = parseInt(document.getElementById('wlProjectId').value, 10);
+            const workDate = shamsiToIso(document.getElementById('wlWorkDate').value);
+            const hours = parseFloat(document.getElementById('wlHours').value);
+            const description = document.getElementById('wlDescription').value.trim();
+
+            if (!projectId) { SwalHelper.warning('لطفاً پروژه را انتخاب کنید.'); return; }
+            if (!workDate) { SwalHelper.warning('لطفاً تاریخ کارکرد را وارد کنید.'); return; }
+            if (!hours || hours < 0.25 || hours > 24) { SwalHelper.warning('ساعت کار باید بین ۰٫۲۵ تا ۲۴ ساعت باشد.'); return; }
+            if (!description) { SwalHelper.warning('لطفاً شرح فعالیت را وارد کنید.'); return; }
+
+            const isEdit = id > 0;
+            const url = isEdit ? `${wlApiAddr}/ProjectWorkLog/UpdateWorkLog` : `${wlApiAddr}/ProjectWorkLog/CreateWorkLog`;
+            const payload = isEdit
+                ? { id, projectId, workDate, hours, description }
+                : { projectId, workDate, hours, description };
+
+            try {
+                const res = await fetch(url, {
+                    method: isEdit ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + wlToken },
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if (!res.ok || !json.status) {
+                    SwalHelper.error(json.message || 'خطا در ذخیره ساعت کار');
+                    return;
+                }
+                bootstrap.Modal.getInstance(document.getElementById('workLogModal'))?.hide();
+                await loadWorkLogs();
+                SwalHelper.success(json.message || 'با موفقیت ذخیره شد.');
+            } catch (err) {
+                SwalHelper.error('خطا در ارتباط با سرور');
+            }
+        }
+
+        async function deleteWorkLog(id) {
+            const conf = await Swal.fire({
+                title: 'حذف ساعت کار؟',
+                text: 'این رکورد حذف خواهد شد.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'بله، حذف شود',
+                cancelButtonText: 'انصراف'
+            });
+            if (!conf.isConfirmed) return;
+            try {
+                const res = await fetch(`${wlApiAddr}/ProjectWorkLog/DeleteWorkLog/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + wlToken }
+                });
+                const json = await res.json();
+                if (!res.ok || !json.status) {
+                    SwalHelper.error(json.message || 'خطا در حذف ساعت کار');
+                    return;
+                }
+                await loadWorkLogs();
+                SwalHelper.success(json.message || 'حذف شد.');
+            } catch (err) {
+                SwalHelper.error('خطا در ارتباط با سرور');
+            }
+        }
+
+        function openReviewModal(id, isApproved) {
+            const item = wlCachedItems.find(x => x.id === id);
+            if (!item) return;
+            document.getElementById('rvWorkLogId').value = id;
+            document.getElementById('rvIsApproved').value = isApproved ? 'true' : 'false';
+            document.getElementById('rvOverrideRate').value = '';
+            document.getElementById('rvNote').value = '';
+            document.getElementById('rvSummaryBox').innerHTML =
+                `<strong>پروژه:</strong> ${item.projectTitle} | <strong>کارمند:</strong> ${item.employeeName}<br>` +
+                `<strong>تاریخ:</strong> ${item.workDateShamsi} | <strong>ساعت:</strong> ${item.hours} | <strong>شرح:</strong> ${item.description}`;
+
+            const overrideWrap = document.getElementById('rvOverrideRateWrap');
+            const confirmBtn = document.getElementById('rvConfirmBtn');
+            const noteLabel = document.getElementById('rvNoteLabel');
+            if (isApproved) {
+                document.getElementById('reviewModalTitle').textContent = 'تأیید ساعت کار';
+                overrideWrap.classList.remove('d-none');
+                noteLabel.textContent = 'یادداشت مدیر (اختیاری)';
+                confirmBtn.className = 'btn btn-success btn-sm';
+                confirmBtn.textContent = 'تأیید و محاسبه دستمزد';
+            } else {
+                document.getElementById('reviewModalTitle').textContent = 'رد ساعت کار';
+                overrideWrap.classList.add('d-none');
+                noteLabel.innerHTML = 'علت رد ساعت کار <span class="text-danger">*</span>';
+                confirmBtn.className = 'btn btn-danger btn-sm';
+                confirmBtn.textContent = 'ثبت رد ساعت کار';
+            }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('reviewWorkLogModal')).show();
+        }
+
+        async function submitWorkLogReview() {
+            const workLogId = parseInt(document.getElementById('rvWorkLogId').value, 10);
+            const isApproved = document.getElementById('rvIsApproved').value === 'true';
+            const reviewNote = document.getElementById('rvNote').value.trim();
+            const overrideRaw = document.getElementById('rvOverrideRate').value.trim();
+
+            if (!isApproved && !reviewNote) {
+                SwalHelper.warning('در صورت رد ساعت کار، وارد کردن علت رد الزامی است.');
+                return;
+            }
+            const payload = {
+                workLogId,
+                isApproved,
+                reviewNote: reviewNote || null,
+                overrideHourlyRate: (isApproved && overrideRaw !== '') ? parseFloat(overrideRaw) : null
+            };
+            try {
+                const res = await fetch(`${wlApiAddr}/ProjectWorkLog/ReviewWorkLog`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + wlToken },
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if (!res.ok || !json.status) {
+                    SwalHelper.error(json.message || 'خطا در بررسی ساعت کار');
+                    return;
+                }
+                bootstrap.Modal.getInstance(document.getElementById('reviewWorkLogModal'))?.hide();
+                await loadWorkLogs();
+                SwalHelper.success(json.message || 'عملیات انجام شد.');
+            } catch (err) {
+                SwalHelper.error('خطا در ارتباط با سرور');
+            }
+        }
+
+        async function batchReviewSelected(isApproved) {
+            const ids = Array.from(document.querySelectorAll('.wl-row-check:checked')).map(cb => parseInt(cb.value, 10));
+            if (ids.length === 0) {
+                SwalHelper.warning('حداقل یک مورد در انتظار تأیید را انتخاب کنید.');
+                return;
+            }
+            let reviewNote = null;
+            if (!isApproved) {
+                const { value, isConfirmed } = await Swal.fire({
+                    title: 'علت رد گروهی',
+                    input: 'text',
+                    inputPlaceholder: 'علت رد ساعات کاری انتخاب‌شده را بنویسید...',
+                    showCancelButton: true,
+                    confirmButtonText: 'رد موارد انتخاب‌شده',
+                    cancelButtonText: 'انصراف'
+                });
+                if (!isConfirmed) return;
+                if (!value || !value.trim()) {
+                    SwalHelper.warning('وارد کردن علت رد الزامی است.');
+                    return;
+                }
+                reviewNote = value.trim();
+            }
+            try {
+                const res = await fetch(`${wlApiAddr}/ProjectWorkLog/BatchReviewWorkLogs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + wlToken },
+                    body: JSON.stringify({ workLogIds: ids, isApproved, reviewNote })
+                });
+                const json = await res.json();
+                if (!res.ok || !json.status) {
+                    SwalHelper.error(json.message || 'خطا در عملیات گروهی');
+                    return;
+                }
+                await loadWorkLogs();
+                SwalHelper.success(json.message || 'انجام شد.');
+            } catch (err) {
+                SwalHelper.error('خطا در ارتباط با سرور');
+            }
+        }
+
+        $(document).ready(function () {
+            $('.persian-date-flt').persianDatepicker({ format: 'YYYY/MM/DD', autoClose: true, initialValue: false });
+            $('.persian-date-modal').persianDatepicker({ format: 'YYYY/MM/DD', autoClose: true, initialValue: true, initialValueType: 'persian' });
+            loadWorkLogs();
+        });
+    </script>
+}

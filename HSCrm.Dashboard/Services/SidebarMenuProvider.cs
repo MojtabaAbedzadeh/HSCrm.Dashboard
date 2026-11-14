@@ -49,9 +49,17 @@ namespace HSCrm.Dashboard.Services
                 new SidebarMenuItem
                 {
                     Key = "dashboard",
-                    Title = "داشبورد",
+                    Title = "داشبورد مدیریتی",
                     Icon = "mdi mdi-view-dashboard",
                     Url = "/AdminArea/Home/Index",
+                    PermissionKey = Permissions.Payments.View
+                },
+                new SidebarMenuItem
+                {
+                    Key = "employee_panel",
+                    Title = "کارتابل کارمند و کارکرد من",
+                    Icon = "mdi mdi-account-clock-outline",
+                    Url = "/AdminArea/Employee/Index",
                 },
                 new SidebarMenuItem
                 {
@@ -167,6 +175,13 @@ namespace HSCrm.Dashboard.Services
                             Title = "لیست پروژه‌ها",
                             Url = "/AdminArea/Project/Index",
                             PermissionKey = Permissions.Projects.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "project_worklogs",
+                            Title = "ساعات کاری و تایم‌شیت",
+                            Url = "/AdminArea/ProjectWorkLog/Index",
+                            PermissionKey = Permissions.WorkLogs.View
                         }
                     }
                 },
@@ -186,10 +201,24 @@ namespace HSCrm.Dashboard.Services
                         },
                         new SidebarMenuItem
                         {
+                            Key = "add_sales_invoice",
+                            Title = "ثبت فاکتور فروش جدید",
+                            Url = "/AdminArea/Invoice/AddSaleInvoice",
+                            PermissionKey = Permissions.SalesInvoices.Create
+                        },
+                        new SidebarMenuItem
+                        {
                             Key = "purchase_invoices",
                             Title = "فاکتورهای خرید",
                             Url = "/AdminArea/Invoice/PurchaseInvoice",
                             PermissionKey = Permissions.PurchaseInvoices.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "add_purchase_invoice",
+                            Title = "ثبت فاکتور خرید جدید",
+                            Url = "/AdminArea/Invoice/AddPurchaseInvoice",
+                            PermissionKey = Permissions.PurchaseInvoices.Create
                         },
                         new SidebarMenuItem
                         {
