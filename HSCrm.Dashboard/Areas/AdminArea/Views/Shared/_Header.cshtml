@@ -6,11 +6,11 @@
         || User.IsInRole("Admin")
         || User.IsInRole("SuperAdmin")
         || User.HasPermission(Permissions.FiscalYears.View);
-    var canViewTreasuryAlerts = User.IsInRole("Owner")
+    var isManagerRole = User.IsInRole("Owner")
         || User.IsInRole("Admin")
-        || User.IsInRole("SuperAdmin")
-        || User.HasPermission(Permissions.Payments.View)
-        || User.HasClaim(c => c.Type == "Permission" && (c.Value == "Permissions.Cheques.View" || c.Value == "Permissions.AccountingReports.View"));
+        || User.IsInRole("SuperAdmin");
+    var canViewChequeAlerts = isManagerRole || User.HasPermission(Permissions.Cheques.View);
+    var canViewAgingAlerts = isManagerRole || User.HasPermission(Permissions.AccountingReports.View);
     var userImageUrl = User.FindFirst("UserImageUrl")?.Value;
     var firstName = User.FindFirst("UserFirstName")?.Value;
     var lastName = User.FindFirst("UserLastName")?.Value;
@@ -70,7 +70,7 @@
                 </ul>
             </div>
 
-            @if (canViewTreasuryAlerts)
+            @if (canViewChequeAlerts || canViewAgingAlerts)
             {
             <!-- زنگوله هشدار چک‌های سررسید نزدیک و مطالبات معوق -->
             <div class="dropdown notifications-menu d-inline-block me-2">
@@ -81,7 +81,10 @@
                 <div class="dropdown-menu dropdown-menu-end shadow p-0" style="width: 340px; max-height: 420px; overflow-y: auto;">
                     <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
                         <strong class="text-dark small"><i class="mdi mdi-bell-alert-outline me-1 text-warning"></i>هشدارهای خزانه‌داری و مطالبات</strong>
-                        <a href="/AdminArea/Cheque/Index" class="text-primary small">مدیریت چک‌ها</a>
+                        @if (canViewChequeAlerts)
+                        {
+                            <a href="/AdminArea/Cheque/Index" class="text-primary small">مدیریت چک‌ها</a>
+                        }
                     </div>
                     <div id="hdrAlertContainer" class="list-group list-group-flush small">
                         <div class="p-3 text-center text-muted">در حال بررسی سررسید چک‌ها و مطالبات...</div>
@@ -124,7 +127,7 @@
                                 </a>
                             </li>
                         }
-                        @if (canViewTreasuryAlerts)
+                        @if (canViewAgingAlerts)
                         {
                             <li>
                                 <a href="/AdminArea/Accounting/Reports">
@@ -276,13 +279,19 @@
             </text>
             }
 
-            @if (canViewTreasuryAlerts)
+            @if (canViewChequeAlerts || canViewAgingAlerts)
             {
             <text>
-            // ۲. بارگذاری هشدار چک‌های در آستانه سررسید (۷ روز آینده) و مطالبات معوق (+۹۰ روز)
+            // ۲. بارگذاری هشدار چک‌های در آستانه سررسید (۷ روز آینده) و مطالبات معوق (+۹۰ روز) بر اساس مجوز دقیق
+            const canFetchCheques = @(canViewChequeAlerts.ToString().ToLower());
+            const canFetchAging = @(canViewAgingAlerts.ToString().ToLower());
             Promise.all([
-                fetch(`${hdrApiBase}/Cheque/GetAll`, { headers, suppressGlobalAlert: true }).then(r => r.json()).catch(() => ({ data: [] })),
-                fetch(`${hdrApiBase}/Accounting/AgingReport?partyType=1&includeChequeAccounts=true`, { headers, suppressGlobalAlert: true }).then(r => r.json()).catch(() => ({ data: null }))
+                canFetchCheques
+                    ? fetch(`${hdrApiBase}/Cheque/GetAll`, { headers, suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] }))
+                    : Promise.resolve({ data: [] }),
+                canFetchAging
+                    ? fetch(`${hdrApiBase}/Accounting/AgingReport?partyType=1&includeChequeAccounts=true`, { headers, suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: null })).catch(() => ({ data: null }))
+                    : Promise.resolve({ data: null })
             ]).then(([chequeRes, agingRes]) => {
                 const cheques = chequeRes.data || [];
                 const agingRows = (agingRes.data && agingRes.data.rows) ? agingRes.data.rows : [];

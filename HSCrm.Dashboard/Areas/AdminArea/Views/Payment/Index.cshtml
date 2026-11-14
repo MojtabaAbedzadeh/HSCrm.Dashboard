@@ -594,13 +594,13 @@
         
         document.addEventListener("DOMContentLoaded", async function () {
             try {
-                const bankRes = await fetch(`${baseAddress}/BankAccount/GetAll`, { headers: getAuthHeaders() });
-                const bankJson = await bankRes.json();
+                const bankRes = await fetch(`${baseAddress}/BankAccount/DropdownList`, { headers: getAuthHeaders(), suppressGlobalAlert: true });
+                const bankJson = bankRes.ok ? await bankRes.json() : { data: [] };
                 const banks = bankJson.data || [];
                 const bankSel = document.getElementById("BankAccountId");
                 if (bankSel && banks.length > 0) {
                     bankSel.innerHTML = '<option value="">انتخاب حساب بانکی / صندوق...</option>' +
-                        banks.map(b => `<option value="${b.id}" data-bank-name="${b.bankName || b.title || ''}" ${b.isDefault ? 'selected' : ''}>${b.bankName || b.title || 'حساب'}${b.accountNumber ? ' - ' + b.accountNumber : ''}</option>`).join('');
+                        banks.map(b => `<option value="${b.drId ?? b.id}" data-bank-name="${b.bankName || b.title || b.drName || ''}" ${b.isDefault ? 'selected' : ''}>${b.drName || ((b.bankName || b.title || 'حساب') + (b.accountNumber ? ' - ' + b.accountNumber : ''))}</option>`).join('');
                 }
             } catch (e) { console.error(e); }
 

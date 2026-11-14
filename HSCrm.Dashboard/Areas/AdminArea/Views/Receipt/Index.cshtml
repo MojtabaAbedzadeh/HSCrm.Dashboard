@@ -1,9 +1,11 @@
 @using System.Security.Claims
 @using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Extensions
 @{
     ViewData["Title"] = "دریافت‌ها و واریزی‌های مشتریان";
     ViewData["selected"] = "receipts_list";
     string apiAddress = ViewBag.ApiAddress?.ToString() ?? "";
+    var canCreateReceipt = User.HasPermission(Permissions.Receipt.Create);
 }
 
 @section styles {
@@ -20,9 +22,12 @@
         </p>
     </div>
     <div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addReceiptModal">
-            <i class="mdi mdi-plus me-1"></i>ثبت دریافت جدید (وجه / چک)
-        </button>
+        @if (canCreateReceipt)
+        {
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addReceiptModal">
+                <i class="mdi mdi-plus me-1"></i>ثبت دریافت جدید (وجه / چک)
+            </button>
+        }
     </div>
 </div>
 
@@ -171,6 +176,7 @@
     <script src="~/lib/persiandate/persian-datepicker.js"></script>
     <script>
         const apiBase = '@apiAddress'.replace(/\/+$/, '');
+        const canCreateReceipt = @canCreateReceipt.ToString().ToLower();
         let salesInvoicesCache = [];
 
         function getAuthHeaders() {
@@ -230,7 +236,7 @@
                 return;
             }
             try {
-                const res = await fetch(`${apiBase}/SalesInvoice/SettlementSummary/${salesInvoiceId}`, { headers: getAuthHeaders() });
+                const res = await fetch(`${apiBase}/SalesInvoice/SettlementSummary/${salesInvoiceId}`, { headers: getAuthHeaders(), suppressGlobalAlert: true });
                 if (!res.ok) {
                     box.classList.add('d-none');
                     return;
@@ -258,24 +264,33 @@
         async function initReceipts() {
             document.getElementById('recDate').value = new Date().toISOString().split('T')[0];
             try {
-                const [recRes, invRes, bankRes] = await Promise.all([
+                const [recRes, invJson, bankJson] = await Promise.all([
                     fetch(`${apiBase}/Receipt/GetReceipts`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/SalesInvoice/GetSalesInvoices`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/BankAccount/GetAll`, { headers: getAuthHeaders() })
+                    canCreateReceipt
+                        ? fetch(`${apiBase}/SalesInvoice/GetSalesInvoices`, { headers: getAuthHeaders(), suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] }))
+                        : Promise.resolve({ data: [] }),
+                    canCreateReceipt
+                        ? fetch(`${apiBase}/BankAccount/DropdownList`, { headers: getAuthHeaders(), suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] }))
+                        : Promise.resolve({ data: [] })
                 ]);
                 const receipts = (await recRes.json()).data || [];
-                const invoices = (await invRes.json()).data || [];
-                const banks = (await bankRes.json()).data || [];
+                const invoices = invJson.data || [];
+                const banks = bankJson.data || [];
                 salesInvoicesCache = invoices;
 
                 const invSelect = document.getElementById('recSalesInvoiceId');
-                invSelect.innerHTML = invoices.length === 0
-                    ? '<option value="">فاکتور فروشی یافت نشد</option>'
-                    : invoices.map(inv => `<option value="${inv.id}">فاکتور #${inv.number} - ${inv.project?.customer?.name || 'بدون مشتری'} (${formatNum(inv.total)} ریال)</option>`).join('');
+                if (invSelect) {
+                    invSelect.innerHTML = invoices.length === 0
+                        ? '<option value="">فاکتور فروشی یافت نشد</option>'
+                        : invoices.map(inv => `<option value="${inv.id}">فاکتور #${inv.number} - ${inv.project?.customer?.name || 'بدون مشتری'} (${formatNum(inv.total)} ریال)</option>`).join('');
+                }
 
-                document.getElementById('recBankAccountId').innerHTML =
-                    '<option value="">انتخاب حساب بانکی...</option>' +
-                    banks.map(b => `<option value="${b.id}" ${b.isDefault ? 'selected' : ''}>${b.title}</option>`).join('');
+                const recBankEl = document.getElementById('recBankAccountId');
+                if (recBankEl) {
+                    recBankEl.innerHTML =
+                        '<option value="">انتخاب حساب بانکی...</option>' +
+                        banks.map(b => `<option value="${b.drId ?? b.id}" ${b.isDefault ? 'selected' : ''}>${b.drName || b.title || b.bankName || ('حساب #' + (b.drId ?? b.id))}</option>`).join('');
+                }
 
                 if (invSelect.value) {
                     loadSalesInvoiceSettlement(Number(invSelect.value));

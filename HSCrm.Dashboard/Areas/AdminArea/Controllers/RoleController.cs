@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Security.Claims;
 using System.Text;
+using HSCrm.Dashboard.Costants;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
@@ -30,6 +31,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         {
             return User.FindFirstValue("Token");
         }
+        [Authorize(Policy = "Permission:" + Permissions.Roles.View)]
         public async Task<IActionResult> Index()
         {
             var json = await _getListApi.GetApiList(ApiUrl("Role/GetRoles"));
@@ -40,11 +42,13 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             return View(model);
         }
         [HttpGet]
+        [Authorize(Policy = "Permission:" + Permissions.Roles.Create)]
         public IActionResult Create()
         {
             return View(new RoleCreateDto());
         }
         [HttpPost]
+        [Authorize(Policy = "Permission:" + Permissions.Roles.Create)]
         public async Task<IActionResult> Create(RoleCreateDto model)
         {
             if (!ModelState.IsValid)
@@ -75,6 +79,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             return RedirectToAction(nameof(Index));
         }
         [HttpGet]
+        [Authorize(Policy = "Permission:" + Permissions.Roles.Edit)]
         public async Task<IActionResult> Edit(string id)
         {
             var json = await _getListApi.GetApiList(ApiUrl($"Role/GetRoleById?roleId={id}"));
@@ -95,6 +100,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             return View(model);
         }
         [HttpPost]
+        [Authorize(Policy = "Permission:" + Permissions.Roles.Edit)]
         public async Task<IActionResult> Edit(RoleEditDto model)
         {
             if (!ModelState.IsValid)
@@ -120,6 +126,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             return RedirectToAction(nameof(Index));
         }
         [HttpPost]
+        [Authorize(Policy = "Permission:" + Permissions.Roles.Delete)]
         public async Task<IActionResult> Delete(string id)
         {
             using var http = new HttpClient();
@@ -131,6 +138,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             return RedirectToAction(nameof(Index));
         }
         [HttpGet]
+        [Authorize(Policy = "Permission:" + Permissions.Roles.ManagePermissions)]
         public async Task<IActionResult> ManagePermissions(string id)
         {
             var roleJson = await _getListApi.GetApiList(ApiUrl($"Role/GetRoleById?roleId={id}"));
@@ -169,6 +177,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             return View(model);
         }
         [HttpPost]
+        [Authorize(Policy = "Permission:" + Permissions.Roles.ManagePermissions)]
         public async Task<IActionResult> ManagePermissions(ManageRolePermissionsDto model)
         {
             var updateModel = new UpdateRolePermissionsDto

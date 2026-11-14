@@ -1,9 +1,14 @@
 ﻿@using System.Security.Claims
 @using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Extensions
 @{
     ViewData["Title"] = "مدیریت سال مالی، اختتامیه و افتتاحیه";
     ViewData["selected"] = "fiscal_years";
     string apiAddress = ViewBag.ApiAddress?.ToString() ?? "";
+    var canCreateFy = User.HasPermission(Permissions.FiscalYears.Create);
+    var canEditFy = User.HasPermission(Permissions.FiscalYears.Edit);
+    var canCloseFy = User.HasPermission(Permissions.FiscalYears.Close);
+    var canReopenFy = User.HasPermission(Permissions.FiscalYears.Reopen);
 }
 
 <div class="breadcrumb-wrapper breadcrumb-contacts">
@@ -16,9 +21,12 @@
         </p>
     </div>
     <div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFiscalYearModal">
-            <i class="mdi mdi-plus me-1"></i>تعریف سال مالی جدید
-        </button>
+        @if (canCreateFy)
+        {
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFiscalYearModal">
+                <i class="mdi mdi-plus me-1"></i>تعریف سال مالی جدید
+            </button>
+        }
     </div>
 </div>
 
@@ -85,9 +93,16 @@
                     </div>
                 </div>
 
-                <button type="button" class="btn btn-success w-100 fw-bold" onclick="executeCloseFiscalYear()">
-                    اجرای عملیات بستن سال مالی و صدور ۳ سند (سود و زیان، اختتامیه و افتتاحیه)
-                </button>
+                @if (canCloseFy)
+                {
+                    <button type="button" class="btn btn-success w-100 fw-bold" onclick="executeCloseFiscalYear()">
+                        اجرای عملیات بستن سال مالی و صدور ۳ سند (سود و زیان، اختتامیه و افتتاحیه)
+                    </button>
+                }
+                else
+                {
+                    <div class="alert alert-warning mb-0 small">شما مجوز بستن سال مالی را ندارید.</div>
+                }
             </div>
         </div>
     </div>
@@ -130,6 +145,8 @@
 @section AdminScripts {
     <script>
         const apiBase = '@apiAddress'.replace(/\/+$/, '');
+        const canEditFy = @canEditFy.ToString().ToLower();
+        const canReopenFy = @canReopenFy.ToString().ToLower();
 
         function getAuthHeaders() {
             const headers = {
@@ -172,8 +189,8 @@
                             ${f.isClosed ? '<span class="badge bg-danger">بسته شده (قفل)</span>' : '<span class="badge bg-success">باز (فعال)</span>'}
                         </td>
                         <td>
-                            ${!f.isCurrent ? `<button class="btn btn-sm btn-outline-primary me-1" onclick="setActiveFiscalYear(${f.id})">انتخاب به‌عنوان جاری</button>` : ''}
-                            ${f.isClosed ? `<button class="btn btn-sm btn-warning" onclick="reopenFiscalYear(${f.id})">بازگشایی (Reopen)</button>` : ''}
+                            ${!f.isCurrent && canEditFy ? `<button class="btn btn-sm btn-outline-primary me-1" onclick="setActiveFiscalYear(${f.id})">انتخاب به‌عنوان جاری</button>` : ''}
+                            ${f.isClosed && canReopenFy ? `<button class="btn btn-sm btn-warning" onclick="reopenFiscalYear(${f.id})">بازگشایی (Reopen)</button>` : ''}
                         </td>
                     </tr>
                 `).join('');

@@ -4,10 +4,13 @@ using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using HSCrm.Dashboard.Costants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
+    [Authorize(Policy = "Permission:" + Permissions.Customers.View)]
     public class CustomerController : BaseController
     {
         private readonly GetListApi _getListApi; 

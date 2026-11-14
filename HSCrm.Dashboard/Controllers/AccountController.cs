@@ -174,7 +174,7 @@ namespace Automation.Dashboard.Controllers
                 return "/AdminArea/Home/Index";
 
             var permSet = new HashSet<string>(permissions ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
-            if (permSet.Contains("payments.view") || permSet.Contains("Permissions.AccountingReports.View"))
+            if (permSet.Contains("Permissions.AccountingReports.View"))
                 return "/AdminArea/Home/Index";
 
             return "/AdminArea/Employee/Index";

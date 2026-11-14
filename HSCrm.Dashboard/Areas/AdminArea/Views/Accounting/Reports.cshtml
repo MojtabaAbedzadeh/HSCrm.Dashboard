@@ -183,12 +183,12 @@
 
         async function initReports() {
             try {
-                const [accRes, bankRes] = await Promise.all([
-                    fetch(`${apiBase}/Accounting/Accounts`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/BankAccount/GetAll`, { headers: getAuthHeaders() })
+                const [accJson, bankJson] = await Promise.all([
+                    fetch(`${apiBase}/Accounting/Accounts`, { headers: getAuthHeaders(), suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] })),
+                    fetch(`${apiBase}/BankAccount/DropdownList`, { headers: getAuthHeaders(), suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] }))
                 ]);
-                const accs = (await accRes.json()).data || [];
-                const banks = (await bankRes.json()).data || [];
+                const accs = accJson.data || [];
+                const banks = bankJson.data || [];
 
                 const cmbAcc = document.getElementById('cmbLedgerAccount');
                 cmbAcc.innerHTML = '<option value="">همه حساب‌ها</option>' +
@@ -196,7 +196,7 @@
 
                 const cmbBank = document.getElementById('cmbLedgerBank');
                 cmbBank.innerHTML = '<option value="">همه بانک‌ها و صندوق‌ها</option>' +
-                    banks.map(b => `<option value="${b.id}" ${String(b.id) === initBankId ? 'selected' : ''}>${b.title}</option>`).join('');
+                    banks.map(b => `<option value="${b.drId ?? b.id}" ${String(b.drId ?? b.id) === initBankId ? 'selected' : ''}>${b.drName || b.title || b.bankName}</option>`).join('');
             } catch (e) { console.error(e); }
 
             loadTrialBalance();

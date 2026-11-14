@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Security.Claims;
+using HSCrm.Dashboard.Costants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
@@ -21,6 +23,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             _getListApi = getListApi;
         }
 
+        [Authorize(Policy = "Permission:" + Permissions.SalesInvoices.View)]
         public async Task<IActionResult> SalesInvoice()
         {
             string apiUrl = "SalesInvoice/GetSalesInvoices";
@@ -48,6 +51,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             }
         }
 
+        [Authorize(Policy = "Permission:" + Permissions.SalesInvoices.Create)]
         public async Task<IActionResult> AddSaleInvoice()
         {
             var tenantId = User.FindFirstValue("TenantId");
@@ -57,6 +61,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Permission:" + Permissions.PurchaseInvoices.View)]
         public async Task<IActionResult> PurchaseInvoice(string supplierFullName = null, DateTime? fromDate = null, DateTime? toDate = null, decimal? minTotal = null, decimal? maxTotal = null)
         {
             var queryParameters = new List<string>();
@@ -108,6 +113,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Permission:" + Permissions.PurchaseInvoices.Edit)]
         public async Task<IActionResult> EditPurchaseInvoice(int id)
         {
             var tenantId = User.FindFirstValue("TenantId");
@@ -167,6 +173,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "Permission:" + Permissions.PurchaseInvoices.Edit)]
         public async Task<IActionResult> EditPurchaseInvoice(PurchaseInvoiceModel model)
         {
             try
@@ -180,6 +187,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             }
         }
 
+        [Authorize(Policy = "Permission:" + Permissions.PurchaseInvoices.Create)]
         public async Task<IActionResult> AddPurchaseInvoice()
         {
             var tenantId = User.FindFirstValue("TenantId");
@@ -270,6 +278,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Permission:" + Permissions.SalesInvoices.View)]
         public async Task<IActionResult> ProjectInvoices(int projectId)
         {
             string apiUrl = "SalesInvoice/GetByProjectId?projectId=" + projectId;

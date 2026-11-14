@@ -1,5 +1,6 @@
 ﻿@using System.Security.Claims
 @using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Extensions
 @{
     ViewData["Title"] = "حساب‌های بانکی و صندوق خزانه";
     ViewData["selected"] = "bank_accounts";
@@ -16,9 +17,12 @@
         </p>
     </div>
     <div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBankModal">
-            <i class="mdi mdi-plus me-1"></i>تعریف حساب بانکی / صندوق جدید
-        </button>
+        @if (User.HasPermission(Permissions.BankAccounts.Create))
+        {
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBankModal">
+                <i class="mdi mdi-plus me-1"></i>تعریف حساب بانکی / صندوق جدید
+            </button>
+        }
     </div>
 </div>
 

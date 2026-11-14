@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
@@ -24,6 +25,11 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
         public async Task<IActionResult> Index()
         {
+            if (!User.HasPermission(Permissions.Expenses.View) && !User.HasPermission(Permissions.Expenses.Create))
+            {
+                return Forbid();
+            }
+
             var tenantId = User.FindFirstValue("TenantId");
             ViewBag.Projects = await GetProjectList(tenantId);
 
@@ -72,6 +78,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Permission:" + Permissions.Expenses.View)]
         public async Task<IActionResult> ProjectExpenses(int projectId)
         {
             string apiUrl = "Expense/GetByProjectId?projectId=" + projectId;

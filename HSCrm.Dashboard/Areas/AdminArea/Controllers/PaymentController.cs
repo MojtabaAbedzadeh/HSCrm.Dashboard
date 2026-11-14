@@ -5,10 +5,13 @@ using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Security.Claims;
+using HSCrm.Dashboard.Costants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area("AdminArea")]
+    [Authorize(Policy = "Permission:" + Permissions.Payments.View)]
     public class PaymentController : BaseController
     {
         private readonly GetListApi _getListApi;

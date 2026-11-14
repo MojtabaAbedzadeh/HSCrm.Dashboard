@@ -27,16 +27,28 @@
                 return false;
         }
 
-        // اگر منو Permission داشته باشد باید بررسی شود
+        // اگر منو Permission داشته باشد باید بررسی شود (پشتیبانی از چند مجوز جداشده با کاما به صورت OR)
         if (!string.IsNullOrEmpty(menu.PermissionKey))
         {
-            var result = await authorizationService.AuthorizeAsync(
-                user,
-                null,
-                $"Permission:{menu.PermissionKey}"
-            );
+            var requiredPerms = menu.PermissionKey
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            if (!result.Succeeded)
+            var anyGranted = false;
+            foreach (var perm in requiredPerms)
+            {
+                var result = await authorizationService.AuthorizeAsync(
+                    user,
+                    null,
+                    $"Permission:{perm}"
+                );
+                if (result.Succeeded)
+                {
+                    anyGranted = true;
+                    break;
+                }
+            }
+
+            if (!anyGranted)
                 return false;
         }
 
@@ -61,7 +73,7 @@
 
         <!-- Logo -->
         @{
-            var homeUrl = (User.IsInRole("Owner") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.HasClaim("Permission", HSCrm.Dashboard.Costants.Permissions.Payments.View))
+            var homeUrl = (User.IsInRole("Owner") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.HasClaim("Permission", HSCrm.Dashboard.Costants.Permissions.AccountingReports.View))
                 ? "/AdminArea/Home/Index"
                 : "/AdminArea/Employee/Index";
         }

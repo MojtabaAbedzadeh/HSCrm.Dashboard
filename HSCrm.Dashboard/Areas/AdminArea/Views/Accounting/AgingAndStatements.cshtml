@@ -1,5 +1,6 @@
 ﻿@using System.Security.Claims
 @using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Extensions
 @{
     ViewData["Title"] = "صورت‌حساب جامع ۳۶۰ درجه و تحلیل سنی مطالبات/بدهی‌ها";
     ViewData["selected"] = "accounting_aging";
@@ -287,15 +288,19 @@
         async function loadPartiesDropdown() {
             const cmb = document.getElementById('cmbPartySelector');
             try {
-                const endpoint = currentPartyType === 1 ? 'Customer/GetCustomers' : 'Supplier/GetSuppliers';
-                const res = await fetch(`${apiBase}/${endpoint}`, { headers: getAuthHeaders() });
-                const json = await res.json();
+                const tenantId = localStorage.getItem('TenantId') || '@ViewBag.TenantId';
+                const endpoint = currentPartyType === 1
+                    ? 'Customer/CustomerDropdownList'
+                    : `Supplier/SupplierDropdownList?tenantId=${tenantId}`;
+                const res = await fetch(`${apiBase}/${endpoint}`, { headers: getAuthHeaders(), suppressGlobalAlert: true });
+                const json = res.ok ? await res.json() : { data: [] };
                 const list = json.data || [];
                 cmb.innerHTML = '<option value="">-- انتخاب طرف‌حساب --</option>' +
                     list.map(p => {
-                        const name = currentPartyType === 1 ? p.name : p.supplierFullName;
-                        const sel = currentPartyId && p.id === currentPartyId ? 'selected' : '';
-                        return `<option value="${p.id}" ${sel}>${name}</option>`;
+                        const id = p.drId ?? p.id;
+                        const name = p.drName || (currentPartyType === 1 ? p.name : p.supplierFullName);
+                        const sel = currentPartyId && id === currentPartyId ? 'selected' : '';
+                        return `<option value="${id}" ${sel}>${name}</option>`;
                     }).join('');
             } catch (e) { console.error(e); }
         }
@@ -537,9 +542,9 @@
                     if ((d.missingVoucherFinalInvoicesCount || 0) > 0) {
                         mvBanner.classList.remove('d-none');
                         mvBanner.innerHTML = `<div><i class="mdi mdi-alert-outline me-1"></i><strong>هشدار مغایرت سند:</strong> این طرف‌حساب دارای <strong>${d.missingVoucherFinalInvoicesCount}</strong> فاکتور نهایی (به مبلغ <strong>${formatNum(d.missingVoucherFinalInvoicesAmount)}</strong> ریال) است که سند حسابداری آن صادر نشده و به همین دلیل در مانده دفتری نیامده است.</div>
-                            <button type="button" class="btn btn-sm btn-warning fw-bold text-dark" onclick="syncMissingVouchers()">
+                            ${canSyncVouchers ? `<button type="button" class="btn btn-sm btn-warning fw-bold text-dark" onclick="syncMissingVouchers()">
                                 <i class="mdi mdi-sync me-1"></i>صدور خودکار سند جاافتاده
-                            </button>`;
+                            </button>` : ''}`;
                     } else {
                         mvBanner.classList.add('d-none');
                         mvBanner.innerHTML = '';

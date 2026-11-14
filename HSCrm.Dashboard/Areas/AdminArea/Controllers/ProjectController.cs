@@ -6,10 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Security.Claims;
+using HSCrm.Dashboard.Costants;
+using HSCrm.Dashboard.Extensions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
+    [Authorize(Policy = "Permission:" + Permissions.Projects.View)]
     public class ProjectController : BaseController
     {
         private readonly IConfiguration _config;
@@ -31,7 +35,9 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
                     : null;
                 var model = result?.Data ?? new List<ProjectModel>();
                 var tenantId = User.FindFirstValue("TenantId");
-                ViewBag.Customers = await GetCustomerList(tenantId);
+                ViewBag.Customers = User.HasPermission(Permissions.Customers.View)
+                    ? await GetCustomerList(tenantId)
+                    : new List<CustomersDropDown>();
                 return View(model);
             }
             catch (Exception ex)

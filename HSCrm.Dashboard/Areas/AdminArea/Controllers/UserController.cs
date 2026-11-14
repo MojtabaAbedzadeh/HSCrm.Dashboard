@@ -5,11 +5,13 @@ using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using HSCrm.Dashboard.Costants;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
     [Authorize(Roles = "Owner")]
+    [Authorize(Policy = "Permission:" + Permissions.Users.View)]
     public class UserController : BaseController
     {
         private readonly IConfiguration _config;
@@ -50,6 +52,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "Permission:" + Permissions.Users.Create)]
         public async Task<IActionResult> AssignRole(string userId, string roleId)
         {
             try

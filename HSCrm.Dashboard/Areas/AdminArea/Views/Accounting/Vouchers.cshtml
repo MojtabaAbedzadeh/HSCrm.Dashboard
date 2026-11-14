@@ -1,9 +1,12 @@
 ﻿@using System.Security.Claims
 @using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Extensions
 @{
     ViewData["Title"] = "اسناد حسابداری (دفتر روزنامه)";
     ViewData["selected"] = "accounting_vouchers";
     string apiAddress = ViewBag.ApiAddress?.ToString() ?? "";
+    var canCreateVoucher = User.HasPermission(Permissions.JournalVouchers.Create);
+    var canLoadAccounts = canCreateVoucher || User.HasPermission(Permissions.AccountingAccounts.View);
 }
 
 <div class="breadcrumb-wrapper breadcrumb-contacts">
@@ -16,9 +19,12 @@
         </p>
     </div>
     <div>
-        <button type="button" class="btn btn-primary" onclick="openManualVoucherModal()">
-            <i class="mdi mdi-plus me-1"></i>ثبت سند حسابداری دستی جدید
-        </button>
+        @if (canCreateVoucher)
+        {
+            <button type="button" class="btn btn-primary" onclick="openManualVoucherModal()">
+                <i class="mdi mdi-plus me-1"></i>ثبت سند حسابداری دستی جدید
+            </button>
+        }
     </div>
 </div>
 
@@ -139,6 +145,7 @@
 @section AdminScripts {
     <script>
         const apiBase = '@apiAddress'.replace(/\/+$/, '');
+        const canLoadAccounts = @canLoadAccounts.ToString().ToLower();
         let vouchers = [];
         let accounts = [];
         let selectedVoucherId = null;
@@ -158,42 +165,53 @@
             return Number(n || 0).toLocaleString('en-US');
         }
 
+        function normalizeVoucherDto(v) {
+            const items = Array.isArray(v.items) ? v.items.map(it => ({
+                ...it,
+                accountCode: it.accountCode ?? it.account?.code ?? '—',
+                accountTitle: it.accountTitle ?? it.account?.title ?? 'حساب نامشخص',
+                debit: Number(it.debit || 0),
+                credit: Number(it.credit || 0)
+            })) : [];
+            const totalDebit = v.totalDebit !== undefined && v.totalDebit !== null
+                ? Number(v.totalDebit)
+                : items.reduce((s, it) => s + it.debit, 0);
+            const totalCredit = v.totalCredit !== undefined && v.totalCredit !== null
+                ? Number(v.totalCredit)
+                : items.reduce((s, it) => s + it.credit, 0);
+            return {
+                id: v.id,
+                voucherNumber: v.voucherNumber,
+                voucherDate: v.voucherDate,
+                referenceType: v.referenceType,
+                referenceId: v.referenceId,
+                description: v.description,
+                totalDebit,
+                totalCredit,
+                items
+            };
+        }
+
         async function initPage() {
-            document.getElementById('mvDate').value = new Date().toISOString().split('T')[0];
+            const mvDateEl = document.getElementById('mvDate');
+            if (mvDateEl) mvDateEl.value = new Date().toISOString().split('T')[0];
             try {
-                const [accRes, ledgerRes] = await Promise.all([
-                    fetch(`${apiBase}/Accounting/Accounts`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/Accounting/Ledger`, { headers: getAuthHeaders() })
+                const [accJson, vouchersRes] = await Promise.all([
+                    canLoadAccounts
+                        ? fetch(`${apiBase}/Accounting/Accounts`, { headers: getAuthHeaders(), suppressGlobalAlert: true })
+                            .then(r => r.ok ? r.json() : ({ data: [] }))
+                            .catch(() => ({ data: [] }))
+                        : Promise.resolve({ data: [] }),
+                    fetch(`${apiBase}/Accounting/Vouchers`, { headers: getAuthHeaders() })
                 ]);
-                const accJson = await accRes.json();
                 accounts = accJson.data || [];
 
-                const ledgerJson = await ledgerRes.json();
-                const txs = ledgerJson.data || [];
+                const vouchersJson = await vouchersRes.json();
+                const rawVouchers = vouchersJson.data || [];
+                vouchers = rawVouchers
+                    .map(normalizeVoucherDto)
+                    .sort((a, b) => (b.voucherNumber || 0) - (a.voucherNumber || 0));
 
-                // Group ledger transactions by VoucherId to build complete vouchers view
-                const map = new Map();
-                txs.forEach(tx => {
-                    if (!map.has(tx.voucherId)) {
-                        map.set(tx.voucherId, {
-                            id: tx.voucherId,
-                            voucherNumber: tx.voucherNumber,
-                            voucherDate: tx.voucherDate,
-                            referenceType: tx.referenceType,
-                            referenceId: tx.referenceId,
-                            description: tx.description,
-                            totalDebit: 0,
-                            totalCredit: 0,
-                            items: []
-                        });
-                    }
-                    const v = map.get(tx.voucherId);
-                    v.totalDebit += (tx.debit || 0);
-                    v.totalCredit += (tx.credit || 0);
-                    v.items.push(tx);
-                });
-
-                vouchers = Array.from(map.values()).sort((a, b) => b.voucherNumber - a.voucherNumber);
                 const urlParams = new URLSearchParams(window.location.search);
                 const qRefType = urlParams.get('refType');
                 const qRefId = urlParams.get('refId');
@@ -203,11 +221,17 @@
                         selectedVoucherId = matched.id;
                     } else {
                         try {
-                            const refRes = await fetch(`${apiBase}/Accounting/GetByReference?referenceType=${qRefType}&referenceId=${qRefId}`, { headers: getAuthHeaders() });
-                            const refJson = await refRes.json();
-                            if (refJson.data && refJson.data.id) {
-                                vouchers.unshift(refJson.data);
-                                selectedVoucherId = refJson.data.id;
+                            const refRes = await fetch(`${apiBase}/Accounting/GetByReference?referenceType=${qRefType}&referenceId=${qRefId}`, {
+                                headers: getAuthHeaders(),
+                                suppressGlobalAlert: true
+                            });
+                            if (refRes.ok) {
+                                const refJson = await refRes.json();
+                                if (refJson.data && refJson.data.id) {
+                                    const normalized = normalizeVoucherDto(refJson.data);
+                                    vouchers.unshift(normalized);
+                                    selectedVoucherId = normalized.id;
+                                }
                             }
                         } catch (e) {}
                     }
@@ -269,7 +293,7 @@
             }
             const dStr = v.voucherDate ? new Date(v.voucherDate).toLocaleDateString('fa-IR') : '';
             document.getElementById('lblSelectedVoucherTitle').textContent = `سند حسابداری شماره ${v.voucherNumber}`;
-            document.getElementById('lblSelectedVoucherMeta').textContent = `تاریخ: ${dStr} · تعداد آرتیکل: ${v.items.length}`;
+            document.getElementById('lblSelectedVoucherMeta').textContent = `${v.description ? v.description + ' · ' : ''}تاریخ: ${dStr} · تعداد آرتیکل: ${v.items.length}`;
             document.getElementById('lblTotalDebit').textContent = formatNum(v.totalDebit);
             document.getElementById('lblTotalCredit').textContent = formatNum(v.totalCredit);
 
@@ -277,8 +301,8 @@
                 <tr>
                     <td class="text-center text-muted">${idx + 1}</td>
                     <td>
-                        <div class="fw-bold font-monospace text-primary" dir="ltr">${item.accountCode}</div>
-                        <div>${item.accountTitle}</div>
+                        <div class="fw-bold font-monospace text-primary" dir="ltr">${item.accountCode ?? item.account?.code ?? '—'}</div>
+                        <div>${item.accountTitle ?? item.account?.title ?? 'حساب نامشخص'}</div>
                     </td>
                     <td>
                         <div>${item.description || ''}</div>

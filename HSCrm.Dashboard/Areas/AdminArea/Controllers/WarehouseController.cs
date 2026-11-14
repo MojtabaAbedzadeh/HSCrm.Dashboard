@@ -6,10 +6,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Security.Claims;
+using HSCrm.Dashboard.Costants;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
     [Area(nameof(AdminArea))]
+    [Authorize(Policy = "Permission:" + Permissions.Warehouses.View)]
     [Authorize(Roles = "Owner")]
     public class WarehouseController : BaseController
     {

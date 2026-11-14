@@ -1,5 +1,6 @@
 ﻿@using System.Security.Claims
 @using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Extensions
 @{
     ViewData["Title"] = "درختواره و کدینگ حساب‌ها";
     ViewData["selected"] = "accounting_accounts";
@@ -16,12 +17,15 @@
         </p>
     </div>
     <div class="d-flex gap-2">
-        <button type="button" class="btn btn-outline-success" onclick="seedDefaultAccounts()">
-            <i class="mdi mdi-database-plus me-1"></i>ایجاد خودکار حساب‌های استاندارد پیش‌فرض
-        </button>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">
-            <i class="mdi mdi-plus me-1"></i>تعریف سرفصل حسابداری جدید
-        </button>
+        @if (User.HasPermission(Permissions.AccountingAccounts.Create))
+        {
+            <button type="button" class="btn btn-outline-success" onclick="seedDefaultAccounts()">
+                <i class="mdi mdi-database-plus me-1"></i>ایجاد خودکار حساب‌های استاندارد پیش‌فرض
+            </button>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+                <i class="mdi mdi-plus me-1"></i>تعریف سرفصل حسابداری جدید
+            </button>
+        }
     </div>
 </div>
 

@@ -18,8 +18,7 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             var isFullAccess = User.IsInRole("Owner")
                 || User.IsInRole("Admin")
                 || User.IsInRole("SuperAdmin")
-                || User.HasPermission(Permissions.Payments.View)
-                || User.HasClaim(c => c.Type == "Permission" && c.Value == "Permissions.AccountingReports.View");
+                || User.HasPermission(Permissions.AccountingReports.View);
 
             if (!isFullAccess)
             {

@@ -1,3 +1,5 @@
+@using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Extensions
 @model IEnumerable<ProductPriceModel>
 
 @{
@@ -69,11 +71,20 @@
                                                 @if (ViewBag.FiscalYearStatus == "0")
                                                 {
                                                     <div class="dropdown-menu">
-                                                        <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Product?.ProductTitle ?? ""))')">قیمت جدید</a>
+                                                        @if (User.HasPermission(Permissions.ProductPrices.Create))
+                                                        {
+                                                            <a class="dropdown-item" href="#" onclick="showInsertPriceModel(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Product?.ProductTitle ?? ""))')">قیمت جدید</a>
+                                                        }
                                                         <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">تاریخچه قیمت</a>
-                                                        <hr />
-                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
-                                                        <a class="dropdown-item text-danger" href="#" onclick="deletePrice(@item.Id)">حذف</a>
+                                                        @if (User.HasPermission(Permissions.ProductPrices.Edit))
+                                                        {
+                                                            <hr />
+                                                            <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
+                                                        }
+                                                        @if (User.HasPermission(Permissions.ProductPrices.Delete))
+                                                        {
+                                                            <a class="dropdown-item text-danger" href="#" onclick="deletePrice(@item.Id)">حذف</a>
+                                                        }
                                                     </div>
                                                 }
                                                 else

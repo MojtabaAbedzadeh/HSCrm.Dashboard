@@ -1,7 +1,15 @@
+@using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Extensions
 @{
     ViewData["AdminTitle"] = "داشبورد جامع مدیریتی و مالی";
     ViewData["selected"] = "dashboard";
     string ApiAddress = ViewBag.ApiAddress;
+    var isManagerRole = User.IsInRole("Owner") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+    var canViewReports = isManagerRole || User.HasPermission(Permissions.AccountingReports.View);
+    var canViewBanks = isManagerRole || User.HasPermission(Permissions.BankAccounts.View);
+    var canViewCheques = isManagerRole || User.HasPermission(Permissions.Cheques.View);
+    var canViewOnboarding = isManagerRole || User.HasPermission(Permissions.Tenants.View);
+    var canViewFiscalYears = isManagerRole || User.HasPermission(Permissions.FiscalYears.View);
 }
 
 <div class="breadcrumb-wrapper d-flex justify-content-between align-items-center mb-4">
@@ -14,18 +22,30 @@
         </p>
     </div>
     <div class="d-flex flex-wrap gap-2">
-        <a href="/AdminArea/Invoice/AddSaleInvoice" class="btn btn-sm btn-primary">
-            <i class="mdi mdi-plus me-1"></i>ثبت فاکتور فروش
-        </a>
-        <a href="/AdminArea/Receipt/Index" class="btn btn-sm btn-success">
-            <i class="mdi mdi-cash-plus me-1"></i>ثبت دریافت
-        </a>
-        <a href="/AdminArea/Payment/Index" class="btn btn-sm btn-danger">
-            <i class="mdi mdi-cash-minus me-1"></i>ثبت پرداخت
-        </a>
-        <a href="/AdminArea/Accounting/Vouchers" class="btn btn-sm btn-dark">
-            <i class="mdi mdi-book-open-page-variant me-1"></i>اسناد حسابداری
-        </a>
+        @if (isManagerRole || User.HasPermission(Permissions.SalesInvoices.Create))
+        {
+            <a href="/AdminArea/Invoice/AddSaleInvoice" class="btn btn-sm btn-primary">
+                <i class="mdi mdi-plus me-1"></i>ثبت فاکتور فروش
+            </a>
+        }
+        @if (isManagerRole || User.HasPermission(Permissions.Receipt.Create) || User.HasPermission(Permissions.Receipt.View))
+        {
+            <a href="/AdminArea/Receipt/Index" class="btn btn-sm btn-success">
+                <i class="mdi mdi-cash-plus me-1"></i>ثبت دریافت
+            </a>
+        }
+        @if (isManagerRole || User.HasPermission(Permissions.Payments.Create) || User.HasPermission(Permissions.Payments.View))
+        {
+            <a href="/AdminArea/Payment/Index" class="btn btn-sm btn-danger">
+                <i class="mdi mdi-cash-minus me-1"></i>ثبت پرداخت
+            </a>
+        }
+        @if (isManagerRole || User.HasPermission(Permissions.JournalVouchers.View))
+        {
+            <a href="/AdminArea/Accounting/Vouchers" class="btn btn-sm btn-dark">
+                <i class="mdi mdi-book-open-page-variant me-1"></i>اسناد حسابداری
+            </a>
+        }
         <button type="button" class="btn btn-sm btn-outline-secondary" onclick="loadDashboardData()">
             <i class="mdi mdi-refresh me-1"></i>بروزرسانی زنده
         </button>
@@ -39,7 +59,10 @@
             <strong><i class="mdi mdi-alert-circle-outline me-1"></i>هشدار پایان تاریخ سال مالی:</strong>
             تاریخ سال مالی جاری به پایان رسیده است اما سال مالی همچنان باز می‌باشد. لطفاً عملیات بستن سال مالی و صدور سند اختتامیه/افتتاحیه را انجام دهید.
         </div>
-        <a href="/AdminArea/FiscalYear/Index" class="btn btn-sm btn-danger">بستن سال مالی (فاز ۶)</a>
+        @if (canViewFiscalYears)
+        {
+            <a href="/AdminArea/FiscalYear/Index" class="btn btn-sm btn-danger">بستن سال مالی (فاز ۶)</a>
+        }
     </div>
 }
 else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null && ViewBag.FiscalYearStatus != "0"))
@@ -49,7 +72,10 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
             <strong><i class="mdi mdi-lock-outline me-1"></i>سال مالی بسته شده است:</strong>
             سال مالی انتخاب‌شده بسته می‌باشد و سیستم در حالت «فقط مشاهده گزارشات» قرار دارد.
         </div>
-        <a href="/AdminArea/FiscalYear/Index" class="btn btn-sm btn-primary">مدیریت سال‌های مالی</a>
+        @if (canViewFiscalYears)
+        {
+            <a href="/AdminArea/FiscalYear/Index" class="btn btn-sm btn-primary">مدیریت سال‌های مالی</a>
+        }
     </div>
 }
 
@@ -154,7 +180,10 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
         <div class="card card-default shadow-sm h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold"><i class="mdi mdi-chart-timeline-variant me-1 text-primary"></i>توزیع سنی مطالبات مشتریان (روش FIFO — فاز ۷)</h5>
-                <a href="/AdminArea/Accounting/AgingAndStatements" class="btn btn-xs btn-outline-primary">مشاهده گزارش کامل</a>
+                @if (canViewReports)
+                {
+                    <a href="/AdminArea/Accounting/AgingAndStatements" class="btn btn-xs btn-outline-primary">مشاهده گزارش کامل</a>
+                }
             </div>
             <div class="card-body">
                 <div class="progress mb-3" style="height: 24px;" id="agingProgressBar">
@@ -179,7 +208,10 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
         <div class="card card-default shadow-sm h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold"><i class="mdi mdi-Bank me-1 text-info"></i>موجودی تفکیکی حساب‌های بانکی و صندوق</h5>
-                <a href="/AdminArea/BankAccount/Index" class="btn btn-xs btn-outline-info">مدیریت بانک‌ها</a>
+                @if (canViewBanks)
+                {
+                    <a href="/AdminArea/BankAccount/Index" class="btn btn-xs btn-outline-info">مدیریت بانک‌ها</a>
+                }
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive" style="max-height: 210px; overflow-y: auto;">
@@ -207,7 +239,10 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
         <div class="card card-default shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold"><i class="mdi mdi-checkbook me-1 text-warning"></i>چک‌های در جریان و نزدیک به سررسید (فاز ۴)</h5>
-                <a href="/AdminArea/Cheque/Index" class="btn btn-xs btn-outline-dark">مدیریت چک‌ها و راس‌گیری</a>
+                @if (canViewCheques)
+                {
+                    <a href="/AdminArea/Cheque/Index" class="btn btn-xs btn-outline-dark">مدیریت چک‌ها و راس‌گیری</a>
+                }
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -234,7 +269,10 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
         <div class="card card-default shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold"><i class="mdi mdi-account-alert-outline me-1 text-danger"></i>مشتریان دارای بیشترین مانده بدهی</h5>
-                <a href="/AdminArea/Accounting/AgingAndStatements?partyType=1" class="btn btn-xs btn-outline-danger">تحلیل سنی کامل</a>
+                @if (canViewReports)
+                {
+                    <a href="/AdminArea/Accounting/AgingAndStatements?partyType=1" class="btn btn-xs btn-outline-danger">تحلیل سنی کامل</a>
+                }
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -263,6 +301,10 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
         const dashApiBase = '@ApiAddress'.replace(/\/+$/, '');
         const dashToken = '@ViewBag.Token';
         const dashTenantId = '@ViewBag.TenantId';
+        const dashCanReports = @canViewReports.ToString().ToLower();
+        const dashCanBanks = @canViewBanks.ToString().ToLower();
+        const dashCanCheques = @canViewCheques.ToString().ToLower();
+        const dashCanOnboarding = @canViewOnboarding.ToString().ToLower();
 
         function fmtNum(n) {
             return Number(n || 0).toLocaleString('fa-IR');
@@ -272,11 +314,21 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
             const headers = { 'Authorization': 'Bearer ' + dashToken };
             try {
                 const [pnlRes, bankRes, chequeRes, custAgingRes, suppAgingRes] = await Promise.all([
-                    fetch(`${dashApiBase}/Accounting/ProfitAndLoss`, { headers }).then(r => r.json()).catch(() => ({ data: null })),
-                    fetch(`${dashApiBase}/BankAccount/BalancesSummary`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
-                    fetch(`${dashApiBase}/Cheque/GetAll`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
-                    fetch(`${dashApiBase}/Accounting/AgingReport?partyType=1&includeChequeAccounts=true`, { headers }).then(r => r.json()).catch(() => ({ data: null })),
-                    fetch(`${dashApiBase}/Accounting/AgingReport?partyType=2&includeChequeAccounts=true`, { headers }).then(r => r.json()).catch(() => ({ data: null }))
+                    dashCanReports
+                        ? fetch(`${dashApiBase}/Accounting/ProfitAndLoss`, { headers, suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: null })).catch(() => ({ data: null }))
+                        : Promise.resolve({ data: null }),
+                    dashCanBanks
+                        ? fetch(`${dashApiBase}/BankAccount/BalancesSummary`, { headers, suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] }))
+                        : Promise.resolve({ data: [] }),
+                    dashCanCheques
+                        ? fetch(`${dashApiBase}/Cheque/GetAll`, { headers, suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] }))
+                        : Promise.resolve({ data: [] }),
+                    dashCanReports
+                        ? fetch(`${dashApiBase}/Accounting/AgingReport?partyType=1&includeChequeAccounts=true`, { headers, suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: null })).catch(() => ({ data: null }))
+                        : Promise.resolve({ data: null }),
+                    dashCanReports
+                        ? fetch(`${dashApiBase}/Accounting/AgingReport?partyType=2&includeChequeAccounts=true`, { headers, suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: null })).catch(() => ({ data: null }))
+                        : Promise.resolve({ data: null })
                 ]);
 
                 // 1. P&L KPIs
@@ -498,7 +550,9 @@ else if (ViewBag.FiscalYearStatus == "2" || (ViewBag.FiscalYearStatus != null &&
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            loadOnboardingChecklist();
+            if (dashCanOnboarding) {
+                loadOnboardingChecklist();
+            }
             loadDashboardData();
         });
     </script>

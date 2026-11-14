@@ -1,6 +1,8 @@
 ﻿using HSCrm.BussinessLogic.PublicMethod;
 using HSCrm.Dashboard.Controllers;
 using Microsoft.AspNetCore.Mvc;
+using HSCrm.Dashboard.Costants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 {
@@ -15,12 +17,14 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Permission:" + Permissions.SalesReturnInvoices.View)]
         public IActionResult SalesReturn()
         {
             return View();
         }
 
         [HttpGet]
+        [Authorize(Policy = "Permission:" + Permissions.PurchaseReturnInvoices.View)]
         public IActionResult PurchaseReturn()
         {
             return View();

@@ -1,9 +1,12 @@
 ﻿@using System.Security.Claims
 @using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Extensions
 @{
     ViewData["Title"] = "مدیریت چک‌های صیادی و رأس‌گیری";
     ViewData["selected"] = "cheques_list";
     string apiAddress = ViewBag.ApiAddress?.ToString() ?? "";
+    var canCreateCheque = User.HasPermission(Permissions.Cheques.Create);
+    var canChangeChequeStatus = User.HasPermission(Permissions.Cheques.ChangeStatus);
 }
 
 <div class="breadcrumb-wrapper breadcrumb-contacts">
@@ -16,9 +19,12 @@
         </p>
     </div>
     <div>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addChequeModal">
-            <i class="mdi mdi-plus me-1"></i>ثبت چک صیادی جدید
-        </button>
+        @if (canCreateCheque)
+        {
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addChequeModal">
+                <i class="mdi mdi-plus me-1"></i>ثبت چک صیادی جدید
+            </button>
+        }
     </div>
 </div>
 
@@ -200,6 +206,8 @@
 @section AdminScripts {
     <script>
         const apiBase = '@apiAddress'.replace(/\/+$/, '');
+        const canCreateCheque = @canCreateCheque.ToString().ToLower();
+        const canChangeChequeStatus = @canChangeChequeStatus.ToString().ToLower();
         const statusLabels = {
             1: '<span class="badge bg-info text-dark">نزد صندوق</span>',
             2: '<span class="badge bg-primary">در جریان وصول بانک</span>',
@@ -223,28 +231,33 @@
         function formatNum(n) { return Number(n || 0).toLocaleString('en-US'); }
 
         async function initChequesPage() {
-            try {
-                const [custRes, supRes, bankRes] = await Promise.all([
-                    fetch(`${apiBase}/Customer/GetCustomer`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/Supplier/GetSupplier`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/BankAccount/GetAll`, { headers: getAuthHeaders() })
-                ]);
-                const custs = (await custRes.json()).data || [];
-                const sups = (await supRes.json()).data || [];
-                const banks = (await bankRes.json()).data || [];
+            if (canCreateCheque || canChangeChequeStatus) {
+                try {
+                    const tenantId = localStorage.getItem('TenantId') || '@ViewBag.TenantId';
+                    const [custJson, supJson, bankJson] = await Promise.all([
+                        canCreateCheque
+                            ? fetch(`${apiBase}/Customer/CustomerDropdownList`, { headers: getAuthHeaders(), suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] }))
+                            : Promise.resolve({ data: [] }),
+                        fetch(`${apiBase}/Supplier/SupplierDropdownList?tenantId=${tenantId}`, { headers: getAuthHeaders(), suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] })),
+                        fetch(`${apiBase}/BankAccount/DropdownList`, { headers: getAuthHeaders(), suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] }))
+                    ]);
+                    const custs = custJson.data || [];
+                    const sups = supJson.data || [];
+                    const banks = bankJson.data || [];
 
-                document.getElementById('chqCustomerId').innerHTML = '<option value="">-- انتخاب مشتری --</option>' +
-                    custs.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-                const supOpts = '<option value="">-- انتخاب تأمین‌کننده --</option>' +
-                    sups.map(s => `<option value="${s.id}">${s.supplierFullName}</option>`).join('');
-                document.getElementById('chqSupplierId').innerHTML = supOpts;
-                document.getElementById('csEndorsedSupplierId').innerHTML = supOpts;
+                    document.getElementById('chqCustomerId').innerHTML = '<option value="">-- انتخاب مشتری --</option>' +
+                        custs.map(c => `<option value="${c.drId ?? c.id}">${c.drName || c.name}</option>`).join('');
+                    const supOpts = '<option value="">-- انتخاب تأمین‌کننده --</option>' +
+                        sups.map(s => `<option value="${s.drId ?? s.id}">${s.drName || s.supplierFullName}</option>`).join('');
+                    document.getElementById('chqSupplierId').innerHTML = supOpts;
+                    document.getElementById('csEndorsedSupplierId').innerHTML = supOpts;
 
-                const bankOpts = '<option value="">-- انتخاب حساب بانکی --</option>' +
-                    banks.map(b => `<option value="${b.id}">${b.title}</option>`).join('');
-                document.getElementById('chqBankAccountId').innerHTML = bankOpts;
-                document.getElementById('csTargetBankAccountId').innerHTML = bankOpts;
-            } catch (e) { console.error(e); }
+                    const bankOpts = '<option value="">-- انتخاب حساب بانکی --</option>' +
+                        banks.map(b => `<option value="${b.drId ?? b.id}">${b.drName || b.title || b.bankName}</option>`).join('');
+                    document.getElementById('chqBankAccountId').innerHTML = bankOpts;
+                    document.getElementById('csTargetBankAccountId').innerHTML = bankOpts;
+                } catch (e) { console.error(e); }
+            }
 
             await loadCheques();
         }
@@ -277,7 +290,7 @@
                         <td class="text-end font-monospace fw-bold" dir="ltr">${formatNum(c.amount)}</td>
                         <td>${statusLabels[c.status] || c.status}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="openStatusModal(${c.id})">تغییر وضعیت</button>
+                            ${canChangeChequeStatus ? `<button class="btn btn-sm btn-outline-primary" onclick="openStatusModal(${c.id})">تغییر وضعیت</button>` : '<span class="text-muted small">—</span>'}
                         </td>
                     </tr>
                 `).join('');

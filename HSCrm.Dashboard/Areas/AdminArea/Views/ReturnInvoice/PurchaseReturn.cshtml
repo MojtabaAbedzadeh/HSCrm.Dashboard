@@ -1,9 +1,13 @@
 @using System.Security.Claims
 @using HSCrm.Dashboard.Costants
+@using HSCrm.Dashboard.Extensions
 @{
     ViewData["Title"] = "فاکتورهای برگشت از خرید";
     ViewData["selected"] = "purchase_return_invoices";
     string apiAddress = ViewBag.ApiAddress?.ToString() ?? "";
+    var canCreatePr = User.HasPermission(Permissions.PurchaseReturnInvoices.Create);
+    var canApprovePr = User.HasPermission(Permissions.PurchaseReturnInvoices.Approve);
+    var canCancelPr = User.HasPermission(Permissions.PurchaseReturnInvoices.Cancel);
 }
 
 <div class="breadcrumb-wrapper breadcrumb-contacts">
@@ -16,9 +20,12 @@
         </p>
     </div>
     <div>
-        <button type="button" class="btn btn-primary" onclick="openCreatePurchaseReturnModal()">
-            <i class="mdi mdi-plus me-1"></i>ثبت فاکتور برگشت از خرید جدید
-        </button>
+        @if (canCreatePr)
+        {
+            <button type="button" class="btn btn-primary" onclick="openCreatePurchaseReturnModal()">
+                <i class="mdi mdi-plus me-1"></i>ثبت فاکتور برگشت از خرید جدید
+            </button>
+        }
     </div>
 </div>
 
@@ -98,6 +105,9 @@
 @section AdminScripts {
     <script>
         const apiBase = '@apiAddress'.replace(/\/+$/, '');
+        const canCreatePr = @canCreatePr.ToString().ToLower();
+        const canApprovePr = @canApprovePr.ToString().ToLower();
+        const canCancelPr = @canCancelPr.ToString().ToLower();
         let products = [];
         let prNumberingMode = 'Hybrid';
         let prDefaultVat = 0;
@@ -116,19 +126,22 @@
         function formatNum(n) { return Number(n || 0).toLocaleString('en-US'); }
 
         async function initPurchaseReturns() {
-            try {
-                const [supRes, whRes, prodRes] = await Promise.all([
-                    fetch(`${apiBase}/Supplier/GetByTenant`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/Warehouse/GetWarehouses`, { headers: getAuthHeaders() }),
-                    fetch(`${apiBase}/Product/GetProducts`, { headers: getAuthHeaders() })
-                ]);
-                const sups = (await supRes.json()).data || [];
-                const whs = (await whRes.json()).data || [];
-                products = (await prodRes.json()).data || [];
+            if (canCreatePr) {
+                try {
+                    const tenantId = localStorage.getItem('TenantId') || '@ViewBag.TenantId';
+                    const [supJson, whJson, prodJson] = await Promise.all([
+                        fetch(`${apiBase}/Supplier/SupplierDropdownList?tenantId=${tenantId}`, { headers: getAuthHeaders(), suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] })),
+                        fetch(`${apiBase}/Warehouse/WarehouseDropdownList`, { headers: getAuthHeaders(), suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] })),
+                        fetch(`${apiBase}/Product/ProductDropdownList`, { headers: getAuthHeaders(), suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] }))
+                    ]);
+                    const sups = supJson.data || [];
+                    const whs = whJson.data || [];
+                    products = prodJson.data || [];
 
-                document.getElementById('prSupplierId').innerHTML = sups.map(s => `<option value="${s.id}">${s.supplierFullName}</option>`).join('');
-                document.getElementById('prWarehouseId').innerHTML = whs.map(w => `<option value="${w.id}">${w.title || w.name || ('انبار #' + w.id)}</option>`).join('');
-            } catch (e) { console.error(e); }
+                    document.getElementById('prSupplierId').innerHTML = sups.map(s => `<option value="${s.drId ?? s.id}">${s.drName || s.supplierFullName || ('تأمین‌کننده #' + (s.drId ?? s.id))}</option>`).join('');
+                    document.getElementById('prWarehouseId').innerHTML = whs.map(w => `<option value="${w.drId ?? w.id}">${w.drName || w.title || w.name || ('انبار #' + (w.drId ?? w.id))}</option>`).join('');
+                } catch (e) { console.error(e); }
+            }
 
             loadPurchaseReturns();
         }
@@ -185,8 +198,8 @@
                             <td class="text-end font-monospace fw-bold" dir="ltr">${formatNum(r.total)}</td>
                             <td>${statusBadge}</td>
                             <td>
-                                ${r.status === 0 ? `<button class="btn btn-sm btn-success me-1" onclick="confirmPurchaseReturn(${r.id})">تأیید نهایی و صدور سند</button>` : ''}
-                                ${r.status !== 2 ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelPurchaseReturn(${r.id})">ابطال</button>` : ''}
+                                ${r.status === 0 && canApprovePr ? `<button class="btn btn-sm btn-success me-1" onclick="confirmPurchaseReturn(${r.id})">تأیید نهایی و صدور سند</button>` : ''}
+                                ${r.status !== 2 && canCancelPr ? `<button class="btn btn-sm btn-outline-danger" onclick="cancelPurchaseReturn(${r.id})">ابطال</button>` : ''}
                             </td>
                         </tr>
                     `;
@@ -205,7 +218,7 @@
 
         function addPrItemRow() {
             const tr = document.createElement('tr');
-            const prodOpts = products.map(p => `<option value="${p.id}">${p.productTitle || p.productName || ('کالا #' + p.id)}</option>`).join('');
+            const prodOpts = products.map(p => `<option value="${p.drId ?? p.id}">${p.drName || p.productTitle || p.productName || ('کالا #' + (p.drId ?? p.id))}</option>`).join('');
             tr.innerHTML = `
                 <td><select class="form-select form-select-sm pr-prod">${prodOpts}</select></td>
                 <td><input type="number" class="form-control form-control-sm pr-qty" value="1" min="1" dir="ltr" /></td>

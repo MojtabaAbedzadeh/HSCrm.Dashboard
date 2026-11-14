@@ -30,7 +30,11 @@ namespace HSCrm.Dashboard.Services
                 }
 
                 bool hasPermission = string.IsNullOrEmpty(menu.PermissionKey)
-                                     || user.HasClaim("Permission", menu.PermissionKey);
+                                     || menu.PermissionKey
+                                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                                         .Any(perm => user.Claims.Any(c =>
+                                             string.Equals(c.Type, "Permission", StringComparison.OrdinalIgnoreCase) &&
+                                             string.Equals(c.Value, perm, StringComparison.OrdinalIgnoreCase)));
                 if (!hasPermission)
                     continue;
 
@@ -61,7 +65,7 @@ namespace HSCrm.Dashboard.Services
                     Title = "داشبورد مدیریتی",
                     Icon = "mdi mdi-view-dashboard",
                     Url = "/AdminArea/Home/Index",
-                    PermissionKey = Permissions.Payments.View
+                    PermissionKey = Permissions.AccountingReports.View
                 },
                 new SidebarMenuItem
                 {
@@ -146,7 +150,7 @@ namespace HSCrm.Dashboard.Services
                             Key = "product_kardex",
                             Title = "کاردکس محصول",
                             Url = "/AdminArea/Inventory/KardexReport",
-                            PermissionKey = Permissions.Products.View
+                            PermissionKey = Permissions.Inventories.View
                         },
                         new SidebarMenuItem
                         {
@@ -169,7 +173,7 @@ namespace HSCrm.Dashboard.Services
                             Key = "warehouses_list",
                             Title = "لیست انبارها",
                             Url = "/AdminArea/Warehouse/Index",
-                            PermissionKey = Permissions.Inventories.View,
+                            PermissionKey = Permissions.Warehouses.View,
                             AllowedRoles = "Owner"
                         }
                     }
@@ -237,14 +241,14 @@ namespace HSCrm.Dashboard.Services
                             Key = "sales_return_invoices",
                             Title = "برگشت از فروش (فاز ۵)",
                             Url = "/AdminArea/ReturnInvoice/SalesReturn",
-                            PermissionKey = Permissions.SalesInvoices.View
+                            PermissionKey = Permissions.SalesReturnInvoices.View
                         },
                         new SidebarMenuItem
                         {
                             Key = "purchase_return_invoices",
                             Title = "برگشت از خرید (فاز ۵)",
                             Url = "/AdminArea/ReturnInvoice/PurchaseReturn",
-                            PermissionKey = Permissions.PurchaseInvoices.View
+                            PermissionKey = Permissions.PurchaseReturnInvoices.View
                         }
                     }
                 },
@@ -260,14 +264,14 @@ namespace HSCrm.Dashboard.Services
                             Key = "bank_accounts",
                             Title = "حساب‌های بانکی و صندوق",
                             Url = "/AdminArea/BankAccount/Index",
-                            PermissionKey = Permissions.Payments.View
+                            PermissionKey = Permissions.BankAccounts.View
                         },
                         new SidebarMenuItem
                         {
                             Key = "receipts_list",
                             Title = "دریافت‌ها و واریزی‌ها",
                             Url = "/AdminArea/Receipt/Index",
-                            PermissionKey = Permissions.Payments.View
+                            PermissionKey = Permissions.Receipt.View
                         },
                         new SidebarMenuItem
                         {
@@ -281,7 +285,7 @@ namespace HSCrm.Dashboard.Services
                             Key = "cheques_list",
                             Title = "چک‌های صیادی و رأس‌گیری",
                             Url = "/AdminArea/Cheque/Index",
-                            PermissionKey = Permissions.Payments.View
+                            PermissionKey = Permissions.Cheques.View
                         }
                     }
                 },
@@ -297,28 +301,28 @@ namespace HSCrm.Dashboard.Services
                             Key = "accounting_accounts",
                             Title = "درختواره و کدینگ حساب‌ها",
                             Url = "/AdminArea/Accounting/Accounts",
-                            PermissionKey = Permissions.Payments.View
+                            PermissionKey = Permissions.AccountingAccounts.View
                         },
                         new SidebarMenuItem
                         {
                             Key = "accounting_vouchers",
                             Title = "اسناد حسابداری (دفتر روزنامه)",
                             Url = "/AdminArea/Accounting/Vouchers",
-                            PermissionKey = Permissions.Payments.View
+                            PermissionKey = Permissions.JournalVouchers.View
                         },
                         new SidebarMenuItem
                         {
                             Key = "accounting_reports",
                             Title = "تراز آزمایشی، معین و سود/زیان",
                             Url = "/AdminArea/Accounting/Reports",
-                            PermissionKey = Permissions.Payments.View
+                            PermissionKey = Permissions.AccountingReports.View
                         },
                         new SidebarMenuItem
                         {
                             Key = "accounting_aging",
                             Title = "صورت‌حساب ۳۶۰ و تحلیل سنی",
                             Url = "/AdminArea/Accounting/AgingAndStatements",
-                            PermissionKey = Permissions.Payments.View
+                            PermissionKey = Permissions.AccountingReports.View
                         }
                     }
                 },
@@ -328,7 +332,7 @@ namespace HSCrm.Dashboard.Services
                     Title = "هزینه‌ها",
                     Icon = "mdi mdi-cash",
                     Url = "/AdminArea/Expense/Index",
-                    PermissionKey = Permissions.Expenses.View
+                    PermissionKey = $"{Permissions.Expenses.View},{Permissions.Expenses.Create}"
                 },
                 new SidebarMenuItem
                 {

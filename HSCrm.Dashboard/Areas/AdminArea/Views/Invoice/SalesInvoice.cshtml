@@ -26,7 +26,10 @@
             @if (User.HasPermission(Permissions.SalesInvoices.Create))
             {
                 <a type="button" class="btn btn-primary" href="/adminarea/invoice/AddSaleInvoice">افزودن فاکتور فروش</a>
-            <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#invoicePatternModal" onclick="loadInvoicePatterns()"><i class="mdi mdi-cog-outline me-1"></i> تنظیم الگوی فاکتور</button>
+            }
+            @if (User.HasPermission(Permissions.Tenants.View) && User.HasPermission(Permissions.Tenants.Edit))
+            {
+                <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#invoicePatternModal" onclick="loadInvoicePatterns()"><i class="mdi mdi-cog-outline me-1"></i> تنظیم الگوی فاکتور</button>
             }
         </div>
     }
@@ -221,7 +224,8 @@
         const apiBase = '@ApiAddress'.endsWith('/') ? '@ApiAddress' : '@ApiAddress/';
         const authHeader = { 'Authorization': 'Bearer ' + '@User.FindFirstValue("Token")' };
 
-        fetch(apiBase + 'Tenant/GetCompanySettings', { headers: authHeader })
+        if (@(User.HasPermission(Permissions.Tenants.View).ToString().ToLower()))
+        fetch(apiBase + 'Tenant/GetCompanySettings', { headers: authHeader, suppressGlobalAlert: true })
             .then(r => r.ok ? r.json() : null)
             .then(res => {
                 const s = res ? (res.data || res) : null;

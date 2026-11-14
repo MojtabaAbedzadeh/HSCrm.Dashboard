@@ -106,5 +106,39 @@ namespace HSCrm.Dashboard.UnitTests
             var ownerUsersMenu = Assert.Single(provider.GetMenus(ownerUser), m => m.Key == "users");
             Assert.Contains(ownerUsersMenu.Children, c => c.Key == "users_list");
         }
+
+        [Fact(DisplayName = "5. ثابت‌های مجوز داشبورد باید دقیقاً با وب‌سرویس هم‌تراز باشند")]
+        public void PermissionsConstants_MatchWebApiNames()
+        {
+            Assert.Equal("Permissions.Receipt.View", Permissions.Receipt.View);
+            Assert.Equal("Permissions.Receipt.Create", Permissions.Receipt.Create);
+            Assert.Equal("Permissions.BankAccounts.View", Permissions.BankAccounts.View);
+            Assert.Equal("Permissions.Cheques.View", Permissions.Cheques.View);
+            Assert.Equal("Permissions.Cheques.ChangeStatus", Permissions.Cheques.ChangeStatus);
+            Assert.Equal("Permissions.AccountingAccounts.View", Permissions.AccountingAccounts.View);
+            Assert.Equal("Permissions.JournalVouchers.View", Permissions.JournalVouchers.View);
+            Assert.Equal("Permissions.AccountingReports.View", Permissions.AccountingReports.View);
+            Assert.Equal("Permissions.SalesReturnInvoices.View", Permissions.SalesReturnInvoices.View);
+            Assert.Equal("Permissions.PurchaseReturnInvoices.View", Permissions.PurchaseReturnInvoices.View);
+        }
+
+        [Fact(DisplayName = "6. کاربر با مجوز payments.view فقط زیرمنوی پرداخت‌ها را می‌بیند نه داشبورد و حسابداری")]
+        public void SidebarMenu_PaymentsViewOnly_ShowsOnlyPaymentsMenu()
+        {
+            var provider = new SidebarMenuProvider();
+            var paymentViewer = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.Role, "User"),
+                new Claim("Permission", Permissions.Payments.View)
+            }, "TestAuth"));
+
+            var menus = provider.GetMenus(paymentViewer);
+
+            Assert.DoesNotContain(menus, m => m.Key == "dashboard");
+            Assert.DoesNotContain(menus, m => m.Key == "accounting");
+            var treasuryGroup = Assert.Single(menus, m => m.Key == "treasury");
+            var onlyChild = Assert.Single(treasuryGroup.Children);
+            Assert.Equal("payments", onlyChild.Key);
+        }
     }
 }
