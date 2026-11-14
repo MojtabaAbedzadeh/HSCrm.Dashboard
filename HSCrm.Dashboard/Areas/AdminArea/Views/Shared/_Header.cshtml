@@ -2,6 +2,10 @@
 @using HSCrm.Dashboard.Costants
 @using HSCrm.Dashboard.Extensions
 @{
+    var canViewFiscalYears = User.IsInRole("Owner")
+        || User.IsInRole("Admin")
+        || User.IsInRole("SuperAdmin")
+        || User.HasPermission(Permissions.FiscalYears.View);
     var canViewTreasuryAlerts = User.IsInRole("Owner")
         || User.IsInRole("Admin")
         || User.IsInRole("SuperAdmin")
@@ -202,9 +206,12 @@
                 'X-FiscalYear-Id': currentFyId
             };
 
-            // ۱. بارگذاری لیست سال‌های مالی جهت سوییچ سریع در هدر
-            fetch(`${hdrApiBase}/FiscalYear/GetAll?tenantId=${hdrTenantId}`, { headers })
-                .then(r => r.json())
+            @if (canViewFiscalYears)
+            {
+            <text>
+            // ۱. بارگذاری لیست سال‌های مالی جهت سوییچ سریع در هدر (فقط برای کاربران دارای مجوز)
+            fetch(`${hdrApiBase}/FiscalYear/GetAll?tenantId=${hdrTenantId}`, { headers, suppressGlobalAlert: true })
+                .then(r => r.ok ? r.json() : ({ data: [] }))
                 .then(res => {
                     const list = res.data || res || [];
                     const ul = document.getElementById('hdrFiscalYearList');
@@ -240,14 +247,42 @@
                     ul.innerHTML = html;
                 })
                 .catch(() => {});
+            </text>
+            }
+            else
+            {
+            <text>
+            // ۱. نمایش عنوان سال مالی فعال از اندپوینت عمومی Dropdown برای کاربران بدون مجوز مدیریت سال مالی
+            fetch(`${hdrApiBase}/FiscalYear/FiscalYearDropdownList?tenantId=${hdrTenantId}`, { headers, suppressGlobalAlert: true })
+                .then(r => r.ok ? r.json() : ({ data: [] }))
+                .then(res => {
+                    const list = res.data || [];
+                    if (Array.isArray(list)) {
+                        const cur = list.find(fy => String(fy.drId ?? fy.id) === String(currentFyId));
+                        if (cur) {
+                            const lbl = document.getElementById('hdrFiscalYearTitle');
+                            if (lbl) lbl.textContent = cur.drName || cur.title || 'سال مالی فعال';
+                        }
+                    }
+                    const ul = document.getElementById('hdrFiscalYearList');
+                    if (ul) {
+                        ul.innerHTML = `<li class="dropdown-header fw-bold text-dark border-bottom pb-1 mb-1">
+                                            <i class="mdi mdi-calendar-check me-1"></i>سال مالی فعال نشست
+                                        </li>
+                                        <li class="px-3 py-2 small text-muted">تغییر سال مالی از طریق خروج و انتخاب در صفحه ورود یا توسط مدیر امکان‌پذیر است.</li>`;
+                    }
+                })
+                .catch(() => {});
+            </text>
+            }
 
             @if (canViewTreasuryAlerts)
             {
             <text>
             // ۲. بارگذاری هشدار چک‌های در آستانه سررسید (۷ روز آینده) و مطالبات معوق (+۹۰ روز)
             Promise.all([
-                fetch(`${hdrApiBase}/Cheque/GetAll`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
-                fetch(`${hdrApiBase}/Accounting/AgingReport?partyType=1&includeChequeAccounts=true`, { headers }).then(r => r.json()).catch(() => ({ data: null }))
+                fetch(`${hdrApiBase}/Cheque/GetAll`, { headers, suppressGlobalAlert: true }).then(r => r.json()).catch(() => ({ data: [] })),
+                fetch(`${hdrApiBase}/Accounting/AgingReport?partyType=1&includeChequeAccounts=true`, { headers, suppressGlobalAlert: true }).then(r => r.json()).catch(() => ({ data: null }))
             ]).then(([chequeRes, agingRes]) => {
                 const cheques = chequeRes.data || [];
                 const agingRows = (agingRes.data && agingRes.data.rows) ? agingRes.data.rows : [];

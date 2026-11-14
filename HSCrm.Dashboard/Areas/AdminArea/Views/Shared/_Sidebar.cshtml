@@ -19,6 +19,14 @@
         ClaimsPrincipal user,
         IAuthorizationService authorizationService)
     {
+        if (!string.IsNullOrWhiteSpace(menu.AllowedRoles))
+        {
+            var allowedRoles = menu.AllowedRoles
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (!allowedRoles.Any(user.IsInRole))
+                return false;
+        }
+
         // اگر منو Permission داشته باشد باید بررسی شود
         if (!string.IsNullOrEmpty(menu.PermissionKey))
         {

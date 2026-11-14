@@ -21,22 +21,31 @@ namespace HSCrm.Dashboard.Services
 
             foreach (var menu in menus)
             {
+                if (!string.IsNullOrWhiteSpace(menu.AllowedRoles))
+                {
+                    var allowedRoles = menu.AllowedRoles
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    if (!allowedRoles.Any(user.IsInRole))
+                        continue;
+                }
+
                 bool hasPermission = string.IsNullOrEmpty(menu.PermissionKey)
                                      || user.HasClaim("Permission", menu.PermissionKey);
+                if (!hasPermission)
+                    continue;
 
                 if (menu.Children != null && menu.Children.Any())
                 {
                     var visibleChildren = FilterMenusByPermission(menu.Children, user);
-                    if (visibleChildren.Any())
-                    {
-                        menu.Children = visibleChildren;
-                        filtered.Add(menu);
+                    if (!visibleChildren.Any())
                         continue;
-                    }
+
+                    menu.Children = visibleChildren;
+                    filtered.Add(menu);
+                    continue;
                 }
 
-                if (hasPermission)
-                    filtered.Add(menu);
+                filtered.Add(menu);
             }
 
             return filtered;
@@ -105,14 +114,16 @@ namespace HSCrm.Dashboard.Services
                             Key = "users_list",
                             Title = "لیست کاربران",
                             Url = "/AdminArea/User/Index",
-                            PermissionKey = Permissions.Users.View
+                            PermissionKey = Permissions.Users.View,
+                            AllowedRoles = "Owner"
                         },
                         new SidebarMenuItem
                         {
                             Key = "roles_list",
                             Title = "نقش‌ها",
                             Url = "/AdminArea/Role/Index",
-                            PermissionKey = Permissions.Roles.View
+                            PermissionKey = Permissions.Roles.View,
+                            AllowedRoles = "Owner,Admin"
                         }
                     }
                 },
@@ -158,7 +169,8 @@ namespace HSCrm.Dashboard.Services
                             Key = "warehouses_list",
                             Title = "لیست انبارها",
                             Url = "/AdminArea/Warehouse/Index",
-                            PermissionKey = Permissions.Inventories.View
+                            PermissionKey = Permissions.Inventories.View,
+                            AllowedRoles = "Owner"
                         }
                     }
                 },

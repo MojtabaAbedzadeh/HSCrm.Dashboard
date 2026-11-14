@@ -61,5 +61,50 @@ namespace HSCrm.Dashboard.UnitTests
             Assert.Equal("/AdminArea/Settings/Index", settingsMenu.Url);
             Assert.DoesNotContain(unauthorizedMenus, m => m.Key == "company_settings");
         }
+
+        [Fact(DisplayName = "3. منوی کناری: منوهای والد بدون زیرمنوی مجاز نباید نمایش داده شوند")]
+        public void SidebarMenu_HidesParentGroupsWhenUserHasNoChildPermissions()
+        {
+            var provider = new SidebarMenuProvider();
+            var employeeWithoutAdminPerms = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.Role, "User"),
+                new Claim("Permission", Permissions.WorkLogs.View),
+                new Claim("Permission", Permissions.WorkLogs.Create)
+            }, "TestAuth"));
+
+            var menus = provider.GetMenus(employeeWithoutAdminPerms);
+
+            Assert.DoesNotContain(menus, m => m.Key == "users");
+            Assert.DoesNotContain(menus, m => m.Key == "customers");
+            Assert.DoesNotContain(menus, m => m.Key == "suppliers");
+            Assert.DoesNotContain(menus, m => m.Key == "inventories");
+            Assert.Contains(menus, m => m.Key == "employee_panel");
+            var projectsGroup = Assert.Single(menus, m => m.Key == "projects");
+            Assert.Single(projectsGroup.Children, c => c.Key == "project_worklogs");
+        }
+
+        [Fact(DisplayName = "4. منوی کناری: منوی کاربران فقط برای نقش Owner قابل مشاهده است")]
+        public void SidebarMenu_UsersMenu_RequiresOwnerRole()
+        {
+            var provider = new SidebarMenuProvider();
+            var nonOwnerWithUsersClaim = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.Role, "User"),
+                new Claim("Permission", Permissions.Users.View),
+                new Claim("Permission", Permissions.Roles.View)
+            }, "TestAuth"));
+
+            var ownerUser = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.Role, "Owner"),
+                new Claim("Permission", Permissions.Users.View),
+                new Claim("Permission", Permissions.Roles.View)
+            }, "TestAuth"));
+
+            Assert.DoesNotContain(provider.GetMenus(nonOwnerWithUsersClaim), m => m.Key == "users");
+            var ownerUsersMenu = Assert.Single(provider.GetMenus(ownerUser), m => m.Key == "users");
+            Assert.Contains(ownerUsersMenu.Children, c => c.Key == "users_list");
+        }
     }
 }

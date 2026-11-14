@@ -331,8 +331,8 @@
 
         try {
             const [invRes, expRes] = await Promise.all([
-                fetch(`${apiAddr}/SalesInvoice/GetProjectInvoices?projectId=${projectId}`, { headers }).then(r => r.json()).catch(() => ({ data: [] })),
-                fetch(`${apiAddr}/Expense/GetProjectExpenses?projectId=${projectId}`, { headers }).then(r => r.json()).catch(() => ({ data: [] }))
+                fetch(`${apiAddr}/SalesInvoice/GetProjectInvoices?projectId=${projectId}`, { headers, suppressGlobalAlert: true }).then(r => r.json()).catch(() => ({ data: [] })),
+                fetch(`${apiAddr}/Expense/GetProjectExpenses?projectId=${projectId}`, { headers, suppressGlobalAlert: true }).then(r => r.json()).catch(() => ({ data: [] }))
             ]);
 
             const invoices = invRes.data || invRes || [];
@@ -463,7 +463,8 @@
     async function loadProjectMemberCounts() {
         try {
             const res = await fetch(`${pmApiAddr}/ProjectMember/GetMemberCounts`, {
-                headers: { 'Authorization': 'Bearer ' + pmToken }
+                headers: { 'Authorization': 'Bearer ' + pmToken },
+                suppressGlobalAlert: true
             });
             if (!res.ok) return;
             const json = await res.json();
