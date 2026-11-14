@@ -1,5 +1,6 @@
 using HSCrm.BussinessLogic.PublicMethod;
 using HSCrm.Dashboard.Controllers;
+using HSCrm.Dashboard.Costants;
 using HSCrm.Models.Common;
 using HSCrm.Models.ModelDto;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,9 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
         public async Task<IActionResult> Index()
         {
+            var tenantId = User.FindFirstValue("TenantId");
+            ViewBag.Projects = await GetProjectList(tenantId);
+
             string apiUrl = "Expense/GetExpense";
             try
             {
@@ -30,14 +34,19 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
                     ? JsonConvert.DeserializeObject<ApiResponse<List<ExpenseModel>>>(json)
                     : null;
                 var model = result?.Data ?? new List<ExpenseModel>();
-                var tenantId = User.FindFirstValue("TenantId");
-                ViewBag.Projects = await GetProjectList(tenantId);
                 return View(model);
+            }
+            catch (AccessDeniedException)
+            {
+                if (!User.HasPermission(Permissions.Expenses.Create))
+                {
+                    ViewBag.ErrorMessage = "دسترسی به مشاهده هزینه‌ها مجاز نمی‌باشد.";
+                }
+                return View(new List<ExpenseModel>());
             }
             catch (Exception ex)
             {
                 ViewBag.ErrorMessage = "خطا در دریافت هزینه‌ها: " + ex.Message;
-                ViewBag.Projects = new List<ProjetcsDropDown>();
                 return View(new List<ExpenseModel>());
             }
         }
