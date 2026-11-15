@@ -86,20 +86,18 @@ namespace HSCrm.Dashboard.UnitTests
             foreach (var t in types)
             {
                 var areaAttr = t.GetCustomAttribute<AreaAttribute>();
-                var authAttr = t.GetCustomAttribute<AuthorizeAttribute>();
+                var authAttrs = t.GetCustomAttributes<AuthorizeAttribute>(inherit: false).ToList();
                 Assert.NotNull(areaAttr);
                 Assert.Equal("UserArea", areaAttr!.RouteValue);
-                Assert.NotNull(authAttr);
-                Assert.Equal("Customer", authAttr!.Roles);
+                Assert.Contains(authAttrs, a => string.Equals(a.Roles, "Customer", StringComparison.Ordinal));
             }
         }
 
         [Fact(DisplayName = "4. ممیزی و تاریخچه تغییرات: AuditTrailController و آیتم منوی کناری با مجوز auditTrail.view هم‌تراز هستند")]
         public void AuditTrailControllerAndSidebarMenu_RequireAuditTrailViewPermission()
         {
-            var authAttr = typeof(AuditTrailController).GetCustomAttribute<AuthorizeAttribute>();
-            Assert.NotNull(authAttr);
-            Assert.Equal("Permission:" + Permissions.AuditTrail.View, authAttr!.Policy);
+            var authAttrs = typeof(AuditTrailController).GetCustomAttributes<AuthorizeAttribute>(inherit: false).ToList();
+            Assert.Contains(authAttrs, a => string.Equals(a.Policy, "Permission:" + Permissions.AuditTrail.View, StringComparison.Ordinal));
 
             var configMock = new Mock<IConfiguration>();
             var ctrl = new AuditTrailController(configMock.Object)
