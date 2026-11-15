@@ -8,7 +8,7 @@
     string fyTitle = ViewBag.FiscalYearTitle?.ToString() ?? "سال مالی فعال";
     string selected = ViewData["selected"]?.ToString() ?? "user_home";
     string avatarRaw = ViewBag.UserImageUrl?.ToString() ?? "";
-    string avatarSrc = string.IsNullOrWhiteSpace(avatarRaw) ? Url.Content("~/assets/img/user/user.png") : avatarRaw;
+    string avatarSrc = string.IsNullOrWhiteSpace(avatarRaw) ? Url.Content("~/assets/img/user/default-user.png") : avatarRaw;
 }
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -68,7 +68,7 @@
             <!-- منوی کاربر -->
             <div class="dropdown">
                 <button class="btn btn-light dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3 py-1" data-bs-toggle="dropdown" aria-expanded="false">
-                    <img src="@avatarSrc" alt="avatar" class="rounded-circle" style="width:28px;height:28px;object-fit:cover;" onerror="this.src='/assets/img/user/user.png'" />
+                    <img src="@avatarSrc" alt="avatar" class="rounded-circle" style="width:28px;height:28px;object-fit:cover;" onerror="this.onerror=null;this.src='/assets/img/user/default-user.png';" />
                     <span class="small fw-bold text-dark d-none d-sm-inline">@fullName</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow small">
