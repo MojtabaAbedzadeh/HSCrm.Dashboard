@@ -1,0 +1,153 @@
+@{
+    ViewData["Title"] = "پروفایل و امنیت حساب";
+    ViewData["selected"] = "user_profile";
+}
+
+<div class="mb-3">
+    <h4 class="fw-bold mb-1">پروفایل و تغییر رمز عبور</h4>
+    <p class="text-muted small mb-0">بروزرسانی اطلاعات تماس و تغییر امن رمز عبور ورود به پرتال مشتریان</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="fw-bold mb-0"><i class="mdi mdi-account-edit-outline me-1 text-primary"></i>اطلاعات فردی و تماس</h6>
+            </div>
+            <div class="card-body">
+                <form id="cpProfileForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">نام کاربری</label>
+                            <input type="text" id="prUserName" class="form-control bg-light" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">نام شرکت</label>
+                            <input type="text" id="prCompany" class="form-control bg-light" readonly />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">نام *</label>
+                            <input type="text" id="prFirstName" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">نام خانوادگی *</label>
+                            <input type="text" id="prLastName" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">شماره همراه</label>
+                            <input type="text" id="prPhone" class="form-control" dir="ltr" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">ایمیل</label>
+                            <input type="email" id="prEmail" class="form-control" dir="ltr" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">نشانی کامل</label>
+                            <textarea id="prAddress" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="mdi mdi-content-save me-1"></i>ذخیره تغییرات پروفایل
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="fw-bold mb-0"><i class="mdi mdi-lock-reset me-1 text-warning"></i>تغییر امن رمز عبور</h6>
+            </div>
+            <div class="card-body">
+                <form id="cpPasswordForm">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">رمز عبور فعلی *</label>
+                        <input type="password" id="pwdCurrent" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">رمز عبور جدید *</label>
+                        <input type="password" id="pwdNew" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">تکرار رمز عبور جدید *</label>
+                        <input type="password" id="pwdConfirm" class="form-control" required />
+                    </div>
+                    <button type="submit" class="btn btn-warning fw-bold w-100">
+                        <i class="mdi mdi-key-change me-1"></i>بروزرسانی رمز عبور
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section UserScripts {
+<script>
+(function () {
+    fetch(window.cpApiBase + 'CustomerPortal/Profile', {
+        headers: { 'Authorization': 'Bearer ' + window.cpToken }
+    })
+    .then(r => r.json())
+    .then(res => {
+        const p = res?.data;
+        if (!p) return;
+        document.getElementById('prUserName').value = p.userName || '';
+        document.getElementById('prCompany').value = p.companyTitle || '';
+        document.getElementById('prFirstName').value = p.userFirstName || '';
+        document.getElementById('prLastName').value = p.userLastName || '';
+        document.getElementById('prPhone').value = p.phone || '';
+        document.getElementById('prEmail').value = p.email || '';
+        document.getElementById('prAddress').value = p.address || '';
+    });
+
+    document.getElementById('cpProfileForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const body = {
+            userFirstName: document.getElementById('prFirstName').value.trim(),
+            userLastName: document.getElementById('prLastName').value.trim(),
+            phone: document.getElementById('prPhone').value.trim() || null,
+            email: document.getElementById('prEmail').value.trim() || null,
+            address: document.getElementById('prAddress').value.trim() || null
+        };
+        fetch(window.cpApiBase + 'CustomerPortal/UpdateProfile', {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + window.cpToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        })
+        .then(r => r.json())
+        .then(res => {
+            SwalHelper.handleResponse(res, 'اطلاعات پروفایل با موفقیت ذخیره شد.');
+        });
+    });
+
+    document.getElementById('cpPasswordForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const body = {
+            currentPassword: document.getElementById('pwdCurrent').value,
+            newPassword: document.getElementById('pwdNew').value,
+            confirmPassword: document.getElementById('pwdConfirm').value
+        };
+        fetch(window.cpApiBase + 'CustomerPortal/ChangePassword', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + window.cpToken,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        })
+        .then(r => r.json())
+        .then(res => {
+            SwalHelper.handleResponse(res, 'رمز عبور با موفقیت تغییر یافت.', function () {
+                document.getElementById('cpPasswordForm').reset();
+            });
+        });
+    });
+})();
+</script>
+}

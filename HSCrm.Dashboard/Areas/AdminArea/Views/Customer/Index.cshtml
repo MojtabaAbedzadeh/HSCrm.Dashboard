@@ -44,6 +44,7 @@
                                     <th>آدرس</th>
                                     <th class="text-end">مانده بدهی (ریال)</th>
                                     <th class="text-end">چک در جریان (ریال)</th>
+                                    <th>حساب پرتال</th>
                                     <th>فعالیت</th>
                                 </tr>
                             </thead>
@@ -57,6 +58,7 @@
                                         <td>@item.Address</td>
                                         <td class="text-end font-monospace cust-bal-cell" data-cust-id="@item.Id" dir="ltr"><span class="text-muted small">...</span></td>
                                         <td class="text-end font-monospace cust-chq-cell" data-cust-id="@item.Id" dir="ltr"><span class="text-muted small">...</span></td>
+                                        <td class="cust-portal-cell" data-cust-id="@item.Id"><span class="text-muted small">...</span></td>
                                         <td>
                                             <div class="btn-group mb-1">
                                                 <a class="btn btn-outline-primary btn-sm" href="/AdminArea/Accounting/AgingAndStatements?partyType=1&partyId=@item.Id" title="صورت‌حساب ۳۶۰، فاکتورها و چک‌ها">۳۶۰</a>
@@ -69,6 +71,7 @@
                                                     @if (User.HasPermission(Permissions.Customers.Edit))
                                                     {
                                                         <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
+                                                        <a class="dropdown-item text-info" href="javascript:void(0)" onclick="openPortalAccountModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Name ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Email ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Phone ?? ""))')">مدیریت حساب پرتال مشتری</a>
                                                     }
                                                     @if (User.HasPermission(Permissions.Customers.Delete))
                                                     {
@@ -253,6 +256,56 @@
         </div>
     </div>
 </div>
+
+<!-- مودال فعال‌سازی / بازنشانی رمز پرتال مشتری (فاز ۴) -->
+<div class="modal fade" id="customerPortalModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="mdi mdi-account-key-outline me-1 text-primary"></i>حساب پرتال مشتری: <span id="cpMdlCustName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="cpMdlCustId" value="0" />
+                <input type="hidden" id="cpMdlHasAccount" value="false" />
+                <div id="cpMdlActivateBox">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">نام کاربری ورود به پرتال *</label>
+                        <input type="text" id="cpMdlUserName" class="form-control" dir="ltr" placeholder="مثلاً customer_ali" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">رمز عبور اولیه *</label>
+                        <input type="password" id="cpMdlPassword" class="form-control" dir="ltr" />
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">تلفن</label>
+                            <input type="text" id="cpMdlPhone" class="form-control" dir="ltr" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">ایمیل</label>
+                            <input type="email" id="cpMdlEmail" class="form-control" dir="ltr" />
+                        </div>
+                    </div>
+                </div>
+                <div id="cpMdlResetBox" style="display:none;">
+                    <div class="alert alert-success small">
+                        این مشتری دارای حساب پرتال فعال با نام کاربری <strong id="cpMdlExistingUserName" class="font-monospace"></strong> است.
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">رمز عبور جدید جهت بازنشانی *</label>
+                        <input type="password" id="cpMdlNewPassword" class="form-control" dir="ltr" />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary" onclick="submitCustomerPortalModal()">ذخیره</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section AdminScripts {
     <script>
         $("#btnCustomerSubmit").on('click', function (e) {
@@ -404,6 +457,84 @@
             .catch(() => {
                 document.querySelectorAll('.cust-bal-cell, .cust-chq-cell').forEach(c => { c.textContent = '-'; });
             });
+
+            window.cpPortalStatusMap = {};
+            fetch(apiBase + '/Customer/GetPortalStatuses', {
+                headers: { 'Authorization': 'Bearer ' + token },
+                suppressGlobalAlert: true
+            })
+            .then(r => r.ok ? r.json() : ({ data: [] }))
+            .then(res => {
+                const list = res.data || [];
+                list.forEach(x => { window.cpPortalStatusMap[x.customerId] = x; });
+                document.querySelectorAll('.cust-portal-cell').forEach(cell => {
+                    const id = Number(cell.getAttribute('data-cust-id'));
+                    const st = window.cpPortalStatusMap[id];
+                    if (st && st.hasPortalAccount) {
+                        cell.innerHTML = `<span class="badge bg-success">فعال</span> <small class="text-muted font-monospace">${st.userName || ''}</small>`;
+                    } else {
+                        cell.innerHTML = '<span class="badge bg-secondary">بدون حساب</span>';
+                    }
+                });
+            }).catch(() => {});
+
+            window.openPortalAccountModal = function (custId, custName, email, phone) {
+                const st = (window.cpPortalStatusMap || {})[custId];
+                document.getElementById('cpMdlCustId').value = custId;
+                document.getElementById('cpMdlCustName').textContent = custName || '';
+                const hasAcc = !!(st && st.hasPortalAccount);
+                document.getElementById('cpMdlHasAccount').value = hasAcc ? 'true' : 'false';
+                document.getElementById('cpMdlActivateBox').style.display = hasAcc ? 'none' : 'block';
+                document.getElementById('cpMdlResetBox').style.display = hasAcc ? 'block' : 'none';
+                document.getElementById('cpMdlExistingUserName').textContent = (st && st.userName) || '';
+                document.getElementById('cpMdlEmail').value = email || '';
+                document.getElementById('cpMdlPhone').value = phone || '';
+                document.getElementById('cpMdlUserName').value = '';
+                document.getElementById('cpMdlPassword').value = '';
+                document.getElementById('cpMdlNewPassword').value = '';
+                new bootstrap.Modal(document.getElementById('customerPortalModal')).show();
+            };
+
+            window.submitCustomerPortalModal = function () {
+                const custId = Number(document.getElementById('cpMdlCustId').value);
+                const hasAcc = document.getElementById('cpMdlHasAccount').value === 'true';
+                if (!hasAcc) {
+                    const userName = document.getElementById('cpMdlUserName').value.trim();
+                    const password = document.getElementById('cpMdlPassword').value;
+                    if (!userName || !password) {
+                        SwalHelper.warning('نام کاربری و رمز عبور الزامی هستند.');
+                        return;
+                    }
+                    fetch(apiBase + '/Customer/ActivatePortalAccount', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            customerId: custId,
+                            userName: userName,
+                            password: password,
+                            phone: document.getElementById('cpMdlPhone').value.trim() || null,
+                            email: document.getElementById('cpMdlEmail').value.trim() || null
+                        })
+                    }).then(r => r.json()).then(res => {
+                        SwalHelper.handleResponse(res, 'حساب پرتال مشتری با موفقیت فعال شد.', function () { window.location.reload(); });
+                    });
+                } else {
+                    const newPassword = document.getElementById('cpMdlNewPassword').value;
+                    if (!newPassword) {
+                        SwalHelper.warning('رمز عبور جدید را وارد کنید.');
+                        return;
+                    }
+                    fetch(apiBase + '/Customer/ResetPortalPassword', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ customerId: custId, newPassword: newPassword })
+                    }).then(r => r.json()).then(res => {
+                        SwalHelper.handleResponse(res, 'رمز عبور پرتال مشتری بازنشانی شد.', function () {
+                            bootstrap.Modal.getInstance(document.getElementById('customerPortalModal'))?.hide();
+                        });
+                    });
+                }
+            };
         })();
     </script>
 }

@@ -1,0 +1,198 @@
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "تاریخچه تغییرات اسناد (Audit Trail)";
+    ViewData["selected"] = "audit_trail";
+    string apiAddress = ViewBag.ApiAddress?.ToString() ?? "";
+}
+
+<div class="breadcrumb-wrapper breadcrumb-contacts">
+    <div>
+        <h1>تاریخچه تغییرات و ممیزی اسناد (Audit Trail)</h1>
+        <p class="breadcrumbs">
+            <span><a href="/AdminArea/Home/Index">خانه</a></span>
+            <span><i class="mdi mdi-chevron-left"></i></span>
+            تاریخچه تغییرات
+        </p>
+    </div>
+</div>
+
+<div class="card card-default mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="mdi mdi-filter-outline me-1 text-primary"></i>فیلتر سابقه ثبت و ویرایش</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-bold small">نوع سند / بخش</label>
+                <select id="atEntityType" class="form-select">
+                    <option value="">همه بخش‌ها</option>
+                    <option value="SalesInvoice">فاکتور فروش</option>
+                    <option value="PurchaseInvoice">فاکتور خرید</option>
+                    <option value="SalesReturnInvoice">برگشت از فروش</option>
+                    <option value="PurchaseReturnInvoice">برگشت از خرید</option>
+                    <option value="Receipt">دریافت وجه</option>
+                    <option value="Payment">پرداخت وجه</option>
+                    <option value="Expense">هزینه پروژه</option>
+                    <option value="Cheque">چک صیادی</option>
+                    <option value="JournalVoucher">سند حسابداری</option>
+                    <option value="Project">پروژه</option>
+                    <option value="ProjectMilestone">مایلستون پروژه</option>
+                    <option value="ProjectProgressLog">گزارش پیشرفت</option>
+                    <option value="ProjectWorkLog">ساعت کار پروژه</option>
+                    <option value="Customer">مشتری</option>
+                    <option value="Supplier">تأمین‌کننده</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold small">جستجو (شماره، عنوان، کاربر)</label>
+                <input type="text" id="atSearch" class="form-control" placeholder="شماره فاکتور، نام پروژه یا کاربر..." />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">از تاریخ (شمسی/میلادی)</label>
+                <input type="text" id="atFromDate" class="form-control text-center" placeholder="1405/01/01" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">تا تاریخ</label>
+                <input type="text" id="atToDate" class="form-control text-center" placeholder="1405/12/29" />
+            </div>
+            <div class="col-md-2 d-grid gap-2">
+                <button type="button" class="btn btn-primary" onclick="loadAuditLogs(1)">
+                    <i class="mdi mdi-magnify me-1"></i>جستجو
+                </button>
+            </div>
+        </div>
+        <div class="form-check form-switch mt-3">
+            <input class="form-check-input" type="checkbox" id="atIncludeDeleted" checked onchange="loadAuditLogs(1)" />
+            <label class="form-check-label small" for="atIncludeDeleted">نمایش رکوردهای حذف‌شده (Soft-Deleted)</label>
+        </div>
+    </div>
+</div>
+
+<div class="card card-default">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="mdi mdi-history me-1 text-success"></i>فهرست رخدادهای ثبت و ویرایش</h5>
+        <span class="badge bg-primary" id="atTotalBadge">0 رکورد</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle small">
+                <thead class="table-light">
+                    <tr>
+                        <th>بخش / نوع</th>
+                        <th>شناسه</th>
+                        <th>سند / عنوان</th>
+                        <th>پروژه / طرف‌حساب</th>
+                        <th>ایجادکننده و زمان ثبت</th>
+                        <th>آخرین ویرایش و زمان</th>
+                        <th>وضعیت</th>
+                    </tr>
+                </thead>
+                <tbody id="atTableBody">
+                    <tr><td colspan="7" class="text-center py-4 text-muted">در حال دریافت تاریخچه...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div class="small text-muted" id="atPageInfo">صفحه 1</div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="atPrevBtn" onclick="changeAuditPage(-1)">قبلی</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="atNextBtn" onclick="changeAuditPage(1)">بعدی</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section AdminScripts {
+<script>
+(function () {
+    const rawApi = '@apiAddress';
+    const apiBase = rawApi.endsWith('/') ? rawApi : rawApi + '/';
+    const token = '@User.FindFirstValue("Token")';
+    let currentPage = 1;
+    const pageSize = 30;
+    let totalCount = 0;
+
+    function esc(v) {
+        return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    window.changeAuditPage = function (delta) {
+        const maxPage = Math.max(1, Math.ceil(totalCount / pageSize));
+        const next = currentPage + delta;
+        if (next < 1 || next > maxPage) return;
+        loadAuditLogs(next);
+    };
+
+    window.loadAuditLogs = function (page) {
+        currentPage = page || 1;
+        const params = new URLSearchParams();
+        const entityType = document.getElementById('atEntityType').value;
+        const search = document.getElementById('atSearch').value;
+        const fromDate = document.getElementById('atFromDate').value;
+        const toDate = document.getElementById('atToDate').value;
+        const includeDeleted = document.getElementById('atIncludeDeleted').checked;
+
+        if (entityType) params.set('entityType', entityType);
+        if (search) params.set('search', search);
+        if (fromDate) params.set('fromDate', fromDate);
+        if (toDate) params.set('toDate', toDate);
+        params.set('includeDeleted', includeDeleted ? 'true' : 'false');
+        params.set('page', currentPage);
+        params.set('pageSize', pageSize);
+
+        const tbody = document.getElementById('atTableBody');
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">در حال بارگذاری...</td></tr>';
+
+        fetch(`${apiBase}AuditTrail/GetLogs?${params.toString()}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(r => r.json())
+        .then(res => {
+            const payload = res.data || {};
+            const items = payload.items || [];
+            totalCount = payload.totalCount || 0;
+            const maxPage = Math.max(1, Math.ceil(totalCount / pageSize));
+
+            document.getElementById('atTotalBadge').textContent = `${totalCount} رکورد`;
+            document.getElementById('atPageInfo').textContent = `صفحه ${currentPage} از ${maxPage}`;
+            document.getElementById('atPrevBtn').disabled = currentPage <= 1;
+            document.getElementById('atNextBtn').disabled = currentPage >= maxPage;
+
+            if (items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">هیچ سابقه تغییری با این فیلترها یافت نشد.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = items.map(item => {
+                const modHtml = item.modifiedAtShamsi
+                    ? `<div><strong>${esc(item.modifiedByName || 'سیستم')}</strong></div><div class="text-muted font-monospace" dir="ltr">${esc(item.modifiedAtShamsi)}</div>`
+                    : '<span class="text-muted">ویرایش نشده</span>';
+                const statusBadge = item.isDeleted
+                    ? `<span class="badge bg-danger">حذف‌شده</span><div class="text-muted mt-1" dir="ltr">${esc(item.deletedAtShamsi || '')}</div>`
+                    : '<span class="badge bg-success">فعال</span>';
+
+                return `<tr>
+                    <td><span class="badge bg-light text-dark border">${esc(item.entityTitleFa)}</span></td>
+                    <td class="font-monospace">#${item.entityId}</td>
+                    <td class="fw-bold">${esc(item.documentNumberOrTitle)}</td>
+                    <td>${esc(item.projectOrPartyTitle || '-')}</td>
+                    <td>
+                        <div><strong>${esc(item.createdByName || 'سیستم')}</strong></div>
+                        <div class="text-muted font-monospace" dir="ltr">${esc(item.createdAtShamsi || '')}</div>
+                    </td>
+                    <td>${modHtml}</td>
+                    <td>${statusBadge}</td>
+                </tr>`;
+            }).join('');
+        })
+        .catch(() => {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">خطا در دریافت تاریخچه تغییرات.</td></tr>';
+        });
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadAuditLogs(1);
+    });
+})();
+</script>
+}

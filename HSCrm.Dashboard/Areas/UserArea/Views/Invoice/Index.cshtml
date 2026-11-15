@@ -1,0 +1,207 @@
+@{
+    ViewData["Title"] = "فاکتورهای فروش و چاپ A4";
+    ViewData["selected"] = "user_invoices";
+}
+
+<div class="mb-3 no-print">
+    <h4 class="fw-bold mb-1">فاکتورهای فروش من</h4>
+    <p class="text-muted small mb-0">مشاهده وضعیت تسویه فاکتورها و دریافت نسخه چاپی رسمی A4 با مشخصات و لوگوی شرکت</p>
+</div>
+
+<div class="card border-0 shadow-sm no-print">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle small">
+                <thead class="table-light">
+                    <tr>
+                        <th>شماره فاکتور</th>
+                        <th>پروژه</th>
+                        <th>تاریخ صدور</th>
+                        <th>وضعیت</th>
+                        <th class="text-end">جمع کل (ریال)</th>
+                        <th class="text-end">پرداخت‌شده (ریال)</th>
+                        <th class="text-end">مانده (ریال)</th>
+                        <th class="text-center">چاپ / جزئیات</th>
+                    </tr>
+                </thead>
+                <tbody id="cpInvoicesBody">
+                    <tr><td colspan="8" class="text-center py-4 text-muted">در حال دریافت فاکتورها...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- مودال چاپ رسمی A4 فاکتور فروش -->
+<div class="modal fade" id="customerPrintInvoiceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light no-print">
+                <h5 class="modal-title"><i class="mdi mdi-printer me-1 text-primary"></i>پیش‌نمایش رسمی فاکتور (A4)</h5>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-warning fw-bold" onclick="window.print()">
+                        <i class="mdi mdi-printer me-1"></i>چاپ فاکتور (A4)
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+            </div>
+            <div class="modal-body p-4" id="cpA4PrintSheet" dir="rtl">
+                <div class="d-flex justify-content-between align-items-center border-bottom border-dark pb-3 mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <img id="cpPrLogo" src="" alt="Logo" style="max-height:70px;max-width:120px;display:none;" />
+                        <div>
+                            <h4 class="fw-bold mb-1" id="cpPrCompanyTitle">صورت‌حساب فروش کالا و خدمات</h4>
+                            <div class="small text-muted" id="cpPrCompanyMeta"></div>
+                        </div>
+                    </div>
+                    <div class="text-end small font-monospace">
+                        <div><strong>شماره فاکتور:</strong> <span id="cpPrNumber">-</span></div>
+                        <div><strong>تاریخ صدور:</strong> <span id="cpPrDate">-</span></div>
+                        <div><strong>وضعیت:</strong> <span id="cpPrStatus">-</span></div>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3 p-2 bg-light border rounded small">
+                    <div class="col-md-4"><strong>خریدار:</strong> <span id="cpPrCustomer">-</span></div>
+                    <div class="col-md-4"><strong>تلفن:</strong> <span id="cpPrPhone">-</span></div>
+                    <div class="col-md-4"><strong>پروژه:</strong> <span id="cpPrProject">-</span></div>
+                    <div class="col-12"><strong>نشانی:</strong> <span id="cpPrAddress">-</span></div>
+                </div>
+
+                <table class="table table-bordered border-dark align-middle text-center small mb-3">
+                    <thead class="table-secondary border-dark">
+                        <tr>
+                            <th>ردیف</th>
+                            <th>شرح کالا / خدمات</th>
+                            <th>واحد</th>
+                            <th>تعداد</th>
+                            <th>فی (ریال)</th>
+                            <th>تخفیف</th>
+                            <th>مالیات</th>
+                            <th>مبلغ کل (ریال)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cpPrItemsBody"></tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="7" class="text-end fw-bold">جمع کل قابل پرداخت (ریال):</td>
+                            <td class="fw-bold font-monospace text-primary" id="cpPrTotal">0</td>
+                        </tr>
+                        <tr>
+                            <td colspan="7" class="text-end">مبلغ تسویه‌شده (ریال):</td>
+                            <td class="font-monospace text-success" id="cpPrPaid">0</td>
+                        </tr>
+                        <tr>
+                            <td colspan="7" class="text-end fw-bold">مانده قابل پرداخت (ریال):</td>
+                            <td class="fw-bold font-monospace text-danger" id="cpPrRem">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div id="cpPrFooterText" class="alert alert-light border small text-muted mb-4" style="display:none;"></div>
+
+                <div class="row mt-5 pt-3 text-center small">
+                    <div class="col-4"><div class="border-top border-dark pt-2">مهر و امضای فروشنده</div></div>
+                    <div class="col-4"><div class="border-top border-dark pt-2">واحد مالی</div></div>
+                    <div class="col-4"><div class="border-top border-dark pt-2">مهر و امضای خریدار</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section UserScripts {
+<script>
+(function () {
+    const apiRoot = window.cpApiBase.replace(/\/api\/?$/i, '/');
+    let invoiceCache = [];
+    function esc(v) { return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    fetch(window.cpApiBase + 'CustomerPortal/Invoices', {
+        headers: { 'Authorization': 'Bearer ' + window.cpToken }
+    })
+    .then(r => r.json())
+    .then(res => {
+        invoiceCache = res?.data || [];
+        const tbody = document.getElementById('cpInvoicesBody');
+        if (invoiceCache.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">فاکتوری برای حساب شما ثبت نشده است.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = invoiceCache.map(inv => `
+            <tr>
+                <td class="fw-bold font-monospace">${esc(inv.number)}</td>
+                <td>${esc(inv.projectTitle)}</td>
+                <td class="font-monospace">${esc(inv.issueDateShamsi)}</td>
+                <td><span class="badge ${inv.status === 2 ? 'bg-success' : inv.status === 3 ? 'bg-danger' : 'bg-secondary'}">${esc(inv.statusTitle)}</span></td>
+                <td class="text-end font-monospace">${Number(inv.total || 0).toLocaleString('fa-IR')}</td>
+                <td class="text-end font-monospace text-success">${Number(inv.paidAmount || 0).toLocaleString('fa-IR')}</td>
+                <td class="text-end font-monospace text-danger">${Number(inv.remainingAmount || 0).toLocaleString('fa-IR')}</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openCustomerInvoicePrint(${inv.id})">
+                        <i class="mdi mdi-printer me-1"></i>مشاهده و چاپ A4
+                    </button>
+                </td>
+            </tr>`).join('');
+    });
+
+    window.openCustomerInvoicePrint = function (id) {
+        const inv = invoiceCache.find(x => x.id === id);
+        if (!inv) return;
+
+        const c = inv.companyInfo || {};
+        document.getElementById('cpPrCompanyTitle').textContent = c.companyTitle || 'صورت‌حساب فروش';
+        const metaParts = [];
+        if (c.taxId) metaParts.push('شناسه ملی/اقتصادی: ' + c.taxId);
+        if (c.companyPhone) metaParts.push('تلفن: ' + c.companyPhone);
+        if (c.address) metaParts.push('نشانی: ' + c.address);
+        document.getElementById('cpPrCompanyMeta').textContent = metaParts.join(' | ');
+
+        const logoEl = document.getElementById('cpPrLogo');
+        if (c.logoUrl) {
+            logoEl.src = c.logoUrl.startsWith('http') ? c.logoUrl : (apiRoot + c.logoUrl.replace(/^\/+/, ''));
+            logoEl.style.display = 'block';
+        } else {
+            logoEl.style.display = 'none';
+        }
+
+        const ftEl = document.getElementById('cpPrFooterText');
+        if (c.invoiceFooterText) {
+            ftEl.textContent = c.invoiceFooterText;
+            ftEl.style.display = 'block';
+        } else {
+            ftEl.style.display = 'none';
+        }
+
+        document.getElementById('cpPrNumber').textContent = inv.number;
+        document.getElementById('cpPrDate').textContent = inv.issueDateShamsi;
+        document.getElementById('cpPrStatus').textContent = inv.statusTitle;
+        document.getElementById('cpPrCustomer').textContent = inv.customerName;
+        document.getElementById('cpPrPhone').textContent = inv.customerPhone || '-';
+        document.getElementById('cpPrProject').textContent = inv.projectTitle;
+        document.getElementById('cpPrAddress').textContent = inv.customerAddress || '-';
+
+        document.getElementById('cpPrTotal').textContent = Number(inv.total || 0).toLocaleString('fa-IR');
+        document.getElementById('cpPrPaid').textContent = Number(inv.paidAmount || 0).toLocaleString('fa-IR');
+        document.getElementById('cpPrRem').textContent = Number(inv.remainingAmount || 0).toLocaleString('fa-IR');
+
+        const items = inv.items || [];
+        document.getElementById('cpPrItemsBody').innerHTML = items.length === 0
+            ? '<tr><td colspan="8" class="text-muted">ردیفی ثبت نشده است.</td></tr>'
+            : items.map((it, idx) => `
+                <tr>
+                    <td>${idx + 1}</td>
+                    <td class="text-start">${esc(it.productTitle)}</td>
+                    <td>${esc(it.unit || '-')}</td>
+                    <td>${Number(it.quantity || 0).toLocaleString('fa-IR')}</td>
+                    <td class="font-monospace">${Number(it.unitPrice || 0).toLocaleString('fa-IR')}</td>
+                    <td class="font-monospace">${Number(it.discount || 0).toLocaleString('fa-IR')}</td>
+                    <td class="font-monospace">${Number(it.tax || 0).toLocaleString('fa-IR')}</td>
+                    <td class="font-monospace fw-bold">${Number(it.total || 0).toLocaleString('fa-IR')}</td>
+                </tr>`).join('');
+
+        new bootstrap.Modal(document.getElementById('customerPrintInvoiceModal')).show();
+    };
+})();
+</script>
+}

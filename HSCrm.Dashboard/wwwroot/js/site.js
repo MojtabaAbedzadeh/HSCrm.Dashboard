@@ -435,3 +435,51 @@ if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
         }
     };
 }
+
+// =========================================================================
+// نمایش سریع سابقه ثبت و آخرین ویرایش سند (Audit Trail Popover / Modal)
+// =========================================================================
+window.showEntityAuditHistory = async function (apiBase, token, entityType, entityId) {
+    const cleanBase = String(apiBase || '').replace(/\/+$/, '');
+    if (!cleanBase || !token) return;
+    try {
+        const res = await fetch(`${cleanBase}/AuditTrail/EntityHistory?entityType=${encodeURIComponent(entityType)}&entityId=${encodeURIComponent(entityId)}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const json = await res.json();
+        if (!res.ok || !json || !json.status || !json.data) {
+            if (typeof SwalHelper !== 'undefined') SwalHelper.warning((json && json.message) || 'سابقه تغییر یافت نشد.');
+            return;
+        }
+        const d = json.data;
+        const esc = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const html = `
+            <div class="text-end small" dir="rtl">
+                <div class="p-2 bg-light rounded border mb-2">
+                    <div><strong>بخش:</strong> ${esc(d.entityTitleFa)} (#${d.entityId})</div>
+                    <div><strong>عنوان / شماره:</strong> ${esc(d.documentNumberOrTitle)}</div>
+                </div>
+                <div class="p-2 border rounded mb-2">
+                    <div class="text-success fw-bold mb-1">ثبت اولیه</div>
+                    <div><strong>کاربر:</strong> ${esc(d.createdByName || 'سیستم')}</div>
+                    <div><strong>زمان:</strong> <span dir="ltr" class="font-monospace">${esc(d.createdAtShamsi)}</span></div>
+                </div>
+                <div class="p-2 border rounded">
+                    <div class="text-primary fw-bold mb-1">آخرین ویرایش</div>
+                    ${d.modifiedAtShamsi
+                        ? `<div><strong>کاربر:</strong> ${esc(d.modifiedByName || 'سیستم')}</div><div><strong>زمان:</strong> <span dir="ltr" class="font-monospace">${esc(d.modifiedAtShamsi)}</span></div>`
+                        : '<div class="text-muted">این رکورد تاکنون ویرایش نشده است.</div>'}
+                </div>
+            </div>`;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'سابقه ثبت و ویرایش سند',
+                html: html,
+                icon: 'info',
+                confirmButtonText: 'بستن'
+            });
+        }
+    } catch (e) {
+        console.error(e);
+    }
+};

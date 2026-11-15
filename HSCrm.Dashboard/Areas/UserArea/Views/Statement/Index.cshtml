@@ -1,0 +1,146 @@
+@{
+    ViewData["Title"] = "صورت‌حساب ۳۶۰ درجه و دریافت‌ها";
+    ViewData["selected"] = "user_statement";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <h4 class="fw-bold mb-1">صورت‌حساب جامع ۳۶۰ درجه و دریافت‌ها</h4>
+        <p class="text-muted small mb-0">مشاهده مانده حساب، ریز گردش دفتر حسابداری، واریزی‌ها و چک‌های در جریان</p>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary no-print" onclick="window.print()">
+        <i class="mdi mdi-printer me-1"></i>چاپ صورت‌حساب
+    </button>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+            <div class="small text-muted">جمع فاکتورها (ریال)</div>
+            <div class="fs-5 fw-bold font-monospace text-dark mt-1" id="stTotalInv">0</div>
+        </div></div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+            <div class="small text-muted">جمع دریافت‌ها و واریزی‌ها</div>
+            <div class="fs-5 fw-bold font-monospace text-success mt-1" id="stTotalCash">0</div>
+        </div></div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+            <div class="small text-muted">چک‌های در جریان</div>
+            <div class="fs-5 fw-bold font-monospace text-info mt-1" id="stPendingChq">0</div>
+        </div></div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+            <div class="small text-muted">مانده نهایی دفتری</div>
+            <div class="fs-5 fw-bold font-monospace mt-1" id="stBookBal">0</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h6 class="fw-bold mb-0"><i class="mdi mdi-book-open-page-variant-outline me-1 text-primary"></i>گردش حساب و اسناد مالی</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle small">
+                <thead class="table-light">
+                    <tr>
+                        <th>تاریخ</th>
+                        <th>شماره سند</th>
+                        <th>پروژه / شرح</th>
+                        <th class="text-end">بدهکار (ریال)</th>
+                        <th class="text-end">بستانکار (ریال)</th>
+                        <th class="text-end">مانده لحظه‌ای (ریال)</th>
+                    </tr>
+                </thead>
+                <tbody id="stLedgerBody">
+                    <tr><td colspan="6" class="text-center py-4 text-muted">در حال دریافت...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white">
+        <h6 class="fw-bold mb-0"><i class="mdi mdi-cash-multiple me-1 text-success"></i>فهرست دریافت‌ها و واریزی‌های ثبت‌شده</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle small">
+                <thead class="table-light">
+                    <tr>
+                        <th>تاریخ واریز</th>
+                        <th>روش پرداخت</th>
+                        <th>شماره پیگیری</th>
+                        <th>بابت فاکتور</th>
+                        <th>توضیحات</th>
+                        <th class="text-end">مبلغ (ریال)</th>
+                    </tr>
+                </thead>
+                <tbody id="stReceiptsBody">
+                    <tr><td colspan="6" class="text-center py-4 text-muted">در حال دریافت...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section UserScripts {
+<script>
+(function () {
+    function esc(v) { return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    fetch(window.cpApiBase + 'CustomerPortal/Statement', {
+        headers: { 'Authorization': 'Bearer ' + window.cpToken }
+    })
+    .then(r => r.json())
+    .then(res => {
+        const data = res?.data || {};
+        const st = data.statement || {};
+        const receipts = data.receipts || [];
+
+        document.getElementById('stTotalInv').textContent = Number(st.totalInvoicesAmount || 0).toLocaleString('fa-IR');
+        const cashSum = st.totalCashAndBankSettlements ?? receipts.reduce((s, r) => s + Number(r.amount || 0), 0);
+        document.getElementById('stTotalCash').textContent = Number(cashSum).toLocaleString('fa-IR');
+        document.getElementById('stPendingChq').textContent = Number(st.pendingChequesAmount || 0).toLocaleString('fa-IR');
+
+        const bal = Number(st.finalBookBalance || 0);
+        const balEl = document.getElementById('stBookBal');
+        balEl.textContent = Math.abs(bal).toLocaleString('fa-IR') + ' (' + (st.finalBalanceNature || 'تسویه') + ')';
+        balEl.className = 'fs-5 fw-bold font-monospace mt-1 ' + (bal > 0 ? 'text-danger' : 'text-success');
+
+        const tx = st.transactions || [];
+        const lBody = document.getElementById('stLedgerBody');
+        lBody.innerHTML = tx.length === 0
+            ? '<tr><td colspan="6" class="text-center py-4 text-muted">تراکنش مالی ثبت نشده است.</td></tr>'
+            : tx.map(t => `
+                <tr>
+                    <td class="font-monospace">${esc(t.voucherDateShamsi)}</td>
+                    <td class="font-monospace">#${t.voucherNumber}</td>
+                    <td>${t.projectTitle ? '<strong>' + esc(t.projectTitle) + '</strong> — ' : ''}${esc(t.description)}</td>
+                    <td class="text-end font-monospace text-danger">${t.debit > 0 ? Number(t.debit).toLocaleString('fa-IR') : '-'}</td>
+                    <td class="text-end font-monospace text-success">${t.credit > 0 ? Number(t.credit).toLocaleString('fa-IR') : '-'}</td>
+                    <td class="text-end font-monospace fw-bold">${Math.abs(Number(t.runningBalance || 0)).toLocaleString('fa-IR')} <small class="text-muted">(${esc(t.balanceNature)})</small></td>
+                </tr>`).join('');
+
+        const rBody = document.getElementById('stReceiptsBody');
+        rBody.innerHTML = receipts.length === 0
+            ? '<tr><td colspan="6" class="text-center py-4 text-muted">دریافتی ثبت نشده است.</td></tr>'
+            : receipts.map(r => `
+                <tr>
+                    <td class="font-monospace">${esc(r.receiptDateShamsi)}</td>
+                    <td>${esc(r.methodTitle)}</td>
+                    <td class="font-monospace">${esc(r.referenceNo || '-')}</td>
+                    <td class="font-monospace">${esc(r.invoiceNumber || '-')}</td>
+                    <td>${esc(r.description || '-')}</td>
+                    <td class="text-end font-monospace fw-bold text-success">${Number(r.amount || 0).toLocaleString('fa-IR')}</td>
+                </tr>`).join('');
+    });
+})();
+</script>
+}

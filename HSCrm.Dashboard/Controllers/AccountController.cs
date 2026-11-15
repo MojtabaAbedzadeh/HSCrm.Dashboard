@@ -76,6 +76,9 @@ namespace Automation.Dashboard.Controllers
         {
             if (HttpContext.User.Identity != null && HttpContext.User.Identity.IsAuthenticated)
             {
+                if (User.IsInRole("Customer") && !User.IsInRole("Owner") && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin"))
+                    return Redirect("/UserArea/Home/Index");
+
                 return Redirect("/AdminArea/Home");
             }
 
@@ -172,6 +175,9 @@ namespace Automation.Dashboard.Controllers
             var roleSet = new HashSet<string>(roles ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
             if (roleSet.Contains("Owner") || roleSet.Contains("Admin") || roleSet.Contains("SuperAdmin"))
                 return "/AdminArea/Home/Index";
+
+            if (roleSet.Contains("Customer"))
+                return "/UserArea/Home/Index";
 
             var permSet = new HashSet<string>(permissions ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
             if (permSet.Contains("Permissions.AccountingReports.View"))

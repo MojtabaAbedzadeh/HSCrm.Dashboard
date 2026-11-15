@@ -122,6 +122,12 @@
                                                                 <i class="mdi mdi-printer me-1"></i>
                                                                 نمایش ریز اقلام و چاپ رسمی (A4)
                                                             </a>
+                                                            @if (User.HasPermission(Permissions.AuditTrail.View))
+                                                            {
+                                                                <a class="dropdown-item text-secondary" href="javascript:void(0)" onclick="showEntityAuditHistory('@ApiAddress', '@User.FindFirstValue("Token")', 'SalesInvoice', @item.Id)">
+                                                                    <i class="mdi mdi-history me-1"></i>سابقه ثبت و ویرایش
+                                                                </a>
+                                                            }
                                                         }
                                                     </div>
                                                 }

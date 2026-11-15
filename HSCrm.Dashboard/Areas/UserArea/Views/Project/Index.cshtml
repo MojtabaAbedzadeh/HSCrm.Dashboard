@@ -1,0 +1,67 @@
+@{
+    ViewData["Title"] = "پروژه‌های من";
+    ViewData["selected"] = "user_projects";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="fw-bold mb-1">پروژه‌های من و روند پیشرفت</h4>
+        <p class="text-muted small mb-0">برای مشاهده مایلستون‌ها، خط زمانی اجرا و تصاویر کارگاهی روی جزئیات پروژه کلیک کنید.</p>
+    </div>
+</div>
+
+<div class="row g-3" id="cpProjectsGrid">
+    <div class="col-12 text-center py-5 text-muted">در حال دریافت فهرست پروژه‌ها...</div>
+</div>
+
+@section UserScripts {
+<script>
+(function () {
+    function esc(v) { return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    fetch(window.cpApiBase + 'CustomerPortal/Projects', {
+        headers: { 'Authorization': 'Bearer ' + window.cpToken }
+    })
+    .then(r => r.json())
+    .then(res => {
+        const list = res?.data || [];
+        const grid = document.getElementById('cpProjectsGrid');
+        if (list.length === 0) {
+            grid.innerHTML = '<div class="col-12"><div class="alert alert-info">هیچ پروژه‌ای برای حساب شما ثبت نشده است.</div></div>';
+            return;
+        }
+        grid.innerHTML = list.map(p => `
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="fw-bold mb-0">${esc(p.projectTitle)}</h6>
+                            <span class="badge ${p.status === 'Completed' ? 'bg-success' : p.status === 'Active' ? 'bg-primary' : 'bg-secondary'}">${esc(p.statusTitle)}</span>
+                        </div>
+                        <div class="small text-muted mb-3">
+                            <i class="mdi mdi-map-marker-outline me-1"></i>${esc(p.projectLocation || 'موقعیت ثبت نشده')}
+                        </div>
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span>پیشرفت کل</span>
+                                <strong class="font-monospace">${Number(p.progressPercent || 0).toFixed(1)}%</strong>
+                            </div>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-success" style="width:${Math.min(100, Math.max(0, Number(p.progressPercent || 0)))}%"></div>
+                            </div>
+                        </div>
+                        <div class="small text-muted mb-3">
+                            فازهای تکمیل‌شده: <strong>${p.completedMilestonesCount}</strong> از <strong>${p.milestonesCount}</strong> · گزارش‌های کارگاهی: <strong>${p.progressLogsCount}</strong>
+                        </div>
+                        <div class="mt-auto">
+                            <a href="/UserArea/Project/Details/${p.id}" class="btn btn-outline-primary w-100">
+                                <i class="mdi mdi-timeline-text-outline me-1"></i>مشاهده مایلستون‌ها و گالری پیشرفت
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>`).join('');
+    });
+})();
+</script>
+}

@@ -91,9 +91,17 @@
                                             @(item.EstimatedBudget.HasValue ? item.EstimatedBudget.Value.ToString("N0") : "-")
                                         </td>
                                         <td>
-                                            <span class="badge @(item.Status == "Active" ? "bg-success" : "bg-danger")">
-                                                @(item.Status == "Active" ? "فعال" : "اتمام پروژه")
-                                            </span>
+                                            @{
+                                                var stClass = item.Status == "Active" ? "bg-success"
+                                                    : item.Status == "Completed" ? "bg-primary"
+                                                    : item.Status == "OnHold" ? "bg-warning text-dark"
+                                                    : "bg-danger";
+                                                var stText = item.Status == "Active" ? "فعال"
+                                                    : item.Status == "Completed" ? "تکمیل‌شده"
+                                                    : item.Status == "OnHold" ? "متوقف موقت"
+                                                    : "لغو / اتمام";
+                                            }
+                                            <span class="badge @stClass">@stText</span>
                                         </td>
                                         <td>
                                             <div class="btn-group mb-1">
@@ -110,6 +118,9 @@
                                                         @if (User.HasPermission(Permissions.Projects.Edit))
                                                         {
                                                             <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
+                                                            <a class="dropdown-item text-warning" href="javascript:void(0)" onclick="openProjectStatusModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ProjectTitle ?? ""))', '@item.Status')">
+                                                                <i class="mdi mdi-swap-horizontal me-1"></i>تغییر وضعیت پروژه
+                                                            </a>
                                                         }
                                                         @if (User.HasPermission(Permissions.Projects.Delete))
                                                         {
@@ -142,6 +153,12 @@
                                                     @if (User.HasPermission(Permissions.SalesInvoices.View))
                                                     {
                                                         <a class="dropdown-item" href="/adminarea/Invoice/ProjectInvoices?projectId=@item.Id">مشاهده فاکتورها</a>
+                                                    }
+                                                    @if (User.HasPermission(Permissions.AuditTrail.View))
+                                                    {
+                                                        <a class="dropdown-item text-secondary" href="javascript:void(0)" onclick="showEntityAuditHistory('@ApiAddress', '@User.FindFirstValue("Token")', 'Project', @item.Id)">
+                                                            <i class="mdi mdi-history me-1"></i>سابقه ثبت و ویرایش
+                                                        </a>
                                                     }
                                                 </div>
                                             </div>
@@ -741,6 +758,64 @@
     }
 
     document.addEventListener('DOMContentLoaded', loadProjectMemberCounts);
+</script>
+
+
+<!-- مودال تغییر وضعیت پروژه (فاز ۵ - همراه با ارسال اعلان) -->
+<div class="modal fade" id="projectStatusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="mdi mdi-swap-horizontal text-warning me-1"></i>تغییر وضعیت پروژه: <span id="psMdlTitle"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="psMdlProjectId" value="0" />
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">وضعیت جدید</label>
+                    <select id="psMdlStatus" class="form-select">
+                        <option value="Active">فعال (در حال اجرا)</option>
+                        <option value="Completed">تکمیل‌شده</option>
+                        <option value="OnHold">متوقف موقت</option>
+                        <option value="Cancelled">لغوشده</option>
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">توضیح تغییر وضعیت (اختیاری - ارسال در اعلان)</label>
+                    <textarea id="psMdlNote" class="form-control" rows="2" placeholder="مثلاً: تحویل موقت انجام شد"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary" onclick="submitProjectStatusChange()">ثبت و ارسال اعلان</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function openProjectStatusModal(projectId, title, currentStatus) {
+        document.getElementById('psMdlProjectId').value = projectId;
+        document.getElementById('psMdlTitle').textContent = title || '';
+        document.getElementById('psMdlStatus').value = currentStatus || 'Active';
+        document.getElementById('psMdlNote').value = '';
+        new bootstrap.Modal(document.getElementById('projectStatusModal')).show();
+    }
+    async function submitProjectStatusChange() {
+        const payload = {
+            projectId: parseInt(document.getElementById('psMdlProjectId').value, 10),
+            status: document.getElementById('psMdlStatus').value,
+            note: document.getElementById('psMdlNote').value.trim() || null
+        };
+        const res = await fetch(`${pmApiAddr}/Project/UpdateStatus`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + pmToken },
+            body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        SwalHelper.handleResponse(json, 'وضعیت پروژه بروزرسانی شد و اعلان ارسال گردید.', function () {
+            window.location.reload();
+        });
+    }
 </script>
 
 @section AdminScripts {

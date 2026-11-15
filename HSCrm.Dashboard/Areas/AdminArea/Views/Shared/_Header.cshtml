@@ -70,28 +70,28 @@
                 </ul>
             </div>
 
-            @if (canViewChequeAlerts || canViewAgingAlerts)
-            {
-            <!-- زنگوله هشدار چک‌های سررسید نزدیک و مطالبات معوق -->
+            <!-- مرکز اعلان‌های درون‌برنامه‌ای (فاز ۵) -->
             <div class="dropdown notifications-menu d-inline-block me-2">
-                <button class="dropdown-toggle nav-link ec-drop position-relative btn btn-link text-dark p-1" data-bs-toggle="dropdown" aria-expanded="false" title="هشدارهای مالی و چک‌های سررسید نزدیک">
+                <button class="dropdown-toggle nav-link ec-drop position-relative btn btn-link text-dark p-1" data-bs-toggle="dropdown" aria-expanded="false" title="مرکز اعلان‌ها">
                     <i class="mdi mdi-bell-ring-outline fs-4"></i>
                     <span id="hdrAlertBadge" class="badge bg-danger rounded-pill position-absolute top-0 start-0 d-none" style="font-size: 10px;">0</span>
                 </button>
-                <div class="dropdown-menu dropdown-menu-end shadow p-0" style="width: 340px; max-height: 420px; overflow-y: auto;">
+                <div class="dropdown-menu dropdown-menu-end shadow p-0" style="width: 360px; max-height: 440px; overflow-y: auto;">
                     <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
-                        <strong class="text-dark small"><i class="mdi mdi-bell-alert-outline me-1 text-warning"></i>هشدارهای خزانه‌داری و مطالبات</strong>
-                        @if (canViewChequeAlerts)
-                        {
-                            <a href="/AdminArea/Cheque/Index" class="text-primary small">مدیریت چک‌ها</a>
-                        }
+                        <strong class="text-dark small"><i class="mdi mdi-bell-alert-outline me-1 text-warning"></i>مرکز اعلان‌ها</strong>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small" onclick="markAllHeaderNotificationsRead()">خواندن همه</button>
+                            @if (canViewChequeAlerts)
+                            {
+                                <a href="/AdminArea/Cheque/Index" class="text-primary small">چک‌ها</a>
+                            }
+                        </div>
                     </div>
                     <div id="hdrAlertContainer" class="list-group list-group-flush small">
-                        <div class="p-3 text-center text-muted">در حال بررسی سررسید چک‌ها و مطالبات...</div>
+                        <div class="p-3 text-center text-muted">در حال دریافت اعلان‌ها...</div>
                     </div>
                 </div>
             </div>
-            }
 
             <ul class="nav navbar-nav">
                 <li class="dropdown user-menu">
@@ -279,78 +279,84 @@
             </text>
             }
 
-            @if (canViewChequeAlerts || canViewAgingAlerts)
-            {
-            <text>
-            // ۲. بارگذاری هشدار چک‌های در آستانه سررسید (۷ روز آینده) و مطالبات معوق (+۹۰ روز) بر اساس مجوز دقیق
-            const canFetchCheques = @(canViewChequeAlerts.ToString().ToLower());
-            const canFetchAging = @(canViewAgingAlerts.ToString().ToLower());
-            Promise.all([
-                canFetchCheques
-                    ? fetch(`${hdrApiBase}/Cheque/GetAll`, { headers, suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: [] })).catch(() => ({ data: [] }))
-                    : Promise.resolve({ data: [] }),
-                canFetchAging
-                    ? fetch(`${hdrApiBase}/Accounting/AgingReport?partyType=1&includeChequeAccounts=true`, { headers, suppressGlobalAlert: true }).then(r => r.ok ? r.json() : ({ data: null })).catch(() => ({ data: null }))
-                    : Promise.resolve({ data: null })
-            ]).then(([chequeRes, agingRes]) => {
-                const cheques = chequeRes.data || [];
-                const agingRows = (agingRes.data && agingRes.data.rows) ? agingRes.data.rows : [];
-                const now = new Date();
-                const in7Days = new Date(now.getTime() + 7 * 86400000);
-
-                const dueCheques = cheques.filter(c => {
-                    if (c.status !== 1 && c.status !== 2) return false; // فقط در جریان / واگذارشده به بانک
-                    const d = new Date(c.dueDate);
-                    return d <= in7Days;
-                });
-
-                const riskyCustomers = agingRows.filter(r => (r.bucket91To180 || 0) + (r.bucketOver180 || 0) > 0);
-                const totalAlerts = dueCheques.length + riskyCustomers.length;
-
-                const badge = document.getElementById('hdrAlertBadge');
-                const container = document.getElementById('hdrAlertContainer');
-                if (!container) return;
-
-                if (totalAlerts > 0 && badge) {
-                    badge.textContent = totalAlerts;
-                    badge.classList.remove('d-none');
-                }
-
-                if (totalAlerts === 0) {
-                    container.innerHTML = `<div class="p-3 text-center text-success">
-                        <i class="mdi mdi-check-circle-outline fs-4 d-block mb-1"></i>
-                        هیچ چک سررسید نزدیک یا مطالبه بحرانی (+۹۰ روز) وجود ندارد.
-                    </div>`;
-                    return;
-                }
-
-                let alertHtml = '';
-                dueCheques.slice(0, 5).forEach(c => {
-                    const typeFa = c.type === 1 ? 'چک دریافتی' : 'چک پرداختی';
-                    alertHtml += `<a href="/AdminArea/Cheque/Index" class="list-group-item list-group-item-action py-2">
-                        <div class="d-flex justify-content-between">
-                            <strong class="text-danger">${typeFa} #${c.chequeNumber}</strong>
-                            <span class="badge bg-warning text-dark">${c.dueDateShamsi || ''}</span>
-                        </div>
-                        <div class="text-muted mt-1">مبلغ: ${Number(c.amount || 0).toLocaleString('fa-IR')} ریال (${c.bankName || ''})</div>
-                    </a>`;
-                });
-
-                riskyCustomers.slice(0, 4).forEach(r => {
-                    const overdue = (r.bucket91To180 || 0) + (r.bucketOver180 || 0);
-                    alertHtml += `<a href="/AdminArea/Accounting/AgingAndStatements?partyType=1&partyId=${r.partyId}" class="list-group-item list-group-item-action py-2">
-                        <div class="d-flex justify-content-between">
-                            <strong class="text-dark">${r.partyName}</strong>
-                            <span class="badge bg-danger">معوق +۹۰ روز</span>
-                        </div>
-                        <div class="text-muted mt-1">مانده معوق: ${Number(overdue).toLocaleString('fa-IR')} ریال</div>
-                    </a>`;
-                });
-
-                container.innerHTML = alertHtml;
-            });
-            </text>
+            // ۲. بارگذاری مرکز اعلان‌ها (ساعات کاری، تغییرات وضعیت پروژه و هشدار سررسید چک‌ها برای کاربران مجاز)
+            function escNotif(v) {
+                return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             }
+
+            window.loadHeaderNotifications = function () {
+                fetch(`${hdrApiBase}/Notification/GetMyNotifications?limit=25`, { headers, suppressGlobalAlert: true })
+                    .then(r => r.ok ? r.json() : null)
+                    .then(res => {
+                        const feed = res?.data;
+                        const badge = document.getElementById('hdrAlertBadge');
+                        const container = document.getElementById('hdrAlertContainer');
+                        if (!container) return;
+
+                        const items = feed?.items || [];
+                        const unread = feed?.unreadCount || 0;
+
+                        if (badge) {
+                            if (unread > 0) {
+                                badge.textContent = unread;
+                                badge.classList.remove('d-none');
+                            } else {
+                                badge.classList.add('d-none');
+                            }
+                        }
+
+                        if (items.length === 0) {
+                            container.innerHTML = `<div class="p-3 text-center text-success">
+                                <i class="mdi mdi-check-circle-outline fs-4 d-block mb-1"></i>
+                                اعلان جدیدی برای نمایش وجود ندارد.
+                            </div>`;
+                            return;
+                        }
+
+                        container.innerHTML = items.map(n => {
+                            const sevClass = n.severity === 'danger' ? 'text-danger' : n.severity === 'warning' ? 'text-warning' : n.severity === 'success' ? 'text-success' : 'text-primary';
+                            const catLabel = n.category === 'WorkLog' ? 'ساعت کار' : n.category === 'Cheque' ? 'چک' : n.category === 'Project' ? 'پروژه' : 'سیستم';
+                            return `<a href="javascript:void(0)" onclick="clickHeaderNotification(${n.id ?? 'null'}, '${escNotif(n.actionUrl || '')}')"
+                                       class="list-group-item list-group-item-action py-2 ${n.isRead ? 'opacity-75' : 'bg-light'}">
+                                <div class="d-flex justify-content-between align-items-start gap-1">
+                                    <strong class="${sevClass}">${escNotif(n.title)}</strong>
+                                    <span class="badge bg-secondary">${catLabel}</span>
+                                </div>
+                                <div class="text-muted mt-1">${escNotif(n.message)}</div>
+                                <div class="d-flex justify-content-between align-items-center mt-1" style="font-size: 10px;">
+                                    <span class="text-muted font-monospace" dir="ltr">${escNotif(n.createdAtShamsi || '')}</span>
+                                    ${!n.isRead ? '<span class="text-primary fw-bold">جدید</span>' : ''}
+                                </div>
+                            </a>`;
+                        }).join('');
+                    })
+                    .catch(() => {});
+            };
+
+            window.clickHeaderNotification = function (id, url) {
+                if (id) {
+                    fetch(`${hdrApiBase}/Notification/MarkAsRead/${id}`, {
+                        method: 'POST',
+                        headers,
+                        suppressGlobalAlert: true
+                    }).finally(() => {
+                        if (url) window.location.href = url;
+                        else window.loadHeaderNotifications();
+                    });
+                } else if (url) {
+                    window.location.href = url;
+                }
+            };
+
+            window.markAllHeaderNotificationsRead = function () {
+                fetch(`${hdrApiBase}/Notification/MarkAllAsRead`, {
+                    method: 'POST',
+                    headers,
+                    suppressGlobalAlert: true
+                }).then(() => window.loadHeaderNotifications());
+            };
+
+            window.loadHeaderNotifications();
         });
 
         window.switchActiveFiscalYear = function (fyId, fyStatus, fyTitle) {

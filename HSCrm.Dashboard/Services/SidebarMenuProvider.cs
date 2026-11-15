@@ -351,6 +351,14 @@ namespace HSCrm.Dashboard.Services
                 },
                 new SidebarMenuItem
                 {
+                    Key = "audit_trail",
+                    Title = "تاریخچه تغییرات (Audit Trail)",
+                    Icon = "mdi mdi-history",
+                    Url = "/AdminArea/AuditTrail/Index",
+                    PermissionKey = Permissions.AuditTrail.View
+                },
+                new SidebarMenuItem
+                {
                     Key = "company_settings",
                     Title = "تنظیمات شرکت",
                     Icon = "mdi mdi-cog-outline",

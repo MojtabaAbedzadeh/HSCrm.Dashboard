@@ -1,0 +1,127 @@
+@{
+    ViewData["Title"] = "جزئیات پیشرفت پروژه";
+    ViewData["selected"] = "user_projects";
+    int projectId = ViewBag.ProjectId ?? 0;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="fw-bold mb-1" id="pdTitle">جزئیات پروژه</h4>
+        <div class="small text-muted" id="pdMeta">در حال بارگذاری...</div>
+    </div>
+    <a href="/UserArea/Project/Index" class="btn btn-outline-secondary btn-sm">بازگشت به پروژه‌ها</a>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold">درصد پیشرفت فیزیکی کل پروژه</span>
+            <span class="fs-5 fw-bold text-success font-monospace" id="pdPercent">0%</span>
+        </div>
+        <div class="progress" style="height: 14px;">
+            <div class="progress-bar bg-success" id="pdBar" style="width:0%"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="fw-bold mb-0"><i class="mdi mdi-flag-checkered me-1 text-primary"></i>مایلستون‌ها و فازهای اجرایی</h6>
+            </div>
+            <div class="card-body" id="pdMilestones">
+                <div class="text-center py-4 text-muted">در حال دریافت...</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h6 class="fw-bold mb-0"><i class="mdi mdi-camera-burst me-1 text-success"></i>خط زمانی (Timeline) و تصاویر کارگاهی</h6>
+            </div>
+            <div class="card-body" id="pdTimeline">
+                <div class="text-center py-4 text-muted">در حال دریافت...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section UserScripts {
+<script>
+(function () {
+    const projectId = @projectId;
+    const apiRoot = window.cpApiBase.replace(/\/api\/?$/i, '/');
+    function esc(v) { return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    fetch(window.cpApiBase + 'CustomerPortal/Projects/' + projectId, {
+        headers: { 'Authorization': 'Bearer ' + window.cpToken }
+    })
+    .then(r => r.json())
+    .then(res => {
+        const d = res?.data;
+        if (!d) return;
+
+        document.getElementById('pdTitle').textContent = d.projectTitle;
+        document.getElementById('pdMeta').textContent = `وضعیت: ${d.statusTitle} | محل اجرا: ${d.projectLocation || '-'} | تاریخ شروع: ${d.createdAtShamsi}`;
+        const pct = Math.min(100, Math.max(0, Number(d.progressPercent || 0)));
+        document.getElementById('pdPercent').textContent = pct.toFixed(1) + '%';
+        document.getElementById('pdBar').style.width = pct + '%';
+
+        const msEl = document.getElementById('pdMilestones');
+        const ms = d.milestones || [];
+        if (ms.length === 0) {
+            msEl.innerHTML = '<div class="text-center text-muted py-4">هنوز فازی تعریف نشده است.</div>';
+        } else {
+            msEl.innerHTML = ms.map(m => `
+                <div class="border rounded p-3 mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>${esc(m.title)}</strong>
+                        <span class="badge ${m.status === 2 ? 'bg-success' : m.status === 3 ? 'bg-danger' : 'bg-info text-dark'}">${esc(m.statusTitle)}</span>
+                    </div>
+                    ${m.description ? `<div class="small text-muted mb-2">${esc(m.description)}</div>` : ''}
+                    <div class="progress mb-1" style="height: 8px;">
+                        <div class="progress-bar bg-primary" style="width:${Math.min(100, Math.max(0, Number(m.progressPercent || 0)))}%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>وزن: ${m.weightPercent}% | پیشرفت: ${m.progressPercent}%</span>
+                        <span>${m.dueDateShamsi ? 'موعد: ' + esc(m.dueDateShamsi) : ''}</span>
+                    </div>
+                </div>`).join('');
+        }
+
+        const tlEl = document.getElementById('pdTimeline');
+        const logs = d.progressLogs || [];
+        if (logs.length === 0) {
+            tlEl.innerHTML = '<div class="text-center text-muted py-4">گزارش پیشرفتی ثبت نشده است.</div>';
+        } else {
+            tlEl.innerHTML = logs.map(l => {
+                const imgs = (l.attachments || []).map(a => {
+                    const href = a.storagePath.startsWith('http') ? a.storagePath : (apiRoot + a.storagePath.replace(/^\/+/, ''));
+                    return a.isImage
+                        ? `<a href="${esc(href)}" target="_blank" class="d-inline-block border rounded overflow-hidden me-2 mb-2" style="width:90px;height:90px;">
+                               <img src="${esc(href)}" alt="${esc(a.fileName)}" style="width:100%;height:100%;object-fit:cover;" />
+                           </a>`
+                        : `<a href="${esc(href)}" target="_blank" class="btn btn-sm btn-outline-secondary me-1 mb-1"><i class="mdi mdi-paperclip me-1"></i>${esc(a.fileName)}</a>`;
+                }).join('');
+
+                return `<div class="border-start border-3 border-primary ps-3 pb-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold mb-0">${esc(l.title)}</h6>
+                        <span class="badge bg-light text-dark border">${esc(l.logDateShamsi)}</span>
+                    </div>
+                    <div class="small text-muted mb-2">
+                        ثبت‌شده توسط: ${esc(l.recordedByName)}
+                        ${l.milestoneTitle ? ' | فاز: ' + esc(l.milestoneTitle) : ''}
+                        ${l.workshopArea ? ' | بخش: ' + esc(l.workshopArea) : ''}
+                        | پیشرفت اعلامی: <strong>${l.progressPercent}%</strong>
+                    </div>
+                    <p class="small mb-2">${esc(l.reportText)}</p>
+                    <div>${imgs}</div>
+                </div>`;
+            }).join('');
+        }
+    });
+})();
+</script>
+}

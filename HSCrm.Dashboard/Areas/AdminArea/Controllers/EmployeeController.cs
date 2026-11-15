@@ -12,6 +12,11 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
 
         public IActionResult Index()
         {
+            if (User.IsInRole("Customer") && !User.IsInRole("Owner") && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin"))
+            {
+                return Redirect("/UserArea/Home/Index");
+            }
+
             return View();
         }
     }
