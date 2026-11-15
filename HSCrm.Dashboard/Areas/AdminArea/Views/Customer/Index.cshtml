@@ -62,6 +62,15 @@
                                         <td>
                                             <div class="btn-group mb-1">
                                                 <a class="btn btn-outline-primary btn-sm" href="/AdminArea/Accounting/AgingAndStatements?partyType=1&partyId=@item.Id" title="صورت‌حساب ۳۶۰، فاکتورها و چک‌ها">۳۶۰</a>
+                                                @if (User.HasPermission(Permissions.Customers.Edit))
+                                                {
+                                                    <button type="button"
+                                                            class="btn btn-outline-warning btn-sm"
+                                                            title="ریست رمز عبور پرتال"
+                                                            onclick="openCustomerResetPasswordModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Name ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Email ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Phone ?? ""))')">
+                                                        <i class="mdi mdi-lock-reset"></i>
+                                                    </button>
+                                                }
                                                 <a class="btn btn-outline-success" href="@("customerprofile?customerId=" + item.Id)">پروفایل</a>
                                                 <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static">
                                                     <span class="sr-only">پروفایل</span>
@@ -72,6 +81,7 @@
                                                     {
                                                         <a class="dropdown-item" href="#" onclick="showUpdateModal(@item.Id)">ویرایش</a>
                                                         <a class="dropdown-item text-info" href="javascript:void(0)" onclick="openPortalAccountModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Name ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Email ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Phone ?? ""))')">مدیریت حساب پرتال مشتری</a>
+                                                        <a class="dropdown-item text-warning fw-bold" href="javascript:void(0)" onclick="openCustomerResetPasswordModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Name ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Email ?? ""))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Phone ?? ""))')">ریست رمز عبور پرتال</a>
                                                     }
                                                     @if (User.HasPermission(Permissions.Customers.Delete))
                                                     {
@@ -269,13 +279,20 @@
                 <input type="hidden" id="cpMdlCustId" value="0" />
                 <input type="hidden" id="cpMdlHasAccount" value="false" />
                 <div id="cpMdlActivateBox">
+                    <div id="cpMdlActivateNotice" class="alert alert-warning small mb-3" style="display:none;">
+                        برای این مشتری هنوز حساب پرتال فعال نشده است. با تعیین نام کاربری و رمز عبور اولیه در همین فرم، حساب پرتال ایجاد و فعال می‌شود.
+                    </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold">نام کاربری ورود به پرتال *</label>
                         <input type="text" id="cpMdlUserName" class="form-control" dir="ltr" placeholder="مثلاً customer_ali" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold">رمز عبور اولیه *</label>
-                        <input type="password" id="cpMdlPassword" class="form-control" dir="ltr" />
+                        <div class="input-group" dir="ltr">
+                            <input type="password" id="cpMdlPassword" class="form-control" placeholder="مثلاً Abcd@Html.Raw("@")1234" />
+                            <button type="button" class="btn btn-outline-secondary" onclick="toggleCustomerPwdField('cpMdlPassword', this)" title="نمایش/مخفی کردن"><i class="mdi mdi-eye-outline"></i></button>
+                        </div>
+                        <small class="text-muted d-block mt-1">رمز عبور باید حداقل ۸ کاراکتر شامل حروف بزرگ، کوچک، عدد و نماد (مانند @Html.Raw("@") یا #) باشد.</small>
                     </div>
                     <div class="row g-2">
                         <div class="col-6">
@@ -292,9 +309,20 @@
                     <div class="alert alert-success small">
                         این مشتری دارای حساب پرتال فعال با نام کاربری <strong id="cpMdlExistingUserName" class="font-monospace"></strong> است.
                     </div>
-                    <div class="mb-2">
+                    <div class="mb-3">
                         <label class="form-label small fw-bold">رمز عبور جدید جهت بازنشانی *</label>
-                        <input type="password" id="cpMdlNewPassword" class="form-control" dir="ltr" />
+                        <div class="input-group" dir="ltr">
+                            <input type="password" id="cpMdlNewPassword" class="form-control" placeholder="مثلاً Abcd@Html.Raw("@")1234" />
+                            <button type="button" class="btn btn-outline-secondary" onclick="toggleCustomerPwdField('cpMdlNewPassword', this)" title="نمایش/مخفی کردن"><i class="mdi mdi-eye-outline"></i></button>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">تکرار رمز عبور جدید *</label>
+                        <div class="input-group" dir="ltr">
+                            <input type="password" id="cpMdlConfirmNewPassword" class="form-control" placeholder="تکرار رمز عبور جدید" />
+                            <button type="button" class="btn btn-outline-secondary" onclick="toggleCustomerPwdField('cpMdlConfirmNewPassword', this)" title="نمایش/مخفی کردن"><i class="mdi mdi-eye-outline"></i></button>
+                        </div>
+                        <small class="text-muted d-block mt-1">رمز عبور باید حداقل ۸ کاراکتر شامل حروف بزرگ، کوچک، عدد و نماد (مانند @Html.Raw("@") یا #) باشد.</small>
                     </div>
                 </div>
             </div>
@@ -478,7 +506,16 @@
                 });
             }).catch(() => {});
 
-            window.openPortalAccountModal = function (custId, custName, email, phone) {
+            window.toggleCustomerPwdField = function (inputId, btn) {
+                const inp = document.getElementById(inputId);
+                if (!inp) return;
+                const isPwd = inp.type === 'password';
+                inp.type = isPwd ? 'text' : 'password';
+                const ico = btn && btn.querySelector('i');
+                if (ico) ico.className = isPwd ? 'mdi mdi-eye-off-outline' : 'mdi mdi-eye-outline';
+            };
+
+            window.openPortalAccountModal = function (custId, custName, email, phone, fromReset) {
                 const st = (window.cpPortalStatusMap || {})[custId];
                 document.getElementById('cpMdlCustId').value = custId;
                 document.getElementById('cpMdlCustName').textContent = custName || '';
@@ -486,13 +523,23 @@
                 document.getElementById('cpMdlHasAccount').value = hasAcc ? 'true' : 'false';
                 document.getElementById('cpMdlActivateBox').style.display = hasAcc ? 'none' : 'block';
                 document.getElementById('cpMdlResetBox').style.display = hasAcc ? 'block' : 'none';
+                document.getElementById('cpMdlActivateNotice').style.display = (!hasAcc && fromReset) ? 'block' : 'none';
                 document.getElementById('cpMdlExistingUserName').textContent = (st && st.userName) || '';
                 document.getElementById('cpMdlEmail').value = email || '';
                 document.getElementById('cpMdlPhone').value = phone || '';
                 document.getElementById('cpMdlUserName').value = '';
-                document.getElementById('cpMdlPassword').value = '';
-                document.getElementById('cpMdlNewPassword').value = '';
+                const pwdEl = document.getElementById('cpMdlPassword');
+                const newPwdEl = document.getElementById('cpMdlNewPassword');
+                const confPwdEl = document.getElementById('cpMdlConfirmNewPassword');
+                pwdEl.value = ''; pwdEl.type = 'password';
+                newPwdEl.value = ''; newPwdEl.type = 'password';
+                confPwdEl.value = ''; confPwdEl.type = 'password';
+                document.querySelectorAll('#customerPortalModal .mdi-eye-off-outline').forEach(el => { el.className = 'mdi mdi-eye-outline'; });
                 new bootstrap.Modal(document.getElementById('customerPortalModal')).show();
+            };
+
+            window.openCustomerResetPasswordModal = function (custId, custName, email, phone) {
+                window.openPortalAccountModal(custId, custName, email, phone, true);
             };
 
             window.submitCustomerPortalModal = function () {
@@ -503,6 +550,10 @@
                     const password = document.getElementById('cpMdlPassword').value;
                     if (!userName || !password) {
                         SwalHelper.warning('نام کاربری و رمز عبور الزامی هستند.');
+                        return;
+                    }
+                    if (password.length < 8) {
+                        SwalHelper.warning('رمز عبور باید حداقل ۸ کاراکتر شامل حروف بزرگ، کوچک، عدد و نماد باشد.');
                         return;
                     }
                     fetch(apiBase + '/Customer/ActivatePortalAccount', {
@@ -517,11 +568,20 @@
                         })
                     }).then(r => r.json()).then(res => {
                         SwalHelper.handleResponse(res, 'حساب پرتال مشتری با موفقیت فعال شد.', function () { window.location.reload(); });
-                    });
+                    }).catch(() => SwalHelper.error('خطا در ارتباط با سرور هنگام فعال‌سازی حساب پرتال.'));
                 } else {
                     const newPassword = document.getElementById('cpMdlNewPassword').value;
+                    const confirmNewPassword = document.getElementById('cpMdlConfirmNewPassword').value;
                     if (!newPassword) {
                         SwalHelper.warning('رمز عبور جدید را وارد کنید.');
+                        return;
+                    }
+                    if (newPassword.length < 8) {
+                        SwalHelper.warning('رمز عبور جدید باید حداقل ۸ کاراکتر شامل حروف بزرگ، کوچک، عدد و نماد باشد.');
+                        return;
+                    }
+                    if (newPassword !== confirmNewPassword) {
+                        SwalHelper.warning('رمز عبور جدید و تکرار آن مطابقت ندارند.');
                         return;
                     }
                     fetch(apiBase + '/Customer/ResetPortalPassword', {
@@ -532,7 +592,7 @@
                         SwalHelper.handleResponse(res, 'رمز عبور پرتال مشتری بازنشانی شد.', function () {
                             bootstrap.Modal.getInstance(document.getElementById('customerPortalModal'))?.hide();
                         });
-                    });
+                    }).catch(() => SwalHelper.error('خطا در ارتباط با سرور هنگام بازنشانی رمز عبور.'));
                 }
             };
         })();

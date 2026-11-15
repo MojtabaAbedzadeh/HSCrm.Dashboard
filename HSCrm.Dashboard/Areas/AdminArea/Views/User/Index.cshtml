@@ -1,3 +1,4 @@
+@using HSCrm.Dashboard.Costants
 @model IEnumerable<UserModel>
 
 @{
@@ -60,10 +61,26 @@
                                         </td>
                                         <td>
                                             <div class="btn-group mb-1">
+                                                @if (User.HasPermission(Permissions.Users.Edit))
+                                                {
+                                                    <button type="button"
+                                                            class="btn btn-outline-warning btn-sm"
+                                                            title="ریست رمز عبور"
+                                                            onclick="openUserResetPasswordModal('@item.Id', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode((item.UserFirstName + " " + item.UserLastName).Trim()))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.UserName ?? ""))')">
+                                                        <i class="mdi mdi-lock-reset"></i>
+                                                    </button>
+                                                }
                                                 <button type="button" class="btn btn-outline-success">اطلاعات</button> <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-display="static"><span class="sr-only">اطلاعات</span></button>
                                                 <div class="dropdown-menu">
-                                                    <a class="dropdown-item" href="#" onclick="showUpdateModal('@item.Id')">ویرایش</a>
-                                                    <a class="dropdown-item text-danger" href="#" onclick="deleteUser('@item.Id', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode((item.UserFirstName + " " + item.UserLastName).Trim()))')">حذف</a>
+                                                    @if (User.HasPermission(Permissions.Users.Edit))
+                                                    {
+                                                        <a class="dropdown-item" href="#" onclick="showUpdateModal('@item.Id')">ویرایش</a>
+                                                        <a class="dropdown-item text-warning fw-bold" href="javascript:void(0)" onclick="openUserResetPasswordModal('@item.Id', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode((item.UserFirstName + " " + item.UserLastName).Trim()))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.UserName ?? ""))')">ریست رمز عبور</a>
+                                                    }
+                                                    @if (User.HasPermission(Permissions.Users.Delete))
+                                                    {
+                                                        <a class="dropdown-item text-danger" href="#" onclick="deleteUser('@item.Id', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode((item.UserFirstName + " " + item.UserLastName).Trim()))')">حذف</a>
+                                                    }
                                                     <a class="dropdown-item" href="#" onclick="openRoleModal('@item.Id','@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.UserFirstName ?? ""))','@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.UserLastName ?? ""))')">تغییر نقش</a>
                                                 </div>
                                             </div>
@@ -328,6 +345,42 @@
 </div>
 
 
+<div class="modal fade" id="resetUserPasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="mdi mdi-lock-reset me-1 text-warning"></i>ریست رمز عبور کاربر</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="rpUserId" />
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">کاربر</label>
+                    <input type="text" id="rpUserDisplay" class="form-control bg-light" disabled />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">رمز عبور جدید *</label>
+                    <div class="input-group" dir="ltr">
+                        <input type="password" id="rpNewPassword" class="form-control" placeholder="مثلاً Abcd@Html.Raw("@")1234" />
+                        <button type="button" class="btn btn-outline-secondary" onclick="toggleUserPwdField('rpNewPassword', this)" title="نمایش/مخفی کردن"><i class="mdi mdi-eye-outline"></i></button>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">تکرار رمز عبور جدید *</label>
+                    <div class="input-group" dir="ltr">
+                        <input type="password" id="rpConfirmPassword" class="form-control" placeholder="تکرار رمز عبور جدید" />
+                        <button type="button" class="btn btn-outline-secondary" onclick="toggleUserPwdField('rpConfirmPassword', this)" title="نمایش/مخفی کردن"><i class="mdi mdi-eye-outline"></i></button>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-1">رمز عبور باید حداقل ۸ کاراکتر و شامل حروف بزرگ، حروف کوچک، عدد و یک نماد (مانند @Html.Raw("@") یا #) باشد.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-warning fw-bold" onclick="submitUserResetPassword()">ثبت رمز جدید</button>
+            </div>
+        </div>
+    </div>
+</div>
 @section AdminScripts {
     <script>
         $("#btnUserSubmit").on('click', function (e) {
@@ -583,5 +636,60 @@
                 SwalHelper.error("خطا در ارتباط با سرور هنگام آپلود تصویر.");
             });
         });
+
+        function toggleUserPwdField(inputId, btn) {
+            var inp = document.getElementById(inputId);
+            if (!inp) return;
+            var isPwd = inp.type === 'password';
+            inp.type = isPwd ? 'text' : 'password';
+            var ico = btn && btn.querySelector('i');
+            if (ico) ico.className = isPwd ? 'mdi mdi-eye-off-outline' : 'mdi mdi-eye-outline';
+        }
+        function openUserResetPasswordModal(userId, fullName, userName) {
+            $("#rpUserId").val(userId || "");
+            var label = (fullName || "").trim();
+            if (userName) label += " (" + userName + ")";
+            $("#rpUserDisplay").val(label);
+            $("#rpNewPassword").val("").attr("type", "password");
+            $("#rpConfirmPassword").val("").attr("type", "password");
+            $("#resetUserPasswordModal .mdi-eye-off-outline").removeClass("mdi-eye-off-outline").addClass("mdi-eye-outline");
+            new bootstrap.Modal(document.getElementById('resetUserPasswordModal')).show();
+        }
+        function submitUserResetPassword() {
+            var userId = ($("#rpUserId").val() || "").trim();
+            var newPassword = $("#rpNewPassword").val() || "";
+            var confirmPassword = $("#rpConfirmPassword").val() || "";
+            if (!userId || !newPassword) {
+                SwalHelper.warning("لطفاً رمز عبور جدید را وارد نمایید.");
+                return;
+            }
+            if (newPassword.length < 8) {
+                SwalHelper.warning("رمز عبور جدید باید حداقل ۸ کاراکتر شامل حروف بزرگ، کوچک، عدد و نماد باشد.");
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                SwalHelper.warning("رمز عبور جدید و تکرار آن مطابقت ندارند.");
+                return;
+            }
+            $.ajax({
+                type: 'POST',
+                url: '@ApiAddress' + 'User/ResetPassword',
+                contentType: 'application/json',
+                dataType: 'json',
+                data: JSON.stringify({ userId: userId, newPassword: newPassword }),
+                headers: {
+                    "Authorization": "Bearer " + "@token"
+                },
+                success: function (xhr) {
+                    SwalHelper.handleResponse(xhr, "رمز عبور کاربر با موفقیت بازنشانی شد.", function () {
+                        bootstrap.Modal.getInstance(document.getElementById('resetUserPasswordModal'))?.hide();
+                    });
+                },
+                error: function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message) || "خطا در بازنشانی رمز عبور کاربر";
+                    SwalHelper.error(msg);
+                }
+            });
+        }
     </script>
 }
