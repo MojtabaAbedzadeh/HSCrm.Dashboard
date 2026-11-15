@@ -361,7 +361,7 @@
                 <div class="mb-3">
                     <label class="form-label small fw-bold">رمز عبور جدید *</label>
                     <div class="input-group" dir="ltr">
-                        <input type="password" id="rpNewPassword" class="form-control" placeholder="مثلاً Abcd@Html.Raw("@")1234" />
+                        <input type="password" id="rpNewPassword" class="form-control" placeholder="مثلاً Abcd&#64;1234" />
                         <button type="button" class="btn btn-outline-secondary" onclick="toggleUserPwdField('rpNewPassword', this)" title="نمایش/مخفی کردن"><i class="mdi mdi-eye-outline"></i></button>
                     </div>
                 </div>
@@ -372,7 +372,7 @@
                         <button type="button" class="btn btn-outline-secondary" onclick="toggleUserPwdField('rpConfirmPassword', this)" title="نمایش/مخفی کردن"><i class="mdi mdi-eye-outline"></i></button>
                     </div>
                 </div>
-                <small class="text-muted d-block mt-1">رمز عبور باید حداقل ۸ کاراکتر و شامل حروف بزرگ، حروف کوچک، عدد و یک نماد (مانند @Html.Raw("@") یا #) باشد.</small>
+                <small class="text-muted d-block mt-1">رمز عبور باید حداقل ۸ کاراکتر و شامل حروف بزرگ، حروف کوچک، عدد و یک نماد (مانند &#64; یا #) باشد.</small>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>

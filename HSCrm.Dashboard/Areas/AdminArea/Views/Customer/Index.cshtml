@@ -289,10 +289,10 @@
                     <div class="mb-3">
                         <label class="form-label small fw-bold">رمز عبور اولیه *</label>
                         <div class="input-group" dir="ltr">
-                            <input type="password" id="cpMdlPassword" class="form-control" placeholder="مثلاً Abcd@Html.Raw("@")1234" />
+                            <input type="password" id="cpMdlPassword" class="form-control" placeholder="مثلاً Abcd&#64;1234" />
                             <button type="button" class="btn btn-outline-secondary" onclick="toggleCustomerPwdField('cpMdlPassword', this)" title="نمایش/مخفی کردن"><i class="mdi mdi-eye-outline"></i></button>
                         </div>
-                        <small class="text-muted d-block mt-1">رمز عبور باید حداقل ۸ کاراکتر شامل حروف بزرگ، کوچک، عدد و نماد (مانند @Html.Raw("@") یا #) باشد.</small>
+                        <small class="text-muted d-block mt-1">رمز عبور باید حداقل ۸ کاراکتر شامل حروف بزرگ، کوچک، عدد و نماد (مانند &#64; یا #) باشد.</small>
                     </div>
                     <div class="row g-2">
                         <div class="col-6">
@@ -312,7 +312,7 @@
                     <div class="mb-3">
                         <label class="form-label small fw-bold">رمز عبور جدید جهت بازنشانی *</label>
                         <div class="input-group" dir="ltr">
-                            <input type="password" id="cpMdlNewPassword" class="form-control" placeholder="مثلاً Abcd@Html.Raw("@")1234" />
+                            <input type="password" id="cpMdlNewPassword" class="form-control" placeholder="مثلاً Abcd&#64;1234" />
                             <button type="button" class="btn btn-outline-secondary" onclick="toggleCustomerPwdField('cpMdlNewPassword', this)" title="نمایش/مخفی کردن"><i class="mdi mdi-eye-outline"></i></button>
                         </div>
                     </div>
@@ -322,7 +322,7 @@
                             <input type="password" id="cpMdlConfirmNewPassword" class="form-control" placeholder="تکرار رمز عبور جدید" />
                             <button type="button" class="btn btn-outline-secondary" onclick="toggleCustomerPwdField('cpMdlConfirmNewPassword', this)" title="نمایش/مخفی کردن"><i class="mdi mdi-eye-outline"></i></button>
                         </div>
-                        <small class="text-muted d-block mt-1">رمز عبور باید حداقل ۸ کاراکتر شامل حروف بزرگ، کوچک، عدد و نماد (مانند @Html.Raw("@") یا #) باشد.</small>
+                        <small class="text-muted d-block mt-1">رمز عبور باید حداقل ۸ کاراکتر شامل حروف بزرگ، کوچک، عدد و نماد (مانند &#64; یا #) باشد.</small>
                     </div>
                 </div>
             </div>
