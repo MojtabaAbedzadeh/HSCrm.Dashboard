@@ -1,4 +1,4 @@
-﻿namespace HSCrm.Models.ModelDto
+namespace HSCrm.Models.ModelDto
 {
     public class ProjectModel
     {
@@ -9,6 +9,8 @@
         public string? CustomerPhone { get; set; }
         public string? ProjectLocation { get; set; }
         public required string Status { get; set; }
+        public decimal? EstimatedBudget { get; set; }
+        public decimal ProgressPercent { get; set; }
     }
 
     public class ProjetcsDropDown

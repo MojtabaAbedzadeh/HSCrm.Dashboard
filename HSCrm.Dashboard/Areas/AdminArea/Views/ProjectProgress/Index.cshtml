@@ -1,0 +1,1192 @@
+@using HSCrm.Dashboard.Costants
+@using HSCrm.Models.ModelDto
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "پیشرفت، مستندات کارگاهی و سود و زیان پروژه";
+    ViewData["selected"] = "project_progress";
+
+    string ApiAddress = ViewBag.ApiAddress ?? "";
+    int? selectedProjectId = ViewBag.SelectedProjectId as int?;
+    List<ProjetcsDropDown> projects = ViewBag.Projects ?? new List<ProjetcsDropDown>();
+    string currentFiscalYearId = User.FindFirstValue("FiscalYearId") ?? "";
+
+    bool canCreate = User.HasPermission(Permissions.ProjectProgress.Create);
+    bool canEdit = User.HasPermission(Permissions.ProjectProgress.Edit);
+    bool canDelete = User.HasPermission(Permissions.ProjectProgress.Delete);
+    bool isFyOpen = (ViewBag.FiscalYearStatus?.ToString() ?? "0") == "0";
+}
+
+@section styles {
+    <link href="~/lib/persiandate/persian-datepicker.css" rel="stylesheet" />
+    <style>
+        .timeline-item {
+            position: relative;
+            padding-right: 1.5rem;
+            border-right: 3px solid #0d6efd;
+            margin-bottom: 1.25rem;
+        }
+        .timeline-dot {
+            position: absolute;
+            right: -9px;
+            top: 0.25rem;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: #0d6efd;
+            border: 2px solid #fff;
+        }
+        .gallery-thumb {
+            height: 150px;
+            width: 100%;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform .15s ease;
+        }
+        .gallery-thumb:hover {
+            transform: scale(1.02);
+        }
+        @@media print {
+            .no-print { display: none !important; }
+        }
+    </style>
+}
+
+<div class="breadcrumb-wrapper d-flex flex-wrap justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h1 class="fw-bold"><i class="mdi mdi-chart-timeline-variant text-primary me-1"></i>پیشرفت فیزیکی، مستندات کارگاهی و سود و زیان پروژه</h1>
+        <p class="breadcrumbs mb-0">
+            <span><a href="/AdminArea/Project/Index">پروژه‌ها</a></span>
+            <span><i class="mdi mdi-chevron-left"></i></span>
+            <span>پیشرفت و گزارش مالی پروژه</span>
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (canCreate)
+        {
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="openMilestoneModal(0)">
+                <i class="mdi mdi-flag-plus-outline me-1"></i>تعریف مرحله (Milestone)
+            </button>
+        }
+        @if (isFyOpen && canCreate)
+        {
+            <button type="button" class="btn btn-primary btn-sm" onclick="openProgressLogModal()">
+                <i class="mdi mdi-camera-plus-outline me-1"></i>ثبت گزارش پیشرفت و عکس کارگاه
+            </button>
+        }
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+            <i class="mdi mdi-printer me-1"></i>چاپ گزارش
+        </button>
+    </div>
+</div>
+
+@if (!isFyOpen)
+{
+    <div class="alert alert-primary mb-3 no-print" role="alert">
+        سال مالی انتخاب‌شده بسته است؛ امکان ثبت گزارش پیشرفت جدید در این سال مالی وجود ندارد، اما مشاهده مستندات و گزارش سود و زیان فعال است.
+    </div>
+}
+
+<!-- انتخاب پروژه و بازه -->
+<div class="card card-default mb-4 no-print">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label small fw-bold mb-1">انتخاب پروژه</label>
+                <select id="ppProjectSelect" class="form-select" onchange="loadAllProjectProgress()">
+                    <option value="">-- انتخاب پروژه --</option>
+                    @foreach (var p in projects)
+                    {
+                        if (selectedProjectId.HasValue && p.DrId == selectedProjectId.Value.ToString())
+                        {
+                            <option value="@p.DrId" selected>@p.DrName</option>
+                        }
+                        else
+                        {
+                            <option value="@p.DrId">@p.DrName</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold mb-1">بازه محاسبه سود و زیان و تایم‌لاین</label>
+                <select id="ppFiscalScope" class="form-select" onchange="loadAllProjectProgress()">
+                    <option value="">کل ادوار پروژه (تجمیعی)</option>
+                    @if (!string.IsNullOrWhiteSpace(currentFiscalYearId))
+                    {
+                        <option value="@currentFiscalYearId">فقط سال مالی جاری</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-grid">
+                <button type="button" class="btn btn-outline-primary" onclick="loadAllProjectProgress()">
+                    <i class="mdi mdi-refresh me-1"></i>بروزرسانی
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="ppEmptyState" class="alert alert-info text-center @(projects.Any() ? "d-none" : "")">
+    پروژه‌ای برای نمایش یافت نشد یا هنوز پروژه‌ای به شما تخصیص داده نشده است.
+</div>
+
+<div id="ppMainContent" class="d-none">
+    <!-- کارت‌های KPI -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm border-start border-4 border-primary h-100">
+                <div class="card-body">
+                    <div class="text-muted small">پیشرفت فیزیکی کل پروژه</div>
+                    <h3 class="fw-bold text-primary font-monospace mb-2" id="kpiProgressPct">0%</h3>
+                    <div class="progress" style="height: 8px;">
+                        <div id="kpiProgressBar" class="progress-bar bg-primary" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm border-start border-4 border-info h-100">
+                <div class="card-body">
+                    <div class="text-muted small">مراحل پروژه (Milestones)</div>
+                    <h3 class="fw-bold text-info font-monospace mb-1" id="kpiMilestonesCount">0 / 0</h3>
+                    <div class="text-muted small" id="kpiLogsCount">0 گزارش کارگاهی ثبت شده</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm border-start border-4 border-warning h-100">
+                <div class="card-body">
+                    <div class="text-muted small">بودجه برآوردی vs هزینه واقعی</div>
+                    <h5 class="fw-bold text-dark font-monospace mb-1" id="kpiBudgetVal">تعیین نشده</h5>
+                    <div class="small" id="kpiBudgetDiff">-</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-0 shadow-sm border-start border-4 border-success h-100">
+                <div class="card-body">
+                    <div class="text-muted small">سود / زیان خالص پروژه</div>
+                    <h4 class="fw-bold text-success font-monospace mb-1" id="kpiNetProfit">0 ریال</h4>
+                    <div class="text-muted small">حاشیه سود: <strong id="kpiMarginPct">0%</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تب‌های اصلی فاز ۳ -->
+    <ul class="nav nav-tabs mb-3 no-print" id="ppTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-bold" id="tab-timeline-btn" data-bs-toggle="tab" data-bs-target="#tab-timeline" type="button" role="tab">
+                <i class="mdi mdi-timeline-text-outline me-1"></i>خط زمانی و گالری مستندات کارگاهی
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="tab-milestones-btn" data-bs-toggle="tab" data-bs-target="#tab-milestones" type="button" role="tab">
+                <i class="mdi mdi-flag-checkered me-1"></i>مراحل و فازهای پروژه (Milestones)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-bold" id="tab-pnl-btn" data-bs-toggle="tab" data-bs-target="#tab-pnl" type="button" role="tab">
+                <i class="mdi mdi-finance me-1"></i>سود و زیان و مقایسه بودجه
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- تب ۱: تایم‌لاین و گالری مستندات -->
+        <div class="tab-pane fade show active" id="tab-timeline" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card card-default h-100">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 fw-bold"><i class="mdi mdi-history text-primary me-1"></i>خط زمانی گزارش‌های پیشرفت</h5>
+                            @if (isFyOpen && canCreate)
+                            {
+                                <button type="button" class="btn btn-primary btn-xs no-print" onclick="openProgressLogModal()">
+                                    <i class="mdi mdi-plus me-1"></i>گزارش جدید
+                                </button>
+                            }
+                        </div>
+                        <div class="card-body" id="ppTimelineContainer">
+                            <div class="text-center text-muted py-4">در حال بارگذاری...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card card-default h-100">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0 fw-bold"><i class="mdi mdi-image-multiple-outline text-success me-1"></i>گالری تصاویر و مستندات کارگاهی</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="small fw-bold text-muted mb-2">تصاویر کارگاهی</h6>
+                            <div class="row g-2 mb-4" id="ppGalleryImages">
+                                <div class="col-12 text-muted small">تصویری ثبت نشده است.</div>
+                            </div>
+                            <h6 class="small fw-bold text-muted mb-2">فایل‌ها و اسناد پیوست (PDF / Office)</h6>
+                            <ul class="list-group list-group-flush small" id="ppGalleryDocs">
+                                <li class="list-group-item text-muted">سندی ثبت نشده است.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- تب ۲: مایلستون‌ها -->
+        <div class="tab-pane fade" id="tab-milestones" role="tabpanel">
+            <div class="card card-default">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="mdi mdi-flag-variant-outline text-info me-1"></i>فهرست مراحل (Milestones) و وزن پیشرفت</h5>
+                    @if (canCreate)
+                    {
+                        <button type="button" class="btn btn-primary btn-sm no-print" onclick="openMilestoneModal(0)">
+                            <i class="mdi mdi-plus me-1"></i>افزودن مرحله جدید
+                        </button>
+                    }
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle small">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:60px;" class="text-center">ترتیب</th>
+                                    <th>عنوان مرحله</th>
+                                    <th style="width:90px;" class="text-center">وزن (%)</th>
+                                    <th style="width:170px;">درصد پیشرفت</th>
+                                    <th>تاریخ سررسید</th>
+                                    <th>وضعیت</th>
+                                    <th class="text-center">گزارش‌ها</th>
+                                    <th class="text-center no-print">عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ppMilestonesBody">
+                                <tr><td colspan="8" class="text-center text-muted py-4">در حال بارگذاری...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- تب ۳: گزارش سود و زیان و مقایسه بودجه -->
+        <div class="tab-pane fade" id="tab-pnl" role="tabpanel">
+            <div class="row g-4 mb-4">
+                <div class="col-lg-7">
+                    <div class="card card-default h-100">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0 fw-bold"><i class="mdi mdi-calculator-variant-outline text-success me-1"></i>صورت سود و زیان پروژه</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-bordered align-middle mb-0 small">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold">فروش ناخالص (فاکتورهای نهایی)</td>
+                                        <td class="text-end font-monospace text-primary" id="pnlGrossSales">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-danger">کسر می‌شود: برگشت از فروش (نهایی)</td>
+                                        <td class="text-end font-monospace text-danger" id="pnlReturns">0</td>
+                                    </tr>
+                                    <tr class="table-light fw-bold">
+                                        <td>درآمد خالص پروژه (Net Revenue)</td>
+                                        <td class="text-end font-monospace text-primary" id="pnlNetSales">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>بهای تمام‌شده کالاهای مصرف‌شده (COGS خالص)</td>
+                                        <td class="text-end font-monospace text-danger" id="pnlNetCogs">0</td>
+                                    </tr>
+                                    <tr class="table-light fw-bold">
+                                        <td>سود ناخالص (Gross Profit)</td>
+                                        <td class="text-end font-monospace" id="pnlGrossProfit">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>هزینه‌های مستقیم پروژه (حمل، کارگاه، متفرقه)</td>
+                                        <td class="text-end font-monospace text-danger" id="pnlDirectExp">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td>دستمزد تأییدشده کارکرد پرسنل (<span id="pnlApprovedHours">0</span> ساعت)</td>
+                                        <td class="text-end font-monospace text-danger" id="pnlApprovedLabor">0</td>
+                                    </tr>
+                                    <tr class="table-secondary fw-bold">
+                                        <td>جمع کل بهای تمام‌شده و هزینه‌ها (Total Costs)</td>
+                                        <td class="text-end font-monospace text-danger" id="pnlTotalCosts">0</td>
+                                    </tr>
+                                    <tr class="fw-bold fs-6" id="pnlNetProfitRow">
+                                        <td>سود / زیان خالص پروژه (Net Profit)</td>
+                                        <td class="text-end font-monospace" id="pnlNetProfit">0</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="p-3 bg-light border-top small text-muted d-flex flex-wrap justify-content-between gap-2">
+                                <span>پیش‌فاکتورهای باز (خارج از سود): <strong id="pnlProformaInfo" class="font-monospace">0</strong></span>
+                                <span>دستمزد در انتظار تأیید (<span id="pnlPendingHours">0</span> ساعت): <strong id="pnlPendingLabor" class="font-monospace">0</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card card-default h-100">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0 fw-bold"><i class="mdi mdi-scale-balance text-warning me-1"></i>مقایسه بودجه برآوردی با عملکرد واقعی</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span>بودجه مصوب / برآوردی:</span>
+                                    <strong class="font-monospace" id="pnlBudgetAmount">تعیین نشده</strong>
+                                </div>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span>هزینه واقعی کل تا این لحظه:</span>
+                                    <strong class="font-monospace text-danger" id="pnlActualCosts">0 ریال</strong>
+                                </div>
+                                <div class="d-flex justify-content-between small mb-2">
+                                    <span>انحراف بودجه (مانده / اضافه‌هزینه):</span>
+                                    <strong class="font-monospace" id="pnlBudgetVariance">-</strong>
+                                </div>
+                                <div class="progress" style="height: 16px;">
+                                    <div id="pnlBudgetBar" class="progress-bar bg-success" role="progressbar" style="width: 0%;">0%</div>
+                                </div>
+                            </div>
+                            <hr />
+                            <h6 class="fw-bold small mb-2">ترکیب هزینه‌های پروژه</h6>
+                            <div class="small" id="pnlCostMix"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- جداول تفکیکی اقلام -->
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="card card-default">
+                        <div class="card-header bg-light"><h6 class="mb-0 fw-bold">بهای تمام‌شده کالاهای مصرف‌شده</h6></div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-sm table-bordered align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>کالا</th>
+                                        <th class="text-center">تعداد خالص</th>
+                                        <th class="text-end">فروش خالص (ریال)</th>
+                                        <th class="text-end">COGS خالص (ریال)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pnlMaterialItemsBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card card-default">
+                        <div class="card-header bg-light"><h6 class="mb-0 fw-bold">تفکیک کارکرد و دستمزد پرسنل پروژه</h6></div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-sm table-bordered align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>کارمند / سمت</th>
+                                        <th class="text-center">ساعت تأییدشده</th>
+                                        <th class="text-end">دستمزد قطعی (ریال)</th>
+                                        <th class="text-center">در انتظار</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pnlMemberWagesBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card card-default">
+                        <div class="card-header bg-light"><h6 class="mb-0 fw-bold">فاکتورهای فروش و برگشتی پروژه</h6></div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-sm table-bordered align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>شماره</th>
+                                        <th>تاریخ</th>
+                                        <th>وضعیت</th>
+                                        <th class="text-end">مبلغ کل (ریال)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pnlInvoicesBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card card-default">
+                        <div class="card-header bg-light"><h6 class="mb-0 fw-bold">هزینه‌های مستقیم ثبت‌شده روی پروژه</h6></div>
+                        <div class="card-body table-responsive p-0">
+                            <table class="table table-sm table-bordered align-middle mb-0 small">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>عنوان هزینه</th>
+                                        <th>نوع</th>
+                                        <th>تاریخ</th>
+                                        <th class="text-end">مبلغ (ریال)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pnlExpensesBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال تعریف / ویرایش مایلستون -->
+<div class="modal fade" id="milestoneModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="msModalTitle">تعریف مرحله جدید (Milestone)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="msId" value="0" />
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">عنوان مرحله <span class="text-danger">*</span></label>
+                    <input type="text" id="msTitle" class="form-control" maxlength="200" placeholder="مثلاً: آهن‌کشی و نصب ریل چاهک" />
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <label class="form-label small fw-bold">ترتیب</label>
+                        <input type="number" id="msSortOrder" class="form-control text-end" min="0" value="1" />
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small fw-bold">وزن مرحله (%)</label>
+                        <input type="number" id="msWeight" class="form-control text-end" min="0" max="100" step="1" value="25" />
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small fw-bold">پیشرفت فعلی (%)</label>
+                        <input type="number" id="msProgress" class="form-control text-end" min="0" max="100" step="1" value="0" />
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">تاریخ سررسید (اختیاری)</label>
+                        <input type="text" id="msDueDate" class="form-control persian-date-pp text-end" autocomplete="off" placeholder="۱۴۰۵/۰۳/۱۵" />
+                    </div>
+                    <div class="col-6" id="msStatusWrap" style="display:none;">
+                        <label class="form-label small fw-bold">وضعیت</label>
+                        <select id="msStatus" class="form-select">
+                            <option value="0">شروع نشده</option>
+                            <option value="1">در حال انجام</option>
+                            <option value="2">تکمیل شده</option>
+                            <option value="3">دارای تأخیر</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">توضیحات</label>
+                    <textarea id="msDesc" class="form-control" rows="2" maxlength="1000"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="saveMilestone()">
+                    <i class="mdi mdi-content-save me-1"></i>ذخیره مرحله
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال ثبت گزارش پیشرفت و آپلود تصاویر کارگاهی -->
+<div class="modal fade" id="progressLogModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold"><i class="mdi mdi-camera-plus-outline text-primary me-1"></i>ثبت گزارش پیشرفت و مستندات کارگاهی</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">عنوان گزارش <span class="text-danger">*</span></label>
+                        <input type="text" id="plTitle" class="form-control" maxlength="200" placeholder="مثلاً: نصب موتور و سیم‌کشی اولیه" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">تاریخ گزارش <span class="text-danger">*</span></label>
+                        <input type="text" id="plDate" class="form-control persian-date-pp text-end" autocomplete="off" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">درصد پیشرفت (%) <span class="text-danger">*</span></label>
+                        <input type="number" id="plProgress" class="form-control text-end" min="0" max="100" step="1" value="0" />
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">مرتبط با مرحله (Milestone - اختیاری)</label>
+                        <select id="plMilestoneId" class="form-select">
+                            <option value="">-- بدون انتخاب مرحله خاص --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">بخش / موقعیت کارگاه (اختیاری)</label>
+                        <input type="text" id="plArea" class="form-control" maxlength="300" placeholder="مثلاً: موتورخانه پشت‌بام / چاهک بلوک A" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">شرح عملیات انجام‌شده در کارگاه <span class="text-danger">*</span></label>
+                    <textarea id="plReportText" class="form-control" rows="3" maxlength="2000" placeholder="جزئیات اجرای کار، موانع یا نکات فنی..."></textarea>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">پیوست تصاویر کارگاهی یا فایل مستندات (حداکثر ۱۰ مگابایت برای هر فایل)</label>
+                    <input type="file" id="plFiles" class="form-control" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt" />
+                    <div id="plSelectedFilesPreview" class="mt-2 small text-muted"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" id="btnSaveProgressLog" class="btn btn-primary btn-sm" onclick="saveProgressLog()">
+                    <i class="mdi mdi-upload me-1"></i>ثبت گزارش و آپلود پیوست‌ها
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- مودال نمایش بزرگ تصویر (Lightbox) -->
+<div class="modal fade" id="galleryLightboxModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold" id="lbTitle">تصویر کارگاهی</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center bg-dark p-2">
+                <img id="lbImage" src="" alt="" class="img-fluid rounded" style="max-height: 75vh;" />
+            </div>
+            <div class="modal-footer justify-content-between small text-muted">
+                <span id="lbMeta"></span>
+                <a id="lbDownload" href="#" target="_blank" class="btn btn-sm btn-outline-primary">باز کردن / دانلود اصلی</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section AdminScripts {
+    <script src="~/lib/persiandate/persian-date.js"></script>
+    <script src="~/lib/persiandate/persian-datepicker.js"></script>
+    <script>
+        const ppApiBase = '@ApiAddress'.replace(/\/+$/, '');
+        const ppApiOrigin = ppApiBase.replace(/\/api$/i, '');
+        const ppToken = '@User.FindFirstValue("Token")';
+        const ppCanCreate = @canCreate.ToString().ToLower();
+        const ppCanEdit = @canEdit.ToString().ToLower();
+        const ppCanDelete = @canDelete.ToString().ToLower();
+        const ppIsFyOpen = @isFyOpen.ToString().ToLower();
+
+        let currentMilestones = [];
+        let currentTimeline = [];
+
+        function esc(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function resolveAssetUrl(path) {
+            if (!path) return '';
+            if (/^https?:\/\//i.test(path)) return path;
+            return ppApiOrigin + (path.startsWith('/') ? path : '/' + path);
+        }
+
+        function money(val) {
+            return Math.round(Number(val || 0)).toLocaleString('fa-IR') + ' ریال';
+        }
+
+        function normalizeDigits(str) {
+            return (str || '').trim()
+                .replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+                .replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+        }
+
+        function shamsiToIso(val) {
+            const raw = normalizeDigits(val);
+            if (!raw) return '';
+            const parts = raw.split('/');
+            if (parts.length === 3 && parseInt(parts[0], 10) < 1900 && typeof persianDate !== 'undefined') {
+                return new persianDate([parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2], 10)])
+                    .toCalendar('gregorian')
+                    .toLocale('en')
+                    .format('YYYY-MM-DD');
+            }
+            return raw.replaceAll('/', '-');
+        }
+
+        function getSelectedProjectId() {
+            const val = document.getElementById('ppProjectSelect')?.value;
+            return val ? parseInt(val, 10) : 0;
+        }
+
+        function getSelectedFiscalYearQuery() {
+            const fy = document.getElementById('ppFiscalScope')?.value;
+            return fy ? `?fiscalYearId=${encodeURIComponent(fy)}` : '';
+        }
+
+        async function loadAllProjectProgress() {
+            const projectId = getSelectedProjectId();
+            const mainEl = document.getElementById('ppMainContent');
+            const emptyEl = document.getElementById('ppEmptyState');
+
+            if (!projectId) {
+                mainEl.classList.add('d-none');
+                emptyEl.classList.remove('d-none');
+                return;
+            }
+            emptyEl.classList.add('d-none');
+            mainEl.classList.remove('d-none');
+
+            const fyQuery = getSelectedFiscalYearQuery();
+            const headers = { 'Authorization': 'Bearer ' + ppToken };
+
+            try {
+                const [msRes, tlRes, galRes, pnlRes] = await Promise.all([
+                    fetch(`${ppApiBase}/ProjectProgress/Milestones/${projectId}`, { headers }).then(r => r.json()).catch(() => ({ status: false, data: [] })),
+                    fetch(`${ppApiBase}/ProjectProgress/Timeline/${projectId}${fyQuery}`, { headers }).then(r => r.json()).catch(() => ({ status: false, data: [] })),
+                    fetch(`${ppApiBase}/ProjectProgress/Gallery/${projectId}`, { headers }).then(r => r.json()).catch(() => ({ status: false, data: [] })),
+                    fetch(`${ppApiBase}/ProjectProgress/ProfitAndLoss/${projectId}${fyQuery}`, { headers, suppressGlobalAlert: true }).then(r => r.json()).catch(() => ({ status: false, data: null }))
+                ]);
+
+                currentMilestones = msRes.data || [];
+                currentTimeline = tlRes.data || [];
+                const gallery = galRes.data || [];
+                const pnl = pnlRes.data || null;
+
+                renderMilestones(currentMilestones);
+                renderTimeline(currentTimeline);
+                renderGallery(gallery);
+                renderProfitAndLoss(pnl);
+                updateKpis(currentMilestones, currentTimeline, pnl);
+                populateMilestoneSelect(currentMilestones);
+            } catch (err) {
+                console.error(err);
+                SwalHelper.error('خطا در بارگذاری اطلاعات پیشرفت پروژه');
+            }
+        }
+
+        function updateKpis(milestones, timeline, pnl) {
+            const pct = pnl ? Number(pnl.progressPercent || 0) : (milestones.length > 0 ? milestones[0].progressPercent : 0);
+            document.getElementById('kpiProgressPct').textContent = pct.toLocaleString('fa-IR') + '%';
+            const bar = document.getElementById('kpiProgressBar');
+            bar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+            bar.className = 'progress-bar ' + (pct >= 100 ? 'bg-success' : 'bg-primary');
+
+            const doneCount = milestones.filter(m => m.status === 2).length;
+            document.getElementById('kpiMilestonesCount').textContent = `${doneCount.toLocaleString('fa-IR')} / ${milestones.length.toLocaleString('fa-IR')}`;
+            document.getElementById('kpiLogsCount').textContent = `${timeline.length.toLocaleString('fa-IR')} گزارش کارگاهی ثبت شده`;
+
+            if (pnl && pnl.estimatedBudget != null) {
+                document.getElementById('kpiBudgetVal').textContent = money(pnl.estimatedBudget);
+                const v = Number(pnl.budgetVariance || 0);
+                document.getElementById('kpiBudgetDiff').innerHTML = pnl.isOverBudget
+                    ? `<span class="text-danger fw-bold">اضافه‌هزینه ${Math.abs(Math.round(v)).toLocaleString('fa-IR')} ریال (${pnl.budgetUsedPercent}%)</span>`
+                    : `<span class="text-success fw-bold">مانده بودجه ${Math.round(v).toLocaleString('fa-IR')} ریال (${pnl.budgetUsedPercent}%)</span>`;
+            } else {
+                document.getElementById('kpiBudgetVal').textContent = 'تعیین نشده';
+                document.getElementById('kpiBudgetDiff').textContent = 'قابل تنظیم در ویرایش پروژه';
+            }
+
+            if (pnl) {
+                const netEl = document.getElementById('kpiNetProfit');
+                netEl.textContent = money(pnl.netProfit);
+                netEl.className = 'fw-bold font-monospace mb-1 ' + (pnl.netProfit >= 0 ? 'text-success' : 'text-danger');
+                document.getElementById('kpiMarginPct').textContent = (pnl.profitMarginPercent ?? 0) + '%';
+            }
+        }
+
+        function renderMilestones(list) {
+            const body = document.getElementById('ppMilestonesBody');
+            if (!list || list.length === 0) {
+                body.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">هنوز هیچ مرحله‌ای (Milestone) برای این پروژه تعریف نشده است.</td></tr>';
+                return;
+            }
+            const statusBadges = {
+                0: 'bg-secondary',
+                1: 'bg-primary',
+                2: 'bg-success',
+                3: 'bg-danger'
+            };
+            body.innerHTML = list.map(m => {
+                const pct = Math.min(100, Math.max(0, Number(m.progressPercent || 0)));
+                let ops = '';
+                if (ppCanEdit) {
+                    ops += `<button type="button" class="btn btn-outline-primary btn-xs py-0 px-2 me-1" onclick="openMilestoneModal(${m.id})">ویرایش</button>`;
+                }
+                if (ppCanDelete) {
+                    ops += `<button type="button" class="btn btn-outline-danger btn-xs py-0 px-2" onclick="deleteMilestone(${m.id})">حذف</button>`;
+                }
+                if (!ops) ops = '<span class="text-muted">-</span>';
+                return `<tr>
+                    <td class="text-center font-monospace">${m.sortOrder}</td>
+                    <td>
+                        <div class="fw-bold">${esc(m.title)}</div>
+                        ${m.description ? `<div class="text-muted small">${esc(m.description)}</div>` : ''}
+                    </td>
+                    <td class="text-center font-monospace">${Number(m.weightPercent || 0).toLocaleString('fa-IR')}%</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height:8px;">
+                                <div class="progress-bar ${pct >= 100 ? 'bg-success' : 'bg-info'}" style="width:${pct}%"></div>
+                            </div>
+                            <span class="font-monospace fw-bold">${pct}%</span>
+                        </div>
+                    </td>
+                    <td>${esc(m.dueDateShamsi || '-')}</td>
+                    <td><span class="badge ${statusBadges[m.status] || 'bg-secondary'}">${esc(m.statusTitle)}</span></td>
+                    <td class="text-center font-monospace">${m.logsCount}</td>
+                    <td class="text-center text-nowrap no-print">${ops}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderTimeline(logs) {
+            const container = document.getElementById('ppTimelineContainer');
+            if (!logs || logs.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-4">هنوز گزارشی در خط زمانی این پروژه ثبت نشده است.</div>';
+                return;
+            }
+            container.innerHTML = logs.map(l => {
+                const attsHtml = (l.attachments || []).map(a => {
+                    const url = resolveAssetUrl(a.storagePath);
+                    if (a.isImage) {
+                        return `<a href="javascript:void(0)" onclick="openLightbox('${esc(url)}', '${esc(a.fileName)}', '${esc(l.logDateShamsi)} - ${esc(l.recordedByName)}')" class="d-inline-block me-2 mb-2">
+                            <img src="${esc(url)}" alt="${esc(a.fileName)}" class="rounded border" style="width:84px;height:68px;object-fit:cover;" />
+                        </a>`;
+                    }
+                    return `<a href="${esc(url)}" target="_blank" class="btn btn-outline-secondary btn-xs me-2 mb-2">
+                        <i class="mdi mdi-file-document-outline me-1"></i>${esc(a.fileName)}
+                    </a>`;
+                }).join('');
+
+                const delBtn = ppCanDelete
+                    ? `<button type="button" class="btn btn-link btn-sm text-danger p-0 ms-2 no-print" onclick="deleteProgressLog(${l.id})" title="حذف گزارش"><i class="mdi mdi-trash-can-outline"></i></button>`
+                    : '';
+
+                return `<div class="timeline-item">
+                    <span class="timeline-dot"></span>
+                    <div class="card border shadow-none bg-light mb-0">
+                        <div class="card-body py-2 px-3">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center mb-1">
+                                <div class="fw-bold text-dark">${esc(l.title)}</div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary font-monospace">${Number(l.progressPercent || 0)}%</span>
+                                    <span class="badge bg-white text-dark border font-monospace">${esc(l.logDateShamsi)}</span>
+                                    ${delBtn}
+                                </div>
+                            </div>
+                            <div class="small text-muted mb-2">
+                                <span><i class="mdi mdi-account-outline me-1"></i>${esc(l.recordedByName || '-')}</span>
+                                ${l.milestoneTitle ? `<span class="ms-2 badge bg-info text-dark">${esc(l.milestoneTitle)}</span>` : ''}
+                                ${l.workshopArea ? `<span class="ms-2"><i class="mdi mdi-map-marker-outline"></i> ${esc(l.workshopArea)}</span>` : ''}
+                            </div>
+                            <p class="mb-2 small" style="white-space:pre-line;">${esc(l.reportText)}</p>
+                            ${attsHtml ? `<div class="pt-1 border-top">${attsHtml}</div>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderGallery(attachments) {
+            const imgWrap = document.getElementById('ppGalleryImages');
+            const docWrap = document.getElementById('ppGalleryDocs');
+            const imgs = (attachments || []).filter(a => a.isImage);
+            const docs = (attachments || []).filter(a => !a.isImage);
+
+            if (imgs.length === 0) {
+                imgWrap.innerHTML = '<div class="col-12 text-muted small">تصویر کارگاهی آپلود نشده است.</div>';
+            } else {
+                imgWrap.innerHTML = imgs.map(a => {
+                    const url = resolveAssetUrl(a.storagePath);
+                    return `<div class="col-6">
+                        <div class="card border overflow-hidden mb-0">
+                            <img src="${esc(url)}" alt="${esc(a.fileName)}" class="gallery-thumb"
+                                 onclick="openLightbox('${esc(url)}', '${esc(a.progressLogTitle || a.fileName)}', '${esc(a.logDateShamsi)} | ${esc(a.uploadedByName)}')" />
+                            <div class="p-1 bg-white small text-truncate" title="${esc(a.progressLogTitle || a.fileName)}">
+                                <span class="font-monospace text-muted">${esc(a.logDateShamsi)}</span> - ${esc(a.progressLogTitle || a.fileName)}
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            if (docs.length === 0) {
+                docWrap.innerHTML = '<li class="list-group-item text-muted">فایل سندی پیوست نشده است.</li>';
+            } else {
+                docWrap.innerHTML = docs.map(a => {
+                    const url = resolveAssetUrl(a.storagePath);
+                    return `<li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div class="text-truncate me-2">
+                            <i class="mdi mdi-file-pdf-box text-danger me-1"></i>
+                            <a href="${esc(url)}" target="_blank" class="fw-bold">${esc(a.fileName)}</a>
+                            <div class="text-muted small">${esc(a.progressLogTitle)} (${esc(a.logDateShamsi)})</div>
+                        </div>
+                        <a href="${esc(url)}" target="_blank" class="btn btn-outline-primary btn-xs">دانلود</a>
+                    </li>`;
+                }).join('');
+            }
+        }
+
+        function renderProfitAndLoss(d) {
+            if (!d) return;
+            document.getElementById('pnlGrossSales').textContent = money(d.grossSalesRevenue);
+            document.getElementById('pnlReturns').textContent = '-' + money(d.salesReturnsAmount);
+            document.getElementById('pnlNetSales').textContent = money(d.netSalesRevenue);
+            document.getElementById('pnlNetCogs').textContent = money(d.netMaterialCogs);
+            document.getElementById('pnlGrossProfit').textContent = money(d.grossProfit);
+            document.getElementById('pnlDirectExp').textContent = money(d.totalDirectExpenses);
+            document.getElementById('pnlApprovedHours').textContent = Number(d.totalApprovedHours || 0).toLocaleString('fa-IR');
+            document.getElementById('pnlApprovedLabor').textContent = money(d.totalApprovedLaborCost);
+            document.getElementById('pnlTotalCosts').textContent = money(d.totalCosts);
+
+            const netEl = document.getElementById('pnlNetProfit');
+            const netRow = document.getElementById('pnlNetProfitRow');
+            netEl.textContent = money(d.netProfit);
+            netRow.className = 'fw-bold fs-6 ' + (d.netProfit >= 0 ? 'table-success text-success' : 'table-danger text-danger');
+
+            document.getElementById('pnlProformaInfo').textContent = `${d.proformaInvoicesCount} سند / ${money(d.proformaSalesTotal)}`;
+            document.getElementById('pnlPendingHours').textContent = Number(d.pendingHours || 0).toLocaleString('fa-IR');
+            document.getElementById('pnlPendingLabor').textContent = money(d.pendingLaborCostEstimate);
+
+            document.getElementById('pnlActualCosts').textContent = money(d.totalCosts);
+            const bar = document.getElementById('pnlBudgetBar');
+            if (d.estimatedBudget != null) {
+                document.getElementById('pnlBudgetAmount').textContent = money(d.estimatedBudget);
+                const v = Number(d.budgetVariance || 0);
+                const vEl = document.getElementById('pnlBudgetVariance');
+                vEl.textContent = (d.isOverBudget ? 'اضافه‌هزینه: ' : 'مانده بودجه: ') + money(Math.abs(v));
+                vEl.className = 'font-monospace ' + (d.isOverBudget ? 'text-danger' : 'text-success');
+                const used = Math.min(100, Math.max(0, Number(d.budgetUsedPercent || 0)));
+                bar.style.width = used + '%';
+                bar.textContent = (d.budgetUsedPercent ?? 0) + '%';
+                bar.className = 'progress-bar ' + (d.isOverBudget ? 'bg-danger' : (used > 85 ? 'bg-warning text-dark' : 'bg-success'));
+            } else {
+                document.getElementById('pnlBudgetAmount').textContent = 'تعیین نشده';
+                document.getElementById('pnlBudgetVariance').textContent = '-';
+                bar.style.width = '0%';
+                bar.textContent = '۰%';
+            }
+
+            const tc = Number(d.totalCosts || 0);
+            const pctPart = val => tc > 0 ? Math.round((Number(val || 0) / tc) * 100) : 0;
+            document.getElementById('pnlCostMix').innerHTML = `
+                <div class="d-flex justify-content-between mb-1"><span>بهای تمام‌شده کالا (COGS):</span><strong class="font-monospace">${pctPart(d.netMaterialCogs)}%</strong></div>
+                <div class="d-flex justify-content-between mb-1"><span>هزینه‌های مستقیم:</span><strong class="font-monospace">${pctPart(d.totalDirectExpenses)}%</strong></div>
+                <div class="d-flex justify-content-between"><span>دستمزد کارکرد پرسنل:</span><strong class="font-monospace">${pctPart(d.totalApprovedLaborCost)}%</strong></div>
+            `;
+
+            const matBody = document.getElementById('pnlMaterialItemsBody');
+            const mats = d.materialItems || [];
+            matBody.innerHTML = mats.length === 0
+                ? '<tr><td colspan="4" class="text-center text-muted py-3">کالایی در فاکتورهای قطعی پروژه مصرف نشده است.</td></tr>'
+                : mats.map(m => `<tr>
+                    <td class="fw-bold">${esc(m.productTitle)} <small class="text-muted">${esc(m.productUnit || '')}</small></td>
+                    <td class="text-center font-monospace">${Number(m.netQuantity).toLocaleString('fa-IR')}</td>
+                    <td class="text-end font-monospace">${Math.round(m.netSalesAmount).toLocaleString('fa-IR')}</td>
+                    <td class="text-end font-monospace text-danger">${Math.round(m.netCogsAmount).toLocaleString('fa-IR')}</td>
+                </tr>`).join('');
+
+            const wagesBody = document.getElementById('pnlMemberWagesBody');
+            const wages = d.laborByMembers || [];
+            wagesBody.innerHTML = wages.length === 0
+                ? '<tr><td colspan="4" class="text-center text-muted py-3">کارکردی برای این پروژه ثبت نشده است.</td></tr>'
+                : wages.map(w => `<tr>
+                    <td><div class="fw-bold">${esc(w.employeeName)}</div><small class="text-muted">${esc(w.projectRole || '')}</small></td>
+                    <td class="text-center font-monospace">${Number(w.approvedHours).toLocaleString('fa-IR')}</td>
+                    <td class="text-end font-monospace fw-bold">${Math.round(w.approvedWageCost).toLocaleString('fa-IR')}</td>
+                    <td class="text-center font-monospace text-warning text-dark">${Number(w.pendingHours).toLocaleString('fa-IR')} ساعت</td>
+                </tr>`).join('');
+
+            const invBody = document.getElementById('pnlInvoicesBody');
+            const invRows = [];
+            (d.invoices || []).forEach(i => invRows.push(`<tr>
+                <td class="font-monospace">#${esc(i.number)}</td>
+                <td>${esc(i.issueDateShamsi)}</td>
+                <td><span class="badge ${i.status === 1 ? 'bg-success' : 'bg-warning text-dark'}">${esc(i.statusTitle)}</span></td>
+                <td class="text-end font-monospace fw-bold">${Math.round(i.total).toLocaleString('fa-IR')}</td>
+            </tr>`));
+            (d.returnInvoices || []).forEach(r => invRows.push(`<tr class="table-danger">
+                <td class="font-monospace">#${esc(r.number)}</td>
+                <td>${esc(r.issueDateShamsi)}</td>
+                <td><span class="badge bg-danger">${esc(r.statusTitle)}</span></td>
+                <td class="text-end font-monospace fw-bold text-danger">-${Math.round(r.total).toLocaleString('fa-IR')}</td>
+            </tr>`));
+            invBody.innerHTML = invRows.length > 0 ? invRows.join('') : '<tr><td colspan="4" class="text-center text-muted py-3">فاکتوری ثبت نشده است.</td></tr>';
+
+            const expBody = document.getElementById('pnlExpensesBody');
+            const exps = d.directExpenses || [];
+            expBody.innerHTML = exps.length === 0
+                ? '<tr><td colspan="4" class="text-center text-muted py-3">هزینه مستقیمی ثبت نشده است.</td></tr>'
+                : exps.map(e => `<tr>
+                    <td class="fw-bold">${esc(e.expenseTitle)}</td>
+                    <td>${esc(e.typeTitle)}</td>
+                    <td>${esc(e.expenseDateShamsi)}</td>
+                    <td class="text-end font-monospace text-danger">${Math.round(e.amount).toLocaleString('fa-IR')}</td>
+                </tr>`).join('');
+        }
+
+        function populateMilestoneSelect(list) {
+            const sel = document.getElementById('plMilestoneId');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">-- بدون انتخاب مرحله خاص --</option>';
+            (list || []).forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = `${m.title} (${m.progressPercent}%)`;
+                sel.appendChild(opt);
+            });
+        }
+
+        function openMilestoneModal(milestoneId) {
+            if (!getSelectedProjectId()) {
+                SwalHelper.warning('ابتدا پروژه را انتخاب نمایید.');
+                return;
+            }
+            const statusWrap = document.getElementById('msStatusWrap');
+            if (milestoneId > 0) {
+                const m = currentMilestones.find(x => x.id === milestoneId);
+                if (!m) return;
+                document.getElementById('msModalTitle').textContent = 'ویرایش مرحله پروژه';
+                document.getElementById('msId').value = m.id;
+                document.getElementById('msTitle').value = m.title || '';
+                document.getElementById('msSortOrder').value = m.sortOrder ?? 1;
+                document.getElementById('msWeight').value = m.weightPercent ?? 0;
+                document.getElementById('msProgress').value = m.progressPercent ?? 0;
+                document.getElementById('msDueDate').value = m.dueDateShamsi || '';
+                document.getElementById('msStatus').value = m.status ?? 0;
+                document.getElementById('msDesc').value = m.description || '';
+                statusWrap.style.display = 'block';
+            } else {
+                document.getElementById('msModalTitle').textContent = 'تعریف مرحله جدید (Milestone)';
+                document.getElementById('msId').value = '0';
+                document.getElementById('msTitle').value = '';
+                document.getElementById('msSortOrder').value = (currentMilestones.length + 1);
+                document.getElementById('msWeight').value = '25';
+                document.getElementById('msProgress').value = '0';
+                document.getElementById('msDueDate').value = '';
+                document.getElementById('msDesc').value = '';
+                statusWrap.style.display = 'none';
+            }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('milestoneModal')).show();
+        }
+
+        async function saveMilestone() {
+            const id = parseInt(document.getElementById('msId').value || '0', 10);
+            const projectId = getSelectedProjectId();
+            const title = document.getElementById('msTitle').value.trim();
+            if (!title) {
+                SwalHelper.warning('عنوان مرحله الزامی است.');
+                return;
+            }
+            const dueDateRaw = document.getElementById('msDueDate').value.trim();
+            const payload = {
+                id: id,
+                projectId: projectId,
+                title: title,
+                description: document.getElementById('msDesc').value.trim() || null,
+                sortOrder: parseInt(document.getElementById('msSortOrder').value || '0', 10),
+                weightPercent: parseFloat(document.getElementById('msWeight').value || '0'),
+                progressPercent: parseFloat(document.getElementById('msProgress').value || '0'),
+                dueDate: dueDateRaw ? shamsiToIso(dueDateRaw) : null,
+                status: id > 0 ? parseInt(document.getElementById('msStatus').value || '0', 10) : null
+            };
+            const url = id > 0 ? `${ppApiBase}/ProjectProgress/UpdateMilestone` : `${ppApiBase}/ProjectProgress/CreateMilestone`;
+            const method = id > 0 ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ppToken },
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json();
+                if (!res.ok || !json.status) {
+                    SwalHelper.error(json.message || 'خطا در ذخیره مرحله پروژه');
+                    return;
+                }
+                bootstrap.Modal.getInstance(document.getElementById('milestoneModal')).hide();
+                SwalHelper.success(json.message || 'مرحله پروژه ذخیره شد.');
+                await loadAllProjectProgress();
+            } catch (err) {
+                SwalHelper.error('خطا در ارتباط با سرور');
+            }
+        }
+
+        async function deleteMilestone(id) {
+            const conf = await Swal.fire({
+                title: 'حذف مرحله پروژه؟',
+                text: 'این مرحله از محاسبه پیشرفت پروژه حذف خواهد شد.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'بله، حذف شود',
+                cancelButtonText: 'انصراف'
+            });
+            if (!conf.isConfirmed) return;
+            try {
+                const res = await fetch(`${ppApiBase}/ProjectProgress/DeleteMilestone/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + ppToken }
+                });
+                const json = await res.json();
+                if (!res.ok || !json.status) {
+                    SwalHelper.error(json.message || 'خطا در حذف مرحله');
+                    return;
+                }
+                SwalHelper.success(json.message || 'مرحله حذف شد.');
+                await loadAllProjectProgress();
+            } catch (err) {
+                SwalHelper.error('خطا در ارتباط با سرور');
+            }
+        }
+
+        function openProgressLogModal() {
+            if (!getSelectedProjectId()) {
+                SwalHelper.warning('ابتدا پروژه را انتخاب نمایید.');
+                return;
+            }
+            document.getElementById('plTitle').value = '';
+            document.getElementById('plReportText').value = '';
+            document.getElementById('plArea').value = '';
+            document.getElementById('plMilestoneId').value = '';
+            document.getElementById('plProgress').value = '0';
+            document.getElementById('plFiles').value = '';
+            document.getElementById('plSelectedFilesPreview').textContent = '';
+            if (typeof persianDate !== 'undefined') {
+                document.getElementById('plDate').value = new persianDate().toLocale('en').format('YYYY/MM/DD');
+            }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('progressLogModal')).show();
+        }
+
+        async function saveProgressLog() {
+            const projectId = getSelectedProjectId();
+            const title = document.getElementById('plTitle').value.trim();
+            const logDate = document.getElementById('plDate').value.trim();
+            const reportText = document.getElementById('plReportText').value.trim();
+            const progressPct = document.getElementById('plProgress').value;
+
+            if (!title || !logDate || !reportText) {
+                SwalHelper.warning('عنوان گزارش، تاریخ و شرح عملیات الزامی هستند.');
+                return;
+            }
+
+            const fd = new FormData();
+            fd.append('ProjectId', String(projectId));
+            const msId = document.getElementById('plMilestoneId').value;
+            if (msId) fd.append('MilestoneId', msId);
+            fd.append('LogDate', shamsiToIso(logDate));
+            fd.append('Title', title);
+            fd.append('ReportText', reportText);
+            fd.append('ProgressPercent', normalizeDigits(progressPct || '0'));
+            const area = document.getElementById('plArea').value.trim();
+            if (area) fd.append('WorkshopArea', area);
+
+            const fileInput = document.getElementById('plFiles');
+            if (fileInput && fileInput.files) {
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    fd.append('Files', fileInput.files[i]);
+                }
+            }
+
+            const btn = document.getElementById('btnSaveProgressLog');
+            btn.disabled = true;
+            try {
+                const res = await fetch(`${ppApiBase}/ProjectProgress/AddProgressLog`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + ppToken },
+                    body: fd
+                });
+                const json = await res.json();
+                if (!res.ok || !json.status) {
+                    SwalHelper.error(json.message || 'خطا در ثبت گزارش پیشرفت');
+                    return;
+                }
+                bootstrap.Modal.getInstance(document.getElementById('progressLogModal')).hide();
+                SwalHelper.success(json.message || 'گزارش پیشرفت ثبت شد.');
+                await loadAllProjectProgress();
+            } catch (err) {
+                SwalHelper.error('خطا در ارتباط با سرور هنگام آپلود مستندات');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function deleteProgressLog(logId) {
+            const conf = await Swal.fire({
+                title: 'حذف گزارش پیشرفت؟',
+                text: 'این گزارش و پیوست‌های آن از خط زمانی پروژه حذف می‌شوند.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'بله، حذف شود',
+                cancelButtonText: 'انصراف'
+            });
+            if (!conf.isConfirmed) return;
+            try {
+                const res = await fetch(`${ppApiBase}/ProjectProgress/DeleteProgressLog/${logId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + ppToken }
+                });
+                const json = await res.json();
+                if (!res.ok || !json.status) {
+                    SwalHelper.error(json.message || 'خطا در حذف گزارش');
+                    return;
+                }
+                SwalHelper.success(json.message || 'گزارش حذف شد.');
+                await loadAllProjectProgress();
+            } catch (err) {
+                SwalHelper.error('خطا در ارتباط با سرور');
+            }
+        }
+
+        function openLightbox(url, title, meta) {
+            document.getElementById('lbTitle').textContent = title || 'تصویر کارگاهی';
+            document.getElementById('lbImage').src = url;
+            document.getElementById('lbMeta').textContent = meta || '';
+            document.getElementById('lbDownload').href = url;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('galleryLightboxModal')).show();
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof $ !== 'undefined' && $.fn.persianDatepicker) {
+                $('.persian-date-pp').persianDatepicker({
+                    format: 'YYYY/MM/DD',
+                    autoClose: true,
+                    initialValue: false,
+                    persianDigit: false
+                });
+            }
+
+            const filesInput = document.getElementById('plFiles');
+            if (filesInput) {
+                filesInput.addEventListener('change', function () {
+                    const preview = document.getElementById('plSelectedFilesPreview');
+                    if (!this.files || this.files.length === 0) {
+                        preview.textContent = '';
+                        return;
+                    }
+                    const names = Array.from(this.files).map(f => `${f.name} (${Math.round(f.size / 1024)} KB)`);
+                    preview.textContent = `${this.files.length} فایل انتخاب شده: ` + names.join(' ، ');
+                });
+            }
+
+            const sel = document.getElementById('ppProjectSelect');
+            if (sel && !sel.value && sel.options.length > 1) {
+                sel.selectedIndex = 1;
+            }
+            if (sel && sel.value) {
+                loadAllProjectProgress();
+            }
+        });
+    </script>
+}

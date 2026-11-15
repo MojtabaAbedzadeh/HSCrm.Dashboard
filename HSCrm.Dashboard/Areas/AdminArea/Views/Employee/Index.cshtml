@@ -8,6 +8,7 @@
     bool canEditWorkLog = User.HasPermission(Permissions.WorkLogs.Edit);
     bool canDeleteWorkLog = User.HasPermission(Permissions.WorkLogs.Delete);
     bool canViewWorkLogs = User.HasPermission(Permissions.WorkLogs.View);
+    bool canViewProgress = User.HasPermission(Permissions.ProjectProgress.View);
     bool canCreateExpense = User.HasPermission(Permissions.Expenses.Create);
     bool canCreateSalesInvoice = User.HasPermission(Permissions.SalesInvoices.Create);
     bool canCreatePurchaseInvoice = User.HasPermission(Permissions.PurchaseInvoices.Create);
@@ -114,7 +115,13 @@
                 <i class="mdi mdi-format-list-bulleted me-1"></i>مشاهده کامل تایم‌شیت
             </a>
         }
-        @if (isFyOpen && !canCreateWorkLog && !canCreateExpense && !canCreateSalesInvoice && !canCreatePurchaseInvoice && !canViewWorkLogs)
+        @if (canViewProgress)
+        {
+            <a href="/AdminArea/ProjectProgress/Index" class="btn btn-outline-primary">
+                <i class="mdi mdi-chart-timeline-variant me-1"></i>پیشرفت و مستندات پروژه
+            </a>
+        }
+        @if (isFyOpen && !canCreateWorkLog && !canCreateExpense && !canCreateSalesInvoice && !canCreatePurchaseInvoice && !canViewWorkLogs && !canViewProgress)
         {
             <div class="alert alert-warning mb-0 w-100 small" role="alert">
                 <i class="mdi mdi-alert-outline me-1"></i>
@@ -231,6 +238,7 @@
         const empCanDeleteWl = @canDeleteWorkLog.ToString().ToLower();
         const empCanCreateExp = @canCreateExpense.ToString().ToLower();
         const empCanCreateSale = @canCreateSalesInvoice.ToString().ToLower();
+        const empCanViewProgress = @canViewProgress.ToString().ToLower();
         const empIsFyOpen = @isFyOpen.ToString().ToLower();
         let empDashboardData = null;
 
@@ -311,8 +319,11 @@
                             actions += `<a href="/AdminArea/Expense/Index?projectId=${p.projectId}" class="btn btn-outline-danger btn-xs py-0 px-2 me-1">ثبت هزینه</a>`;
                         }
                         if (empCanCreateSale) {
-                            actions += `<a href="/AdminArea/Invoice/AddSaleInvoice?projectId=${p.projectId}" class="btn btn-outline-success btn-xs py-0 px-2">فاکتور فروش</a>`;
+                            actions += `<a href="/AdminArea/Invoice/AddSaleInvoice?projectId=${p.projectId}" class="btn btn-outline-success btn-xs py-0 px-2 me-1">فاکتور فروش</a>`;
                         }
+                    }
+                    if (empCanViewProgress) {
+                        actions += `<a href="/AdminArea/ProjectProgress/Index?projectId=${p.projectId}" class="btn btn-outline-primary btn-xs py-0 px-2">پیشرفت و مستندات</a>`;
                     }
                     if (!actions) actions = '<span class="text-muted">-</span>';
 

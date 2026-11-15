@@ -198,6 +198,13 @@ namespace HSCrm.Dashboard.Services
                             Title = "ساعات کاری و تایم‌شیت",
                             Url = "/AdminArea/ProjectWorkLog/Index",
                             PermissionKey = Permissions.WorkLogs.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "project_progress",
+                            Title = "پیشرفت و مستندات پروژه",
+                            Url = "/AdminArea/ProjectProgress/Index",
+                            PermissionKey = Permissions.ProjectProgress.View
                         }
                     }
                 },

@@ -139,5 +139,13 @@ namespace HSCrm.Common.PublicTools
             [Display(Name = "تأیید شده")] Approved = 1,
             [Display(Name = "رد شده")] Rejected = 2
         }
+
+        public enum MilestoneStatus : byte
+        {
+            [Display(Name = "شروع نشده")] NotStarted = 0,
+            [Display(Name = "در حال انجام")] InProgress = 1,
+            [Display(Name = "تکمیل شده")] Completed = 2,
+            [Display(Name = "دارای تأخیر")] Delayed = 3
+        }
     }
 }

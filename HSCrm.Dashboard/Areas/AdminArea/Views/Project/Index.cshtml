@@ -58,6 +58,8 @@
                                     <th>شماره تماس مشتری</th>
                                     <th>محل پروژه</th>
                                     <th>اعضای تیم</th>
+                                    <th>پیشرفت فیزیکی</th>
+                                    <th>بودجه برآوردی (ریال)</th>
                                     <th>وضعیت</th>
                                     <th>فعالیت</th>
                                 </tr>
@@ -75,6 +77,18 @@
                                                   onclick="openProjectMembersModal(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.ProjectTitle ?? ""))')">
                                                 0 عضو
                                             </span>
+                                        </td>
+                                        <td style="min-width:130px;">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height: 8px;">
+                                                    <div class="progress-bar @(item.ProgressPercent >= 100 ? "bg-success" : "bg-primary")" role="progressbar"
+                                                         style="width: @Math.Min(100m, Math.Max(0m, item.ProgressPercent)).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                                                </div>
+                                                <small class="font-monospace fw-bold">@item.ProgressPercent.ToString("0.#")%</small>
+                                            </div>
+                                        </td>
+                                        <td class="text-end font-monospace">
+                                            @(item.EstimatedBudget.HasValue ? item.EstimatedBudget.Value.ToString("N0") : "-")
                                         </td>
                                         <td>
                                             <span class="badge @(item.Status == "Active" ? "bg-success" : "bg-danger")">
@@ -113,6 +127,12 @@
                                                     {
                                                         <a class="dropdown-item text-info" href="/AdminArea/ProjectWorkLog/Index?projectId=@item.Id">
                                                             <i class="mdi mdi-clock-outline me-1"></i>ساعات کاری پروژه
+                                                        </a>
+                                                    }
+                                                    @if (User.HasPermission(Permissions.ProjectProgress.View))
+                                                    {
+                                                        <a class="dropdown-item text-success" href="/AdminArea/ProjectProgress/Index?projectId=@item.Id">
+                                                            <i class="mdi mdi-chart-timeline-variant me-1"></i>پیشرفت، تایم‌لاین و مستندات
                                                         </a>
                                                     }
                                                     @if (User.HasPermission(Permissions.Expenses.View))
@@ -164,10 +184,16 @@
                                 </div>
 
                             </div>
-                            <div class="col-lg-12">
+                            <div class="col-lg-6">
                                 <div class="form-group form-floating">
                                     <input class="form-control text-end" id="ProjectLocation" name="ProjectLocation" placeholder="محل پروژه">
                                     <label for="ProjectLocation" style="right:0!important; left:unset!important;">محل پروژه</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="form-group form-floating">
+                                    <input type="number" min="0" step="1000" class="form-control text-end" id="EstimatedBudget" name="EstimatedBudget" placeholder="بودجه برآوردی (ریال)">
+                                    <label for="EstimatedBudget" style="right:0!important; left:unset!important;">بودجه برآوردی (ریال - اختیاری)</label>
                                 </div>
                             </div>
                             <input hidden class="form-control text-end" id="CreateById" name="CreateById" value="@ViewBag.UserId">
@@ -214,10 +240,16 @@
                                 </div>
 
                             </div>
-                            <div class="col-lg-12">
+                            <div class="col-lg-6">
                                 <div class="form-group form-floating">
                                     <input class="form-control text-end" id="ProjectLocationE" name="ProjectLocationE" placeholder="محل پروژه">
                                     <label for="ProjectLocationE" style="right:0!important; left:unset!important;">محل پروژه</label>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="form-group form-floating">
+                                    <input type="number" min="0" step="1000" class="form-control text-end" id="EstimatedBudgetE" name="EstimatedBudgetE" placeholder="بودجه برآوردی (ریال)">
+                                    <label for="EstimatedBudgetE" style="right:0!important; left:unset!important;">بودجه برآوردی (ریال - اختیاری)</label>
                                 </div>
                             </div>
                             <input hidden class="form-control text-end" id="ModifiedById" name="ModifiedById" value="@ViewBag.UserId">
@@ -239,7 +271,7 @@
 }
 
 
-<!-- مودال کارنامه مالی و سود و زیان تفکیکی پروژه -->
+<!-- مودال کارنامه مالی و سود و زیان تفکیکی پروژه (فاز ۳: محاسبه سمت سرور با COGS و دستمزد) -->
 <div class="modal fade" id="projectProfitabilityModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
@@ -249,49 +281,78 @@
                     کارنامه مالی و صورت سود و زیان پروژه: <span id="pfTitle" class="text-warning"></span>
                 </h5>
                 <div class="d-flex gap-2">
+                    <a id="pfFullReportLink" href="/AdminArea/ProjectProgress/Index" class="btn btn-sm btn-outline-info">
+                        <i class="mdi mdi-chart-timeline-variant me-1"></i>تایم‌لاین، مستندات و گزارش کامل
+                    </a>
                     <button type="button" class="btn btn-sm btn-outline-light" onclick="window.print()">
-                        <i class="mdi mdi-printer me-1"></i>چاپ کارنامه پروژه (A4)
+                        <i class="mdi mdi-printer me-1"></i>چاپ کارنامه (A4)
                     </button>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
             </div>
             <div class="modal-body">
-                <div class="row g-3 mb-4">
-                    <div class="col-md-3">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3 col-sm-6">
                         <div class="p-3 rounded bg-light border-start border-4 border-primary">
-                            <div class="text-muted small">جمع فاکتورهای فروش پروژه</div>
+                            <div class="text-muted small">درآمد خالص فروش (پس از برگشتی)</div>
                             <h5 class="fw-bold text-primary font-monospace mb-0" id="pfTotalSales">0</h5>
+                            <div class="text-muted small mt-1" id="pfProformaNote"></div>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 col-sm-6">
                         <div class="p-3 rounded bg-light border-start border-4 border-danger">
-                            <div class="text-muted small">جمع هزینه‌های مستقیم پروژه</div>
-                            <h5 class="fw-bold text-danger font-monospace mb-0" id="pfTotalExpenses">0</h5>
+                            <div class="text-muted small">جمع کل هزینه‌ها و بهای تمام‌شده</div>
+                            <h5 class="fw-bold text-danger font-monospace mb-0" id="pfTotalCosts">0</h5>
+                            <div class="text-muted small mt-1" id="pfCostBreakdown"></div>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 col-sm-6">
                         <div class="p-3 rounded bg-light border-start border-4 border-success">
                             <div class="text-muted small">سود / زیان خالص پروژه</div>
                             <h5 class="fw-bold text-success font-monospace mb-0" id="pfNetProfit">0</h5>
+                            <div class="text-muted small mt-1">حاشیه سود: <strong id="pfMarginPct">0%</strong></div>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-3 col-sm-6">
                         <div class="p-3 rounded bg-light border-start border-4 border-info">
-                            <div class="text-muted small">حاشیه سود پروژه (Margin)</div>
-                            <h5 class="fw-bold text-info font-monospace mb-0" id="pfMarginPct">0%</h5>
+                            <div class="text-muted small">بودجه برآوردی و انحراف</div>
+                            <h5 class="fw-bold text-info font-monospace mb-0" id="pfBudgetText">تعیین نشده</h5>
+                            <div class="small mt-1" id="pfBudgetVarianceText"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="border rounded p-2 bg-white small d-flex justify-content-between">
+                            <span>بهای تمام‌شده کالا (COGS خالص):</span>
+                            <strong class="font-monospace" id="pfCogsVal">0</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-2 bg-white small d-flex justify-content-between">
+                            <span>هزینه‌های مستقیم پروژه:</span>
+                            <strong class="font-monospace text-danger" id="pfDirectExpVal">0</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-2 bg-white small d-flex justify-content-between">
+                            <span>دستمزد تأییدشده کارکرد (<span id="pfApprovedHoursVal">0</span> ساعت):</span>
+                            <strong class="font-monospace text-warning text-dark" id="pfLaborVal">0</strong>
                         </div>
                     </div>
                 </div>
 
                 <div class="row g-4">
                     <div class="col-lg-6">
-                        <h6 class="fw-bold border-bottom pb-2"><i class="mdi mdi-file-document-outline me-1 text-primary"></i>فاکتورهای فروش ثبت‌شده برای این پروژه</h6>
-                        <div class="table-responsive" style="max-height: 280px;">
+                        <h6 class="fw-bold border-bottom pb-2"><i class="mdi mdi-file-document-outline me-1 text-primary"></i>فاکتورهای فروش و برگشتی پروژه</h6>
+                        <div class="table-responsive" style="max-height: 260px;">
                             <table class="table table-sm table-bordered align-middle small">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>شماره فاکتور</th>
+                                        <th>شماره</th>
                                         <th>وضعیت</th>
+                                        <th class="text-end">COGS (ریال)</th>
                                         <th class="text-end">مبلغ کل (ریال)</th>
                                     </tr>
                                 </thead>
@@ -300,13 +361,13 @@
                         </div>
                     </div>
                     <div class="col-lg-6">
-                        <h6 class="fw-bold border-bottom pb-2"><i class="mdi mdi-cash-remove me-1 text-danger"></i>هزینه‌های ثبت‌شده برای این پروژه</h6>
-                        <div class="table-responsive" style="max-height: 280px;">
+                        <h6 class="fw-bold border-bottom pb-2"><i class="mdi mdi-cash-remove me-1 text-danger"></i>هزینه‌های مستقیم و دستمزد پرسنل</h6>
+                        <div class="table-responsive" style="max-height: 260px;">
                             <table class="table table-sm table-bordered align-middle small">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>عنوان هزینه</th>
-                                        <th>توضیحات</th>
+                                        <th>شرح هزینه / پرسنل</th>
+                                        <th>نوع</th>
                                         <th class="text-end">مبلغ (ریال)</th>
                                     </tr>
                                 </thead>
@@ -321,69 +382,112 @@
 </div>
 
 <script>
+    function pfFormatMoney(val) {
+        return Math.round(Number(val || 0)).toLocaleString('fa-IR') + ' ریال';
+    }
+
     async function openProjectProfitabilityModal(projectId, projectTitle, customerName) {
         document.getElementById('pfTitle').textContent = `${projectTitle} (${customerName || 'بدون مشتری'})`;
-        const modal = new bootstrap.Modal(document.getElementById('projectProfitabilityModal'));
+        const fullLink = document.getElementById('pfFullReportLink');
+        if (fullLink) fullLink.href = `/AdminArea/ProjectProgress/Index?projectId=${projectId}`;
+
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('projectProfitabilityModal'));
         modal.show();
 
-        const apiAddr = '@ApiAddress'.replace(/\/+$/, '');
+        document.getElementById('pfInvoicesBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">در حال محاسبه سود و زیان پروژه...</td></tr>';
+        document.getElementById('pfExpensesBody').innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">در حال بارگذاری...</td></tr>';
+
+        const apiAddr = '@ApiAddress'.replace(/\/+$|\/$/g, '').replace(/\/+$/, '');
         const headers = { 'Authorization': 'Bearer ' + '@User.FindFirstValue("Token")' };
 
         try {
-            const [invRes, expRes] = await Promise.all([
-                fetch(`${apiAddr}/SalesInvoice/GetProjectInvoices?projectId=${projectId}`, { headers, suppressGlobalAlert: true }).then(r => r.json()).catch(() => ({ data: [] })),
-                fetch(`${apiAddr}/Expense/GetProjectExpenses?projectId=${projectId}`, { headers, suppressGlobalAlert: true }).then(r => r.json()).catch(() => ({ data: [] }))
-            ]);
+            const res = await fetch(`${apiAddr}/ProjectProgress/ProfitAndLoss/${projectId}`, { headers, suppressGlobalAlert: true });
+            const json = await res.json();
+            if (!res.ok || !json.status || !json.data) {
+                document.getElementById('pfInvoicesBody').innerHTML = `<tr><td colspan="4" class="text-center text-danger py-2">${json.message || 'خطا در محاسبه گزارش مالی پروژه'}</td></tr>`;
+                document.getElementById('pfExpensesBody').innerHTML = '';
+                return;
+            }
 
-            const invoices = invRes.data || invRes || [];
-            const expenses = expRes.data || expRes || [];
+            const d = json.data;
+            document.getElementById('pfTotalSales').textContent = pfFormatMoney(d.netSalesRevenue);
+            document.getElementById('pfProformaNote').textContent = d.proformaInvoicesCount > 0
+                ? `${d.proformaInvoicesCount} پیش‌فاکتور (${Math.round(d.proformaSalesTotal || 0).toLocaleString('fa-IR')} ریال)`
+                : `${d.finalInvoicesCount} فاکتور قطعی`;
 
-            const totalSales = Array.isArray(invoices)
-                ? invoices.reduce((s, x) => s + (x.totalAmount ?? x.total ?? x.finalAmount ?? 0), 0)
-                : 0;
-            const totalExp = Array.isArray(expenses)
-                ? expenses.reduce((s, x) => s + (x.amount ?? 0), 0)
-                : 0;
-            const netProfit = totalSales - totalExp;
-            const margin = totalSales > 0 ? Math.round((netProfit / totalSales) * 100) : 0;
+            document.getElementById('pfTotalCosts').textContent = pfFormatMoney(d.totalCosts);
+            document.getElementById('pfCostBreakdown').textContent = d.pendingLaborCostEstimate > 0
+                ? `دستمزد در انتظار تأیید: ${Math.round(d.pendingLaborCostEstimate).toLocaleString('fa-IR')} ریال`
+                : 'شامل کالا، هزینه مستقیم و دستمزد';
 
-            document.getElementById('pfTotalSales').textContent = Number(totalSales).toLocaleString('fa-IR') + ' ریال';
-            document.getElementById('pfTotalExpenses').textContent = Number(totalExp).toLocaleString('fa-IR') + ' ریال';
-            document.getElementById('pfNetProfit').textContent = Number(netProfit).toLocaleString('fa-IR') + ' ریال';
-            document.getElementById('pfNetProfit').className = 'fw-bold font-monospace mb-0 ' + (netProfit >= 0 ? 'text-success' : 'text-danger');
-            document.getElementById('pfMarginPct').textContent = margin + '%';
+            const netEl = document.getElementById('pfNetProfit');
+            netEl.textContent = pfFormatMoney(d.netProfit);
+            netEl.className = 'fw-bold font-monospace mb-0 ' + (d.netProfit >= 0 ? 'text-success' : 'text-danger');
+            document.getElementById('pfMarginPct').textContent = (d.profitMarginPercent ?? 0) + '%';
+
+            if (d.estimatedBudget != null) {
+                document.getElementById('pfBudgetText').textContent = pfFormatMoney(d.estimatedBudget);
+                const v = Number(d.budgetVariance || 0);
+                const vEl = document.getElementById('pfBudgetVarianceText');
+                vEl.innerHTML = d.isOverBudget
+                    ? `<span class="text-danger fw-bold">اضافه‌هزینه: ${Math.abs(Math.round(v)).toLocaleString('fa-IR')} ریال (${d.budgetUsedPercent}%)</span>`
+                    : `<span class="text-success fw-bold">صرفه‌جویی باقیمانده: ${Math.round(v).toLocaleString('fa-IR')} ریال (${d.budgetUsedPercent}%)</span>`;
+            } else {
+                document.getElementById('pfBudgetText').textContent = 'تعیین نشده';
+                document.getElementById('pfBudgetVarianceText').textContent = 'برای مقایسه، بودجه برآوردی پروژه را وارد کنید';
+            }
+
+            document.getElementById('pfCogsVal').textContent = pfFormatMoney(d.netMaterialCogs);
+            document.getElementById('pfDirectExpVal').textContent = pfFormatMoney(d.totalDirectExpenses);
+            document.getElementById('pfApprovedHoursVal').textContent = Number(d.totalApprovedHours || 0).toLocaleString('fa-IR');
+            document.getElementById('pfLaborVal').textContent = pfFormatMoney(d.totalApprovedLaborCost);
 
             const invBody = document.getElementById('pfInvoicesBody');
-            if (!Array.isArray(invoices) || invoices.length === 0) {
-                invBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-2">فاکتور فروشی برای این پروژه ثبت نشده است.</td></tr>';
-            } else {
-                invBody.innerHTML = invoices.map(i => `
-                    <tr>
-                        <td class="font-monospace">#${i.invoiceNumber || i.number || i.id}</td>
-                        <td><span class="badge ${i.status === 1 ? 'bg-success' : 'bg-warning text-dark'}">${i.status === 1 ? 'نهایی' : 'پیش‌فاکتور'}</span></td>
-                        <td class="text-end font-monospace fw-bold">${Number(i.totalAmount ?? i.total ?? 0).toLocaleString('fa-IR')}</td>
-                    </tr>
-                `).join('');
-            }
+            const invRows = [];
+            (d.invoices || []).forEach(i => {
+                invRows.push(`<tr>
+                    <td class="font-monospace">#${i.number}</td>
+                    <td><span class="badge ${i.status === 1 ? 'bg-success' : 'bg-warning text-dark'}">${i.statusTitle}</span></td>
+                    <td class="text-end font-monospace text-muted">${Math.round(i.materialCost || 0).toLocaleString('fa-IR')}</td>
+                    <td class="text-end font-monospace fw-bold">${Math.round(i.total || 0).toLocaleString('fa-IR')}</td>
+                </tr>`);
+            });
+            (d.returnInvoices || []).forEach(r => {
+                invRows.push(`<tr class="table-danger">
+                    <td class="font-monospace">#${r.number}</td>
+                    <td><span class="badge bg-danger">برگشت از فروش</span></td>
+                    <td class="text-end font-monospace">-${Math.round(r.materialCost || 0).toLocaleString('fa-IR')}</td>
+                    <td class="text-end font-monospace fw-bold text-danger">-${Math.round(r.total || 0).toLocaleString('fa-IR')}</td>
+                </tr>`);
+            });
+            invBody.innerHTML = invRows.length > 0
+                ? invRows.join('')
+                : '<tr><td colspan="4" class="text-center text-muted py-2">فاکتور فروشی برای این پروژه ثبت نشده است.</td></tr>';
 
             const expBody = document.getElementById('pfExpensesBody');
-            if (!Array.isArray(expenses) || expenses.length === 0) {
-                expBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-2">هزینه‌ای برای این پروژه ثبت نشده است.</td></tr>';
-            } else {
-                expBody.innerHTML = expenses.map(e => `
-                    <tr>
-                        <td class="fw-bold">${e.expenseTitle || '-'}</td>
-                        <td class="text-muted">${e.description || '-'}</td>
-                        <td class="text-end font-monospace fw-bold text-danger">${Number(e.amount || 0).toLocaleString('fa-IR')}</td>
-                    </tr>
-                `).join('');
-            }
+            const costRows = [];
+            (d.directExpenses || []).forEach(e => {
+                costRows.push(`<tr>
+                    <td class="fw-bold">${e.expenseTitle}</td>
+                    <td><span class="badge bg-light text-dark border">${e.typeTitle}</span></td>
+                    <td class="text-end font-monospace fw-bold text-danger">${Math.round(e.amount || 0).toLocaleString('fa-IR')}</td>
+                </tr>`);
+            });
+            (d.laborByMembers || []).filter(m => m.approvedWageCost > 0).forEach(m => {
+                costRows.push(`<tr class="table-warning">
+                    <td class="fw-bold">${m.employeeName} <small class="text-muted">(${Number(m.approvedHours).toLocaleString('fa-IR')} ساعت)</small></td>
+                    <td><span class="badge bg-warning text-dark">دستمزد کارکرد</span></td>
+                    <td class="text-end font-monospace fw-bold">${Math.round(m.approvedWageCost || 0).toLocaleString('fa-IR')}</td>
+                </tr>`);
+            });
+            expBody.innerHTML = costRows.length > 0
+                ? costRows.join('')
+                : '<tr><td colspan="3" class="text-center text-muted py-2">هزینه یا دستمزد تأییدشده‌ای ثبت نشده است.</td></tr>';
         } catch (err) {
             console.error(err);
         }
     }
 </script>
-
 
 <!-- مودال مدیریت اعضای تیم پروژه (فاز ۲) -->
 <div class="modal fade" id="projectMembersModal" tabindex="-1" aria-hidden="true">
@@ -665,6 +769,7 @@
                         $('#ProjectTitle').val("");
                         $('#CustomerId').val("");
                         $('#ProjectLocation').val("");
+                        $('#EstimatedBudget').val("");
                         window.location.reload();
                     });
                 },
@@ -691,6 +796,7 @@
                         $("#ProjectTitleE").val(data.projectTitle);
                         $("#ProjectLocationE").val(data.projectLocation);
                         $("#CustomerIdE").val(data.customerId);
+                        $("#EstimatedBudgetE").val(data.estimatedBudget ?? '');
                         $("#editProject").modal('show');
                     } else {
                         SwalHelper.error("اطلاعات پروژه یافت نشد.");
@@ -713,6 +819,7 @@
                 ProjectTitle: $("#ProjectTitleE").val(),
                 CustomerId: $("#CustomerIdE").val() ? parseInt($("#CustomerIdE").val()) : null,
                 ProjectLocation: $("#ProjectLocationE").val(),
+                EstimatedBudget: $("#EstimatedBudgetE").val() !== "" ? parseFloat($("#EstimatedBudgetE").val()) : null,
                 ModifiedById: $("#ModifiedById").val()
             };
             $.ajax({

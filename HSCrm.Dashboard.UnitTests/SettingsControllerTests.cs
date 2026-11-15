@@ -140,5 +140,36 @@ namespace HSCrm.Dashboard.UnitTests
             var onlyChild = Assert.Single(treasuryGroup.Children);
             Assert.Equal("payments", onlyChild.Key);
         }
+
+        [Fact(DisplayName = "7. فاز ۳: ثابت‌های مجوز پیشرفت پروژه و نمایش منوی پیشرفت و مستندات در سایدبار")]
+        public void SidebarMenu_ProjectProgress_RequiresPermissionAndMatchesWebApi()
+        {
+            Assert.Equal("projectProgress.view", Permissions.ProjectProgress.View);
+            Assert.Equal("projectProgress.create", Permissions.ProjectProgress.Create);
+            Assert.Equal("projectProgress.edit", Permissions.ProjectProgress.Edit);
+            Assert.Equal("projectProgress.delete", Permissions.ProjectProgress.Delete);
+
+            var provider = new SidebarMenuProvider();
+            var authorizedUser = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.Role, "User"),
+                new Claim("Permission", Permissions.ProjectProgress.View)
+            }, "TestAuth"));
+            var unauthorizedUser = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.Role, "User"),
+                new Claim("Permission", Permissions.Projects.View)
+            }, "TestAuth"));
+
+            var authorizedMenus = provider.GetMenus(authorizedUser);
+            var unauthorizedMenus = provider.GetMenus(unauthorizedUser);
+
+            var authProjects = Assert.Single(authorizedMenus, m => m.Key == "projects");
+            var progressMenu = Assert.Single(authProjects.Children, c => c.Key == "project_progress");
+            Assert.Equal("/AdminArea/ProjectProgress/Index", progressMenu.Url);
+
+            var unauthProjects = Assert.Single(unauthorizedMenus, m => m.Key == "projects");
+            Assert.DoesNotContain(unauthProjects.Children, c => c.Key == "project_progress");
+        }
     }
 }
