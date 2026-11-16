@@ -1,3 +1,4 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 ﻿@using HSCrm.Models.ModelDto
 
 @{
@@ -56,8 +57,12 @@
         </div>
     </div>
 </div>
+@{
+    var registerApiBase = (Configuration["ApiAddress"] ?? "https://localhost:44327/api/").TrimEnd('/');
+}
 @section AdminScripts {
     <script>
+        const registerApiUrl = '@registerApiBase/account/registertenant';
         $("#registerForm").submit(function(e){
             e.preventDefault();
             var data = {};
@@ -69,7 +74,7 @@
                 return false;
             }
             $.ajax({
-                url: "https://localhost:7001/api/account/registertenant",
+                url: registerApiUrl,
                 method: "POST",
                 contentType: "application/json",
                 data: JSON.stringify(data),
