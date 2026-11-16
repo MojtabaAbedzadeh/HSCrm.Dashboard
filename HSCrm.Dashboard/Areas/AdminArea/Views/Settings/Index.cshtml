@@ -19,7 +19,13 @@
             <span>تنظیمات شرکت</span>
         </p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
+        @if (canEdit)
+        {
+            <button type="button" class="btn btn-outline-primary" id="btnOpenPrintDesigner">
+                <i class="mdi mdi-palette-outline me-1"></i>طراحی قالب چاپ فاکتور
+            </button>
+        }
         <button type="button" class="btn btn-outline-secondary" id="btnReloadSettings">
             <i class="mdi mdi-refresh me-1"></i>بارگذاری مجدد
         </button>
@@ -252,7 +258,20 @@
             const apiBase = '@apiAddress'.replace(/\/+$/, '');
             const apiOrigin = apiBase.replace(/\/api$/i, '');
             const authToken = '@ViewBag.Token';
+            const currentTenantId = '@(ViewBag.TenantId?.ToString() ?? User.FindFirst("TenantId")?.Value ?? "")';
             const canEditSettings = @(canEdit ? "true" : "false");
+
+            function syncSidebarBrandingCache(partial) {
+                try {
+                    const cacheKey = 'hscrm_tenant_branding_' + currentTenantId;
+                    const existing = JSON.parse(sessionStorage.getItem(cacheKey) || '{}');
+                    const merged = Object.assign({}, existing, partial);
+                    sessionStorage.setItem(cacheKey, JSON.stringify(merged));
+                    if (typeof window.applySidebarBranding === 'function') {
+                        window.applySidebarBranding(merged);
+                    }
+                } catch (e) { }
+            }
             let currentTenantCode = 'T';
 
             function getAuthHeaders(includeJson) {
@@ -385,6 +404,18 @@
                     if (d.salesReturnPreview) $('#salesReturnPatternPreview').text(d.salesReturnPreview);
                     if (d.purchaseReturnPreview) $('#purchaseReturnPatternPreview').text(d.purchaseReturnPreview);
 
+                    syncSidebarBrandingCache({
+                        tenantTitle: d.tenantTitle || '',
+                        logoUrl: d.logoUrl || '',
+                        taxId: d.taxId || '',
+                        companyPhone: d.companyPhone || '',
+                        companyEmail: d.companyEmail || '',
+                        address: d.address || '',
+                        invoiceFooterText: d.invoiceFooterText || '',
+                        currency: d.currency || 'IRR',
+                        invoicePrintTemplateJson: d.invoicePrintTemplateJson || null
+                    });
+
                     if (!canEditSettings) {
                         $('#companySettingsForm input, #companySettingsForm select, #companySettingsForm textarea').prop('disabled', true);
                     }
@@ -417,6 +448,7 @@
                     }
                     const logoUrl = json.data ? (json.data.logoUrl || '') : '';
                     setLogoPreview(logoUrl);
+                    syncSidebarBrandingCache({ logoUrl: logoUrl, tenantTitle: ($('#TenantTitle').val() || '').trim() });
                     fileInput.value = '';
                     SwalHelper.success(json.message || 'لوگوی شرکت با موفقیت بارگذاری شد.');
                 } catch (err) {
@@ -507,6 +539,18 @@
                 $('#btnUploadLogo').on('click', uploadCompanyLogo);
                 $('#btnReloadSettings').on('click', loadCompanySettings);
                 $('#btnSaveSettingsTop').on('click', saveCompanySettings);
+                $('#btnOpenPrintDesigner').on('click', function () {
+                    if (window.HSCrmPrint) {
+                        window.HSCrmPrint.openDesignerModal({
+                            apiBase: apiBase,
+                            token: authToken,
+                            canSaveServer: canEditSettings,
+                            onSaved: function (tpl) {
+                                syncSidebarBrandingCache({ invoicePrintTemplateJson: JSON.stringify(tpl) });
+                            }
+                        });
+                    }
+                });
 
                 $('#companySettingsForm').on('submit', function (e) {
                     e.preventDefault();

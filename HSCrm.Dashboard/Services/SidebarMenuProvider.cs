@@ -59,8 +59,10 @@ namespace HSCrm.Dashboard.Services
         {
             return new List<SidebarMenuItem>
             {
+                // 1. پیشخوان و کارتابل
                 new SidebarMenuItem
                 {
+                    Category = "پیشخوان و کارتابل",
                     Key = "dashboard",
                     Title = "داشبورد مدیریتی",
                     Icon = "mdi mdi-view-dashboard",
@@ -69,13 +71,17 @@ namespace HSCrm.Dashboard.Services
                 },
                 new SidebarMenuItem
                 {
+                    Category = "پیشخوان و کارتابل",
                     Key = "employee_panel",
                     Title = "کارتابل کارمند و کارکرد من",
                     Icon = "mdi mdi-account-clock-outline",
                     Url = "/AdminArea/Employee/Index",
                 },
+
+                // 2. اطلاعات پایه، پروژه‌ها و انبار
                 new SidebarMenuItem
                 {
+                    Category = "اطلاعات پایه، پروژه‌ها و انبار",
                     Key = "customers",
                     Title = "مشتریان",
                     Icon = "mdi mdi-account-group",
@@ -92,6 +98,7 @@ namespace HSCrm.Dashboard.Services
                 },
                 new SidebarMenuItem
                 {
+                    Category = "اطلاعات پایه، پروژه‌ها و انبار",
                     Key = "suppliers",
                     Title = "تأمین‌کنندگان",
                     Icon = "mdi mdi-truck",
@@ -108,78 +115,7 @@ namespace HSCrm.Dashboard.Services
                 },
                 new SidebarMenuItem
                 {
-                    Key = "users",
-                    Title = "کاربران",
-                    Icon = "mdi mdi-account",
-                    Children = new List<SidebarMenuItem>
-                    {
-                        new SidebarMenuItem
-                        {
-                            Key = "users_list",
-                            Title = "لیست کاربران",
-                            Url = "/AdminArea/User/Index",
-                            PermissionKey = Permissions.Users.View,
-                            AllowedRoles = "Owner"
-                        },
-                        new SidebarMenuItem
-                        {
-                            Key = "roles_list",
-                            Title = "نقش‌ها",
-                            Url = "/AdminArea/Role/Index",
-                            PermissionKey = Permissions.Roles.View,
-                            AllowedRoles = "Owner,Admin"
-                        }
-                    }
-                },
-                new SidebarMenuItem
-                {
-                    Key = "products",
-                    Title = "محصولات",
-                    Icon = "mdi mdi-cube-outline",
-                    Children = new List<SidebarMenuItem>
-                    {
-                        new SidebarMenuItem
-                        {
-                            Key = "products_list",
-                            Title = "لیست محصولات",
-                            Url = "/AdminArea/Product/Index",
-                            PermissionKey = Permissions.Products.View
-                        },
-                        new SidebarMenuItem
-                        {
-                            Key = "product_kardex",
-                            Title = "کاردکس محصول",
-                            Url = "/AdminArea/Inventory/KardexReport",
-                            PermissionKey = Permissions.Inventories.View
-                        },
-                        new SidebarMenuItem
-                        {
-                            Key = "product_prices",
-                            Title = "قیمت‌ها",
-                            Url = "/AdminArea/ProductPrice/Index",
-                            PermissionKey = Permissions.ProductPrices.View
-                        }
-                    }
-                },
-                new SidebarMenuItem
-                {
-                    Key = "inventories",
-                    Title = "انبارها",
-                    Icon = "mdi mdi-warehouse",
-                    Children = new List<SidebarMenuItem>
-                    {
-                        new SidebarMenuItem
-                        {
-                            Key = "warehouses_list",
-                            Title = "لیست انبارها",
-                            Url = "/AdminArea/Warehouse/Index",
-                            PermissionKey = Permissions.Warehouses.View,
-                            AllowedRoles = "Owner"
-                        }
-                    }
-                },
-                new SidebarMenuItem
-                {
+                    Category = "اطلاعات پایه، پروژه‌ها و انبار",
                     Key = "projects",
                     Title = "پروژه‌ها",
                     Icon = "mdi mdi-folder-outline",
@@ -210,6 +146,58 @@ namespace HSCrm.Dashboard.Services
                 },
                 new SidebarMenuItem
                 {
+                    Category = "اطلاعات پایه، پروژه‌ها و انبار",
+                    Key = "products",
+                    Title = "محصولات و قیمت‌گذاری",
+                    Icon = "mdi mdi-cube-outline",
+                    Children = new List<SidebarMenuItem>
+                    {
+                        new SidebarMenuItem
+                        {
+                            Key = "products_list",
+                            Title = "لیست محصولات",
+                            Url = "/AdminArea/Product/Index",
+                            PermissionKey = Permissions.Products.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "product_kardex",
+                            Title = "کاردکس محصول",
+                            Url = "/AdminArea/Inventory/KardexReport",
+                            PermissionKey = Permissions.Inventories.View
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "product_prices",
+                            Title = "قیمت‌ها",
+                            Url = "/AdminArea/ProductPrice/Index",
+                            PermissionKey = Permissions.ProductPrices.View
+                        }
+                    }
+                },
+                new SidebarMenuItem
+                {
+                    Category = "اطلاعات پایه، پروژه‌ها و انبار",
+                    Key = "inventories",
+                    Title = "انبارها",
+                    Icon = "mdi mdi-warehouse",
+                    Children = new List<SidebarMenuItem>
+                    {
+                        new SidebarMenuItem
+                        {
+                            Key = "warehouses_list",
+                            Title = "لیست انبارها",
+                            Url = "/AdminArea/Warehouse/Index",
+                            PermissionKey = Permissions.Warehouses.View,
+                            AllowedRoles = "Owner"
+                        }
+                    }
+                },
+
+                // 3. فروش، خرید و خزانه‌داری
+                new SidebarMenuItem
+                {
+                    Category = "فروش، خرید و خزانه‌داری",
                     Key = "invoices",
                     Title = "فاکتورها و برگشتی‌ها",
                     Icon = "mdi mdi-receipt",
@@ -246,14 +234,14 @@ namespace HSCrm.Dashboard.Services
                         new SidebarMenuItem
                         {
                             Key = "sales_return_invoices",
-                            Title = "برگشت از فروش (فاز ۵)",
+                            Title = "برگشت از فروش",
                             Url = "/AdminArea/ReturnInvoice/SalesReturn",
                             PermissionKey = Permissions.SalesReturnInvoices.View
                         },
                         new SidebarMenuItem
                         {
                             Key = "purchase_return_invoices",
-                            Title = "برگشت از خرید (فاز ۵)",
+                            Title = "برگشت از خرید",
                             Url = "/AdminArea/ReturnInvoice/PurchaseReturn",
                             PermissionKey = Permissions.PurchaseReturnInvoices.View
                         }
@@ -261,6 +249,7 @@ namespace HSCrm.Dashboard.Services
                 },
                 new SidebarMenuItem
                 {
+                    Category = "فروش، خرید و خزانه‌داری",
                     Key = "treasury",
                     Title = "خزانه‌داری، بانک و چک",
                     Icon = "mdi mdi-bank",
@@ -298,6 +287,18 @@ namespace HSCrm.Dashboard.Services
                 },
                 new SidebarMenuItem
                 {
+                    Category = "فروش، خرید و خزانه‌داری",
+                    Key = "expenses",
+                    Title = "هزینه‌ها",
+                    Icon = "mdi mdi-cash",
+                    Url = "/AdminArea/Expense/Index",
+                    PermissionKey = $"{Permissions.Expenses.View},{Permissions.Expenses.Create}"
+                },
+
+                // 4. حسابداری و گزارشات
+                new SidebarMenuItem
+                {
+                    Category = "حسابداری و گزارشات",
                     Key = "accounting",
                     Title = "حسابداری و گزارشات مالی",
                     Icon = "mdi mdi-calculator-variant",
@@ -335,14 +336,7 @@ namespace HSCrm.Dashboard.Services
                 },
                 new SidebarMenuItem
                 {
-                    Key = "expenses",
-                    Title = "هزینه‌ها",
-                    Icon = "mdi mdi-cash",
-                    Url = "/AdminArea/Expense/Index",
-                    PermissionKey = $"{Permissions.Expenses.View},{Permissions.Expenses.Create}"
-                },
-                new SidebarMenuItem
-                {
+                    Category = "حسابداری و گزارشات",
                     Key = "fiscal_years",
                     Title = "سال مالی و بستن حساب‌ها",
                     Icon = "mdi mdi-calendar-check",
@@ -351,14 +345,44 @@ namespace HSCrm.Dashboard.Services
                 },
                 new SidebarMenuItem
                 {
+                    Category = "حسابداری و گزارشات",
                     Key = "audit_trail",
                     Title = "تاریخچه تغییرات (Audit Trail)",
                     Icon = "mdi mdi-history",
                     Url = "/AdminArea/AuditTrail/Index",
                     PermissionKey = Permissions.AuditTrail.View
                 },
+
+                // 5. مدیریت و تنظیمات
                 new SidebarMenuItem
                 {
+                    Category = "مدیریت و تنظیمات",
+                    Key = "users",
+                    Title = "کاربران و نقش‌ها",
+                    Icon = "mdi mdi-account",
+                    Children = new List<SidebarMenuItem>
+                    {
+                        new SidebarMenuItem
+                        {
+                            Key = "users_list",
+                            Title = "لیست کاربران",
+                            Url = "/AdminArea/User/Index",
+                            PermissionKey = Permissions.Users.View,
+                            AllowedRoles = "Owner"
+                        },
+                        new SidebarMenuItem
+                        {
+                            Key = "roles_list",
+                            Title = "نقش‌ها",
+                            Url = "/AdminArea/Role/Index",
+                            PermissionKey = Permissions.Roles.View,
+                            AllowedRoles = "Owner,Admin"
+                        }
+                    }
+                },
+                new SidebarMenuItem
+                {
+                    Category = "مدیریت و تنظیمات",
                     Key = "company_settings",
                     Title = "تنظیمات شرکت",
                     Icon = "mdi mdi-cog-outline",

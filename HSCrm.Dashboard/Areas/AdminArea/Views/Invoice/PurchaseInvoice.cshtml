@@ -1,3 +1,5 @@
+@using System.Security.Claims
+@using HSCrm.BussinessLagic.Tools
 @using HSCrm.Dashboard.Costants
 @using static HSCrm.Common.PublicTools.Enums
 @model IEnumerable<PurchaseInvoiceModel>
@@ -5,11 +7,19 @@
     ViewData["Title"] = "فاکتورهای خرید";
     ViewData["selected"] = "invoice_purchase_list";
 
-    // محاسبات خلاصه مالی بالای صفحه
     var totalPurchase = Model.Sum(x => x.Total);
     var totalPaid = Model.Sum(x => x.PaidAmount);
     var totalRemaining = Model.Sum(x => x.RemainingAmount);
 
+    var qSupplier = Context.Request.Query["supplierFullName"].ToString();
+    var qFromDate = Context.Request.Query["fromDate"].ToString();
+    var qToDate = Context.Request.Query["toDate"].ToString();
+    var qMinTotal = Context.Request.Query["minTotal"].ToString();
+    var qMaxTotal = Context.Request.Query["maxTotal"].ToString();
+    bool hasActiveFilters = !string.IsNullOrWhiteSpace(qSupplier) || !string.IsNullOrWhiteSpace(qFromDate) || !string.IsNullOrWhiteSpace(qToDate) || !string.IsNullOrWhiteSpace(qMinTotal) || !string.IsNullOrWhiteSpace(qMaxTotal);
+    bool canDesignPrint = User.HasPermission(Permissions.Tenants.Edit) || User.IsInRole("Owner");
+    string apiAddress = (ViewBag.ApiAddress?.ToString() ?? string.Empty).TrimEnd('/');
+    string jwtToken = ViewBag.Token?.ToString() ?? User.FindFirstValue("Token") ?? string.Empty;
 }
 
 @section styles {
@@ -31,38 +41,66 @@
             </span>فاکتور خرید
         </p>
     </div>
-    @if (ViewBag.FiscalYearStatus == "0")
-    {
-        <div>
-            @if (User.HasPermission(Permissions.PurchaseInvoices.Create))
-            {
-                <a type="button" class="btn btn-primary" href="/adminarea/invoice/AddPurchaseInvoice">افزودن فاکتور خرید </a>
-            }
-        </div>
-    }
+    <div class="d-flex flex-wrap gap-2">
+        @if (canDesignPrint)
+        {
+            <button type="button" class="btn btn-outline-primary" onclick="openPurchasePrintDesigner()">
+                <i class="mdi mdi-palette-outline me-1"></i>طراحی قالب چاپ فاکتور
+            </button>
+        }
+        @if (ViewBag.FiscalYearStatus == "0" && User.HasPermission(Permissions.PurchaseInvoices.Create))
+        {
+            <a type="button" class="btn btn-primary" href="/adminarea/invoice/AddPurchaseInvoice">
+                <i class="mdi mdi-plus me-1"></i>افزودن فاکتور خرید
+            </a>
+        }
+    </div>
 </div>
-<div class="row mb-4">
-    <div class="col-xl-4 col-sm-6 p-b-15">
-        <div class="card card-mini bg-primary text-white">
-            <div class="card-body">
-                <h2 class="mb-1">@totalPurchase.ToString("N0") تومان</h2>
-                <p>جمع کل فاکتورها</p>
-            </div>
-        </div>
+
+<div class="card card-default shadow-sm mb-3">
+    <div class="card-header p-0 bg-light">
+        <button type="button"
+                class="hscrm-accordion-btn"
+                id="piSummaryToggleBtn"
+                data-bs-toggle="collapse"
+                data-bs-target="#piSummaryCollapse"
+                aria-expanded="true"
+                aria-controls="piSummaryCollapse">
+            <span class="d-flex align-items-center gap-2">
+                <i class="mdi mdi-chart-box-outline text-primary fs-5"></i>
+                <span>خلاصه وضعیت مالی فاکتورهای خرید</span>
+                <span class="badge bg-secondary">@Model.Count() فاکتور</span>
+            </span>
+            <i class="mdi mdi-chevron-down hscrm-chevron fs-5"></i>
+        </button>
     </div>
-    <div class="col-xl-4 col-sm-6 p-b-15">
-        <div class="card card-mini bg-success text-white">
-            <div class="card-body">
-                <h2 class="mb-1">@totalPaid.ToString("N0") تومان</h2>
-                <p>جمع کل پرداخت‌شده</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-4 col-sm-6 p-b-15">
-        <div class="card card-mini bg-danger text-white">
-            <div class="card-body">
-                <h2 class="mb-1">@totalRemaining.ToString("N0") تومان</h2>
-                <p>جمع کل مانده بدهی</p>
+    <div id="piSummaryCollapse" class="collapse show">
+        <div class="card-body pb-1">
+            <div class="row">
+                <div class="col-xl-4 col-sm-6 p-b-15">
+                    <div class="card card-mini bg-primary text-white mb-0">
+                        <div class="card-body">
+                            <h2 class="mb-1">@totalPurchase.ToString("N0") تومان</h2>
+                            <p class="mb-0">جمع کل فاکتورها</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-sm-6 p-b-15">
+                    <div class="card card-mini bg-success text-white mb-0">
+                        <div class="card-body">
+                            <h2 class="mb-1">@totalPaid.ToString("N0") تومان</h2>
+                            <p class="mb-0">جمع کل پرداخت‌شده</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-sm-6 p-b-15">
+                    <div class="card card-mini bg-danger text-white mb-0">
+                        <div class="card-body">
+                            <h2 class="mb-1">@totalRemaining.ToString("N0") تومان</h2>
+                            <p class="mb-0">جمع کل مانده بدهی</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -81,10 +119,27 @@
             <div class="card-body">
                 <div class="table-responsive-md">
                     <div id="responsive-data-table_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
-                        <form method="get" asp-area="AdminArea" asp-controller="Invoice" asp-action="PurchaseInvoice" class="card mb-4">
-                            <div class="card-header">
-                                <h5 class="mb-0">فیلتر فاکتورهای خرید</h5>
+                        <form method="get" asp-area="AdminArea" asp-controller="Invoice" asp-action="PurchaseInvoice" class="card mb-4 border">
+                            <div class="card-header p-0 bg-light">
+                                <button type="button"
+                                        class="hscrm-accordion-btn"
+                                        id="piFilterToggleBtn"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#piFilterCollapse"
+                                        aria-expanded="@(hasActiveFilters ? "true" : "true")"
+                                        aria-controls="piFilterCollapse">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <i class="mdi mdi-filter-outline text-primary fs-5"></i>
+                                        <span>فیلتر فاکتورهای خرید</span>
+                                        @if (hasActiveFilters)
+                                        {
+                                            <span class="badge bg-primary">فیلتر فعال</span>
+                                        }
+                                    </span>
+                                    <i class="mdi mdi-chevron-down hscrm-chevron fs-5"></i>
+                                </button>
                             </div>
+                            <div id="piFilterCollapse" class="collapse show">
                             <div class="card-body">
                                 <div class="row g-3">
                                     <div class="col-md-2">
@@ -150,9 +205,9 @@
                                 </div>
                             </div>
 
-                            <div class="card-footer d-flex gap-2">
-                                <button type="submit" class="btn btn-primary" style="margin-left: 8px;">
-                                    <i class="fa fa-filter"></i>
+                            <div class="card-footer d-flex flex-wrap gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa fa-filter me-1"></i>
                                     اعمال فیلتر
                                 </button>
 
@@ -162,6 +217,7 @@
                                    class="btn btn-outline-secondary">
                                     حذف فیلترها
                                 </a>
+                            </div>
                             </div>
                         </form>
 
@@ -248,6 +304,20 @@
                                                         <!-- عملیات‌های تائید، رد، کنسل: فقط برای پیش‌نویس -->
                                                         @if (item.Status == InvoiceStatus.Proforma)
                                                         {
+                                                            <a class="dropdown-item text-dark"
+                                                               href="javascript:void(0)"
+                                                               data-inv-id="@item.Id"
+                                                               data-inv-number="@item.Number"
+                                                               data-inv-date="@ConvertDate.ConvertMiladiToShamsi(item.IssueDate, "yyyy/MM/dd")"
+                                                               data-inv-supplier="@(item.Supplier?.SupplierFullName ?? "-")"
+                                                               data-inv-warehouse="@(item.Warehouses?.Title ?? "-")"
+                                                               data-inv-total="@item.Total"
+                                                               data-inv-paid="@item.PaidAmount"
+                                                               data-inv-rem="@item.RemainingAmount"
+                                                               data-inv-status="@((byte)item.Status)"
+                                                               onclick="openPurchaseInvoicePrintModal(this)">
+                                                                <i class="mdi mdi-printer me-1"></i> چاپ پیش‌نویس فاکتور
+                                                            </a>
                                                             @if (User.HasPermission(Permissions.PurchaseInvoices.Approve))
                                                             {
                                                                 <a class="dropdown-item" href="#" onclick="confirmPurchaseInvoice(@item.Id)">
@@ -283,7 +353,18 @@
                                                                 <a class="dropdown-item text-info" href="/AdminArea/Accounting/Vouchers?refType=2&refId=@item.Id">
                                                                     <i class="mdi mdi-book-open-page-variant me-1"></i> مشاهده سند حسابداری
                                                                 </a>
-                                                                <a class="dropdown-item text-dark" href="javascript:void(0)" onclick="window.print()">
+                                                                <a class="dropdown-item text-dark"
+                                                                   href="javascript:void(0)"
+                                                                   data-inv-id="@item.Id"
+                                                                   data-inv-number="@item.Number"
+                                                                   data-inv-date="@ConvertDate.ConvertMiladiToShamsi(item.IssueDate, "yyyy/MM/dd")"
+                                                                   data-inv-supplier="@(item.Supplier?.SupplierFullName ?? "-")"
+                                                                   data-inv-warehouse="@(item.Warehouses?.Title ?? "-")"
+                                                                   data-inv-total="@item.Total"
+                                                                   data-inv-paid="@item.PaidAmount"
+                                                                   data-inv-rem="@item.RemainingAmount"
+                                                                   data-inv-status="@((byte)item.Status)"
+                                                                   onclick="openPurchaseInvoicePrintModal(this)">
                                                                     <i class="mdi mdi-printer me-1"></i> چاپ رسمی فاکتور خرید (A4)
                                                                 </a>
                                                             }
@@ -426,4 +507,61 @@
     </script>
 
     <script src="~/js/views/invoice/purchase-invoice-list.js"></script>
+    <script>
+        (function () {
+            const hasFilters = @(hasActiveFilters ? "true" : "false");
+            function bindAccordionState(collapseId, storageKey, forceOpen) {
+                const el = document.getElementById(collapseId);
+                if (!el || !window.bootstrap || !bootstrap.Collapse) return;
+                const saved = localStorage.getItem(storageKey);
+                const btn = document.querySelector(`[data-bs-target="#${collapseId}"]`);
+                if (!forceOpen && saved === '0') {
+                    el.classList.remove('show');
+                    if (btn) btn.setAttribute('aria-expanded', 'false');
+                }
+                el.addEventListener('shown.bs.collapse', function () {
+                    localStorage.setItem(storageKey, '1');
+                });
+                el.addEventListener('hidden.bs.collapse', function () {
+                    localStorage.setItem(storageKey, '0');
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                bindAccordionState('piSummaryCollapse', 'hscrm_pi_summary_open', false);
+                bindAccordionState('piFilterCollapse', 'hscrm_pi_filter_open', hasFilters);
+            });
+
+            window.openPurchaseInvoicePrintModal = function (el) {
+                if (!window.HSCrmPrint) return;
+                const d = el.dataset || {};
+                window.HSCrmPrint.openInvoicePrintModal({
+                    type: 'purchase',
+                    invoiceId: Number(d.invId),
+                    apiBase: '@apiAddress',
+                    token: '@jwtToken',
+                    canDesign: @(canDesignPrint ? "true" : "false"),
+                    fallbackSummary: {
+                        number: d.invNumber || '',
+                        dateShamsi: d.invDate || '',
+                        partyName: d.invSupplier || '-',
+                        secondaryRef: d.invWarehouse || '-',
+                        total: Number(d.invTotal || 0),
+                        paidAmount: Number(d.invPaid || 0),
+                        remainingAmount: Number(d.invRem || 0),
+                        status: Number(d.invStatus || 0)
+                    }
+                });
+            };
+
+            window.openPurchasePrintDesigner = function () {
+                if (!window.HSCrmPrint) return;
+                window.HSCrmPrint.openDesignerModal({
+                    apiBase: '@apiAddress',
+                    token: '@jwtToken',
+                    canSaveServer: @(canDesignPrint ? "true" : "false")
+                });
+            };
+        })();
+    </script>
 }

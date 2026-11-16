@@ -1,3 +1,4 @@
+@using System.Security.Claims
 @using HSCrm.BussinessLagic.Tools
 @using HSCrm.Dashboard.Costants
 @model IEnumerable<SalesInvoiceModel>
@@ -6,7 +7,18 @@
     ViewData["Title"] = "فاکتورهای فروش";
     ViewData["selected"] = "invoice_salles_list";
 
-    string ApiAddress = ViewBag.ApiAddress;
+    string ApiAddress = (ViewBag.ApiAddress?.ToString() ?? string.Empty).TrimEnd('/');
+    string jwtToken = User.FindFirstValue("Token") ?? ViewBag.Token?.ToString() ?? string.Empty;
+    bool canDesignPrint = User.HasPermission(Permissions.Tenants.Edit) || User.IsInRole("Owner");
+
+    var totalSales = Model.Sum(x => x.Total);
+    var qCustomerOrProject = Context.Request.Query["customerOrProject"].ToString();
+    var qStatus = Context.Request.Query["status"].ToString();
+    var qFromDate = Context.Request.Query["fromDate"].ToString();
+    var qToDate = Context.Request.Query["toDate"].ToString();
+    var qMinTotal = Context.Request.Query["minTotal"].ToString();
+    var qMaxTotal = Context.Request.Query["maxTotal"].ToString();
+    bool hasActiveFilters = !string.IsNullOrWhiteSpace(qCustomerOrProject) || !string.IsNullOrWhiteSpace(qStatus) || !string.IsNullOrWhiteSpace(qFromDate) || !string.IsNullOrWhiteSpace(qToDate) || !string.IsNullOrWhiteSpace(qMinTotal) || !string.IsNullOrWhiteSpace(qMaxTotal);
 }
 
 @section styles {
@@ -20,19 +32,78 @@
         <h1>لیست فاکتورهای فروش</h1>
         <p class="breadcrumbs"><span><a href="/AdminArea/Home/Index">خانه</a></span> <span><i class="mdi mdi-chevron-left"></i></span>فاکتور فروش</p>
     </div>
-    @if (ViewBag.FiscalYearStatus == "0")
-    {
-        <div>
-            @if (User.HasPermission(Permissions.SalesInvoices.Create))
-            {
-                <a type="button" class="btn btn-primary" href="/adminarea/invoice/AddSaleInvoice">افزودن فاکتور فروش</a>
-            }
+    <div class="d-flex flex-wrap gap-2">
+        @if (canDesignPrint)
+        {
+            <button type="button" class="btn btn-outline-primary" onclick="openSalesPrintDesigner()">
+                <i class="mdi mdi-palette-outline me-1"></i>طراحی قالب چاپ فاکتور
+            </button>
+        }
+        @if (ViewBag.FiscalYearStatus == "0")
+        {
             @if (User.HasPermission(Permissions.Tenants.View) && User.HasPermission(Permissions.Tenants.Edit))
             {
-                <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#invoicePatternModal" onclick="loadInvoicePatterns()"><i class="mdi mdi-cog-outline me-1"></i> تنظیم الگوی فاکتور</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#invoicePatternModal" onclick="loadInvoicePatterns()">
+                    <i class="mdi mdi-cog-outline me-1"></i>تنظیم الگوی فاکتور
+                </button>
             }
+            @if (User.HasPermission(Permissions.SalesInvoices.Create))
+            {
+                <a type="button" class="btn btn-primary" href="/adminarea/invoice/AddSaleInvoice">
+                    <i class="mdi mdi-plus me-1"></i>افزودن فاکتور فروش
+                </a>
+            }
+        }
+    </div>
+</div>
+
+<div class="card card-default shadow-sm mb-3">
+    <div class="card-header p-0 bg-light">
+        <button type="button"
+                class="hscrm-accordion-btn"
+                id="siSummaryToggleBtn"
+                data-bs-toggle="collapse"
+                data-bs-target="#siSummaryCollapse"
+                aria-expanded="true"
+                aria-controls="siSummaryCollapse">
+            <span class="d-flex align-items-center gap-2">
+                <i class="mdi mdi-chart-box-outline text-primary fs-5"></i>
+                <span>خلاصه وضعیت مالی فاکتورهای فروش</span>
+                <span class="badge bg-secondary">@Model.Count() فاکتور</span>
+            </span>
+            <i class="mdi mdi-chevron-down hscrm-chevron fs-5"></i>
+        </button>
+    </div>
+    <div id="siSummaryCollapse" class="collapse show">
+        <div class="card-body pb-1">
+            <div class="row">
+                <div class="col-xl-4 col-sm-6 p-b-15">
+                    <div class="card card-mini bg-primary text-white mb-0">
+                        <div class="card-body">
+                            <h2 class="mb-1" id="siSummaryTotal">@totalSales.ToString("N0") ریال</h2>
+                            <p class="mb-0">جمع کل فاکتورهای فروش</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-sm-6 p-b-15">
+                    <div class="card card-mini bg-success text-white mb-0">
+                        <div class="card-body">
+                            <h2 class="mb-1" id="siSummaryPaid">در حال محاسبه...</h2>
+                            <p class="mb-0">جمع کل دریافت‌شده / چک وصول‌شده</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-sm-6 p-b-15">
+                    <div class="card card-mini bg-danger text-white mb-0">
+                        <div class="card-body">
+                            <h2 class="mb-1" id="siSummaryRemaining">در حال محاسبه...</h2>
+                            <p class="mb-0">جمع کل مانده مطالبات</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    }
+    </div>
 </div>
 @if (ViewBag.FiscalYearStatus != "0")
 {
@@ -48,6 +119,72 @@
             <div class="card-body">
                 <div class="table-responsive-md">
                     <div id="responsive-data-table_wrapper" class="dataTables_wrapper dt-bootstrap5 no-footer">
+                        <form method="get" asp-area="AdminArea" asp-controller="Invoice" asp-action="SalesInvoice" class="card mb-4 border">
+                            <div class="card-header p-0 bg-light">
+                                <button type="button"
+                                        class="hscrm-accordion-btn"
+                                        id="siFilterToggleBtn"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#siFilterCollapse"
+                                        aria-expanded="true"
+                                        aria-controls="siFilterCollapse">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <i class="mdi mdi-filter-outline text-primary fs-5"></i>
+                                        <span>فیلتر فاکتورهای فروش</span>
+                                        @if (hasActiveFilters)
+                                        {
+                                            <span class="badge bg-primary">فیلتر فعال</span>
+                                        }
+                                    </span>
+                                    <i class="mdi mdi-chevron-down hscrm-chevron fs-5"></i>
+                                </button>
+                            </div>
+                            <div id="siFilterCollapse" class="collapse show">
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label for="customerOrProject" class="form-label">مشتری / پروژه / شماره فاکتور</label>
+                                            <input type="text" id="customerOrProject" name="customerOrProject" class="form-control" placeholder="جستجو..." value="@qCustomerOrProject" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="status" class="form-label">وضعیت فاکتور</label>
+                                            <select id="status" name="status" class="form-select">
+                                                <option value="">همه وضعیت‌ها</option>
+                                                <option value="0" selected="@(qStatus == "0")">پیش‌فاکتور</option>
+                                                <option value="1" selected="@(qStatus == "1")">فاکتور نهایی</option>
+                                                <option value="2" selected="@(qStatus == "2")">ابطال شده</option>
+                                                <option value="3" selected="@(qStatus == "3")">رد شده</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="fromDate" class="form-label">از تاریخ</label>
+                                            <input type="date" id="fromDate" name="fromDate" class="form-control" value="@qFromDate" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="toDate" class="form-label">تا تاریخ</label>
+                                            <input type="date" id="toDate" name="toDate" class="form-control" value="@qToDate" />
+                                        </div>
+                                        <div class="col-md-1">
+                                            <label for="minTotal" class="form-label">حداقل مبلغ</label>
+                                            <input type="number" id="minTotal" name="minTotal" class="form-control" value="@qMinTotal" min="0" step="1" />
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label for="maxTotal" class="form-label">حداکثر مبلغ</label>
+                                            <input type="number" id="maxTotal" name="maxTotal" class="form-control" value="@qMaxTotal" min="0" step="1" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer d-flex flex-wrap gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fa fa-filter me-1"></i>اعمال فیلتر
+                                    </button>
+                                    <a asp-area="AdminArea" asp-controller="Invoice" asp-action="SalesInvoice" class="btn btn-outline-secondary">
+                                        حذف فیلترها
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+
                         <table id="responsive-data-table" class="table dataTable no-footer" aria-describedby="responsive-data-table_info">
                             <thead>
                                 <tr>
@@ -71,9 +208,22 @@
                                         <td>@(item.Project?.ProjectTitle ?? "-")</td>
                                         <td>@(item.Project?.Customer?.Name ?? "-")</td>
                                         <td>
-                                            <span class="badge @(item.Status == 1 ? "bg-success" : "bg-info")">
-                                                @(item.Status == 1 ? "فاکتور نهایی" : "پیش فاکتور")
-                                            </span>
+                                            @if (item.Status == 1)
+                                            {
+                                                <span class="badge bg-success">فاکتور نهایی</span>
+                                            }
+                                            else if (item.Status == 2)
+                                            {
+                                                <span class="badge bg-secondary">ابطال شده</span>
+                                            }
+                                            else if (item.Status == 3)
+                                            {
+                                                <span class="badge bg-danger">رد شده</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-info">پیش فاکتور</span>
+                                            }
                                         </td>
                                         <td class="font-monospace fw-bold" dir="ltr">@item.Total.ToString("N0")</td>
                                         <td class="si-paid-cell font-monospace small" data-inv-id="@item.Id" data-status="@item.Status"><span class="text-muted">...</span></td>
@@ -102,6 +252,19 @@
                                                                 <i class="mdi mdi-file"></i>
                                                                 تبدیل به فاکتور نهایی
                                                             </a>
+                                                            <a class="dropdown-item text-dark"
+                                                               href="javascript:void(0)"
+                                                               data-inv-id="@item.Id"
+                                                               data-inv-number="@item.Number"
+                                                               data-inv-date="@ConvertDate.ConvertMiladiToShamsi(item.IssueDate, "yyyy/MM/dd")"
+                                                               data-inv-customer="@(item.Project?.Customer?.Name ?? "-")"
+                                                               data-inv-project="@(item.Project?.ProjectTitle ?? "-")"
+                                                               data-inv-total="@item.Total"
+                                                               data-inv-status="@item.Status"
+                                                               onclick="openSalesInvoicePrintModal(this)">
+                                                                <i class="mdi mdi-printer me-1"></i>
+                                                                چاپ پیش‌فاکتور (A4)
+                                                            </a>
                                                         }
                                                         else
                                                         {
@@ -118,7 +281,16 @@
                                                                 <i class="mdi mdi-book-open-page-variant me-1"></i>
                                                                 مشاهده سند حسابداری
                                                             </a>
-                                                            <a class="dropdown-item text-dark" href="javascript:void(0)" onclick="openSalesInvoicePrintModal('@item.Id', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Number ?? ""))', '@ConvertDate.ConvertMiladiToShamsi(item.IssueDate, "yyyy/MM/dd")', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Project?.Customer?.Name ?? "-"))', '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.Project?.ProjectTitle ?? "-"))', '@item.Total')">
+                                                            <a class="dropdown-item text-dark"
+                                                               href="javascript:void(0)"
+                                                               data-inv-id="@item.Id"
+                                                               data-inv-number="@item.Number"
+                                                               data-inv-date="@ConvertDate.ConvertMiladiToShamsi(item.IssueDate, "yyyy/MM/dd")"
+                                                               data-inv-customer="@(item.Project?.Customer?.Name ?? "-")"
+                                                               data-inv-project="@(item.Project?.ProjectTitle ?? "-")"
+                                                               data-inv-total="@item.Total"
+                                                               data-inv-status="@item.Status"
+                                                               onclick="openSalesInvoicePrintModal(this)">
                                                                 <i class="mdi mdi-printer me-1"></i>
                                                                 نمایش ریز اقلام و چاپ رسمی (A4)
                                                             </a>
@@ -148,153 +320,37 @@
     </div>
 </div>
 
-<!-- مودال مشاهده ریز اقلام و چاپ رسمی فاکتور فروش (A4) -->
-<div class="modal fade" id="printOfficialSalesInvoiceModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header bg-dark text-white d-flex justify-content-between align-items-center">
-                <h5 class="modal-title"><i class="mdi mdi-printer me-1"></i>نمایش جزئیات و چاپ رسمی فاکتور فروش</h5>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-warning fw-bold" onclick="window.print()">
-                        <i class="mdi mdi-printer me-1"></i>چاپ فاکتور رسمی (A4)
-                    </button>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-            </div>
-            <div class="modal-body p-4" id="officialInvoicePrintArea">
-                <div class="border border-2 border-dark p-4 rounded">
-                    <div class="d-flex justify-content-between align-items-center border-bottom border-dark pb-3 mb-3">
-                        <div class="d-flex align-items-center gap-3">
-                            <img id="prCompanyLogo" src="" alt="لوگو" style="max-height:56px; display:none;" />
-                            <div>
-                                <h4 class="fw-bold mb-1" id="prCompanyName">صورت‌حساب فروش کالا و خدمات</h4>
-                                <div class="text-muted small" id="prCompanySubtitle">سامانه جامع مالی و حسابداری</div>
-                            </div>
-                        </div>
-                        <div class="text-end font-monospace">
-                            <div><strong>شماره فاکتور:</strong> <span id="prInvNumber">-</span></div>
-                            <div><strong>تاریخ صدور:</strong> <span id="prInvDate">-</span></div>
-                        </div>
-                    </div>
-                    <div class="row g-2 mb-3 p-2 bg-light border rounded small">
-                        <div class="col-md-6"><strong>خریدار / طرف‌حساب:</strong> <span id="prInvCustomer">-</span></div>
-                        <div class="col-md-6"><strong>پروژه مرتبط:</strong> <span id="prInvProject">-</span></div>
-                    </div>
-                    <table class="table table-bordered border-dark align-middle text-center small mb-3">
-                        <thead class="table-secondary border-dark">
-                            <tr>
-                                <th>ردیف</th>
-                                <th>شرح کالا / خدمات</th>
-                                <th>تعداد</th>
-                                <th>مبلغ واحد (ریال)</th>
-                                <th>تخفیف</th>
-                                <th>مالیات و عوارض</th>
-                                <th>مبلغ کل پس از تخفیف و مالیات (ریال)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="prInvItemsBody"></tbody>
-                        <tfoot>
-                            <tr class="table-light fw-bold">
-                                <td colspan="6" class="text-end">جمع کل قابل پرداخت (ریال):</td>
-                                <td class="font-monospace fs-6 text-primary" id="prInvTotal">0</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                    <div id="prInvoiceFooter" class="alert alert-light border small text-muted mb-3" style="display:none;"></div>
-                    <div class="row mt-5 pt-4 text-center small">
-                        <div class="col-4"><div class="border-top border-dark pt-2">مهر و امضای فروشنده</div></div>
-                        <div class="col-4"><div class="border-top border-dark pt-2">تایید واحد مالی و حسابداری</div></div>
-                        <div class="col-4"><div class="border-top border-dark pt-2">مهر و امضای خریدار</div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 <script>
-    function openSalesInvoicePrintModal(id, number, dateStr, customer, project, total) {
-        document.getElementById('prInvNumber').textContent = number || id;
-        document.getElementById('prInvDate').textContent = dateStr || '-';
-        document.getElementById('prInvCustomer').textContent = customer || '-';
-        document.getElementById('prInvProject').textContent = project || '-';
-        document.getElementById('prInvTotal').textContent = Number(total || 0).toLocaleString('fa-IR');
-        document.getElementById('prCompanyLogo').style.display = 'none';
-        document.getElementById('prCompanyName').textContent = 'صورت‌حساب فروش کالا و خدمات';
-        document.getElementById('prCompanySubtitle').textContent = 'سامانه جامع مالی و حسابداری';
-        document.getElementById('prInvoiceFooter').style.display = 'none';
-
-        const tbody = document.getElementById('prInvItemsBody');
-        tbody.innerHTML = '<tr><td colspan="7" class="py-3 text-muted">در حال دریافت ریز اقلام فاکتور از سرور...</td></tr>';
-        new bootstrap.Modal(document.getElementById('printOfficialSalesInvoiceModal')).show();
-
-        const apiBase = '@ApiAddress'.endsWith('/') ? '@ApiAddress' : '@ApiAddress/';
-        const authHeader = { 'Authorization': 'Bearer ' + '@User.FindFirstValue("Token")' };
-
-        if (@(User.HasPermission(Permissions.Tenants.View).ToString().ToLower()))
-        fetch(apiBase + 'Tenant/GetCompanySettings', { headers: authHeader, suppressGlobalAlert: true })
-            .then(r => r.ok ? r.json() : null)
-            .then(res => {
-                const s = res ? (res.data || res) : null;
-                if (!s) return;
-                if (s.companyName || s.name) {
-                    document.getElementById('prCompanyName').textContent = s.companyName || s.name;
-                    document.getElementById('prCompanySubtitle').textContent = 'صورت‌حساب رسمی فروش کالا و خدمات' + (s.economicCode ? (' | کد اقتصادی: ' + s.economicCode) : '');
-                }
-                if (s.logoPath) {
-                    const logoEl = document.getElementById('prCompanyLogo');
-                    logoEl.src = s.logoPath.startsWith('http') ? s.logoPath : (apiBase.replace(/\/api\/?$/i, '/') + s.logoPath.replace(/^\/+/, ''));
-                    logoEl.style.display = 'block';
-                }
-                if (s.invoiceFooterText) {
-                    const footerEl = document.getElementById('prInvoiceFooter');
-                    footerEl.textContent = s.invoiceFooterText;
-                    footerEl.style.display = 'block';
-                }
-            }).catch(() => {});
-
-        fetch(apiBase + 'SalesInvoice/GetById?invoiceId=' + id, {
-            headers: authHeader
-        })
-        .then(r => r.json())
-        .then(res => {
-            const inv = res.data || res || {};
-            const items = inv.items || inv.salesInvoiceItems || [];
-            if (!Array.isArray(items) || items.length === 0) {
-                tbody.innerHTML = `<tr>
-                    <td>1</td>
-                    <td>فروش کالا / خدمات طبق فاکتور شماره ${number || id}</td>
-                    <td>1</td>
-                    <td class="font-monospace">${Number(total || 0).toLocaleString('fa-IR')}</td>
-                    <td>0</td>
-                    <td>0</td>
-                    <td class="font-monospace fw-bold">${Number(total || 0).toLocaleString('fa-IR')}</td>
-                </tr>`;
-            } else {
-                tbody.innerHTML = items.map((it, idx) => {
-                    const title = it.product?.productTitle || it.productTitle || it.productName || ('کالای #' + it.productId);
-                    const qty = it.quantity || it.count || 1;
-                    const unit = it.unitPriceSell ?? it.unitPrice ?? it.price ?? 0;
-                    const disc = it.discount ?? 0;
-                    const taxVal = it.tax ?? it.vatAmount ?? 0;
-                    const rowTotal = it.lineTotal ?? it.totalPrice ?? it.rowSum ?? ((qty * unit) - disc + taxVal);
-                    return `
-                    <tr>
-                        <td>${idx + 1}</td>
-                        <td>${title}</td>
-                        <td class="font-monospace">${qty}</td>
-                        <td class="font-monospace">${Number(unit).toLocaleString('fa-IR')}</td>
-                        <td class="font-monospace">${Number(disc).toLocaleString('fa-IR')}</td>
-                        <td class="font-monospace">${Number(taxVal).toLocaleString('fa-IR')}</td>
-                        <td class="font-monospace fw-bold">${Number(rowTotal).toLocaleString('fa-IR')}</td>
-                    </tr>`;
-                }).join('');
+    window.openSalesInvoicePrintModal = function (el) {
+        if (!window.HSCrmPrint) return;
+        const d = el && el.dataset ? el.dataset : {};
+        const apiBase = '@ApiAddress';
+        const token = '@jwtToken';
+        window.HSCrmPrint.openInvoicePrintModal({
+            type: 'sales',
+            invoiceId: Number(d.invId),
+            apiBase: apiBase,
+            token: token,
+            canDesign: @(canDesignPrint ? "true" : "false"),
+            fallbackSummary: {
+                number: d.invNumber || '',
+                dateShamsi: d.invDate || '',
+                partyName: d.invCustomer || '-',
+                secondaryRef: d.invProject || '-',
+                total: Number(d.invTotal || 0),
+                status: Number(d.invStatus || 0)
             }
-        })
-        .catch(() => {
-            tbody.innerHTML = '<tr><td colspan="7" class="py-3 text-danger text-center">خطا در بارگذاری اقلام فاکتور از سرور.</td></tr>';
-            SwalHelper.error("خطا در بارگذاری ریز اقلام فاکتور از سرور.");
         });
-    }
+    };
+
+    window.openSalesPrintDesigner = function () {
+        if (!window.HSCrmPrint) return;
+        window.HSCrmPrint.openDesignerModal({
+            apiBase: '@ApiAddress',
+            token: '@jwtToken',
+            canSaveServer: @(canDesignPrint ? "true" : "false")
+        });
+    };
 </script>
 
 @section AdminScripts {
@@ -321,7 +377,7 @@
                 console.log("Submitting confirmation:", invoiceId);
                 $.ajax({
                     type: 'POST',
-                    url: '@ApiAddress' + 'SalesInvoice/ConfirmInvoice',
+                    url: '@(ApiAddress + "/SalesInvoice/ConfirmInvoice")',
                     processData: false,
                     contentType: false,
                     dataType: 'json',
@@ -425,7 +481,7 @@
 
             $.ajax({
                 type: 'GET',
-                url: '@ApiAddress' + 'SalesInvoice/GetInvoiceDetail?invoiceId=' + invoiceId,
+                url: '@(ApiAddress + "/SalesInvoice/GetInvoiceDetail?invoiceId=")' + invoiceId,
                 dataType: 'json',
                 headers: {
                     "Authorization": "Bearer " + "@User.FindFirstValue("Token")"
@@ -707,9 +763,39 @@ function saveInvoicePatterns() {
 }
 
 $(document).ready(function () {
+    const hasFilters = @(hasActiveFilters ? "true" : "false");
+    function bindAccordionState(collapseId, storageKey, forceOpen) {
+        const el = document.getElementById(collapseId);
+        const btn = document.querySelector(`[data-bs-target="#${collapseId}"]`);
+        if (!el) return;
+        const saved = localStorage.getItem(storageKey);
+        if (!forceOpen && saved === '0') {
+            el.classList.remove('show');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+        el.addEventListener('shown.bs.collapse', function () {
+            localStorage.setItem(storageKey, '1');
+        });
+        el.addEventListener('hidden.bs.collapse', function () {
+            localStorage.setItem(storageKey, '0');
+        });
+    }
+    bindAccordionState('siSummaryCollapse', 'hscrm_si_summary_open', false);
+    bindAccordionState('siFilterCollapse', 'hscrm_si_filter_open', hasFilters);
+
     const apiBase = ('@ViewBag.ApiAddress'.endsWith('/') ? '@ViewBag.ApiAddress' : '@ViewBag.ApiAddress/');
     const token = '@ViewBag.Token';
-    if (!token) return;
+    if (!token) {
+        document.getElementById('siSummaryPaid').textContent = '0 ریال';
+        document.getElementById('siSummaryRemaining').textContent = '0 ریال';
+        return;
+    }
+
+    const displayedIds = new Set();
+    document.querySelectorAll('.si-paid-cell').forEach(cell => {
+        const id = Number(cell.getAttribute('data-inv-id'));
+        if (id) displayedIds.add(id);
+    });
 
     fetch(apiBase + 'SalesInvoice/SettlementSummaries', {
         headers: { 'Authorization': 'Bearer ' + token }
@@ -718,7 +804,20 @@ $(document).ready(function () {
     .then(res => {
         const list = res.data || [];
         const map = {};
-        list.forEach(s => { const key = s.salesInvoiceId ?? s.referenceId; if (key) map[key] = s; });
+        let sumPaid = 0;
+        let sumRem = 0;
+        list.forEach(s => {
+            const key = Number(s.salesInvoiceId ?? s.referenceId);
+            if (key) {
+                map[key] = s;
+                if (displayedIds.has(key)) {
+                    sumPaid += Number(s.cashPaidAmount || 0) + Number(s.clearedChequesAmount || 0);
+                    sumRem += Number(s.remainingAmount || 0);
+                }
+            }
+        });
+        document.getElementById('siSummaryPaid').textContent = sumPaid.toLocaleString('fa-IR') + ' ریال';
+        document.getElementById('siSummaryRemaining').textContent = sumRem.toLocaleString('fa-IR') + ' ریال';
 
         document.querySelectorAll('.si-paid-cell').forEach(cell => {
             const id = Number(cell.getAttribute('data-inv-id'));
@@ -761,6 +860,8 @@ $(document).ready(function () {
     })
     .catch(() => {
         document.querySelectorAll('.si-paid-cell, .si-rem-cell').forEach(c => { c.textContent = '-'; });
+        document.getElementById('siSummaryPaid').textContent = '0 ریال';
+        document.getElementById('siSummaryRemaining').textContent = '0 ریال';
     });
 });
 </script>

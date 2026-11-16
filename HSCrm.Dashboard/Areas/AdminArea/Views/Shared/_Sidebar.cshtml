@@ -6,14 +6,16 @@
 @inject IAuthorizationService AuthorizationService
 @inject ISidebarMenuProvider SidebarProvider
 
-
 @{
     var menus = SidebarProvider.GetMenus(User);
     var selected = ViewData["selected"]?.ToString() ?? "";
+    var sbApiAddr = ViewBag.ApiAddress as string ?? "";
+    var sbToken = User.FindFirst("Token")?.Value ?? ViewBag.Token?.ToString() ?? "";
+    var sbTenantId = User.FindFirst("TenantId")?.Value ?? ViewBag.TenantId?.ToString() ?? "0";
+    var defaultLogo = Url.Content("~/assets/img/logo/ec-site-logo.png");
 }
 
 @functions {
-
     public static async Task<bool> IsMenuVisibleAsync(
         SidebarMenuItem menu,
         ClaimsPrincipal user,
@@ -27,7 +29,6 @@
                 return false;
         }
 
-        // اگر منو Permission داشته باشد باید بررسی شود (پشتیبانی از چند مجوز جداشده با کاما به صورت OR)
         if (!string.IsNullOrEmpty(menu.PermissionKey))
         {
             var requiredPerms = menu.PermissionKey
@@ -52,7 +53,6 @@
                 return false;
         }
 
-        // اگر فرزند دارد باید بررسی شود آیا حداقل یک فرزند قابل نمایش هست یا نه
         if (menu.Children != null && menu.Children.Count > 0)
         {
             foreach (var child in menu.Children)
@@ -71,30 +71,53 @@
 <div class="ec-left-sidebar ec-bg-sidebar">
     <div id="sidebar" class="sidebar ec-sidebar-footer">
 
-        <!-- Logo -->
+        <!-- Logo & Company Title -->
         @{
             var homeUrl = (User.IsInRole("Owner") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.HasClaim("Permission", HSCrm.Dashboard.Costants.Permissions.AccountingReports.View))
                 ? "/AdminArea/Home/Index"
                 : "/AdminArea/Employee/Index";
         }
         <div class="ec-brand">
-            <a href="@homeUrl" title="BilgiSoft">
-                <img class="ec-brand-icon" src="~/assets/img/logo/ec-site-logo.png" alt="">
-                <span class="ec-brand-name text-truncate">بیلگی سافت</span>
+            <a id="sidebarBrandLink" href="@homeUrl" title="پنل مدیریت">
+                <img id="sidebarBrandLogo" class="ec-brand-icon" src="@defaultLogo" alt="لوگو" onerror="this.onerror=null;this.src='@defaultLogo';" />
+                <span id="sidebarBrandName" class="ec-brand-name">سامانه مدیریت</span>
             </a>
         </div>
         <div class="ec-navigation" data-simplebar>
             <ul class="nav sidebar-inner" id="sidebar-menu">
-
+                @{
+                    string lastCategory = null;
+                }
                 @foreach (var menu in menus)
                 {
                     var menuVisible = await IsMenuVisibleAsync(menu, User, AuthorizationService);
-
                     if (!menuVisible)
                         continue;
 
-                    // ===== اگر منو فرزند نداشت =====
-                    if (menu.Children == null || menu.Children.Count == 0)
+                    List<SidebarMenuItem> visibleChildren = null;
+                    if (menu.Children != null && menu.Children.Count > 0)
+                    {
+                        visibleChildren = new List<SidebarMenuItem>();
+                        foreach (var child in menu.Children)
+                        {
+                            if (await IsMenuVisibleAsync(child, User, AuthorizationService))
+                            {
+                                visibleChildren.Add(child);
+                            }
+                        }
+                        if (visibleChildren.Count == 0)
+                            continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(menu.Category) && !string.Equals(lastCategory, menu.Category, StringComparison.Ordinal))
+                    {
+                        lastCategory = menu.Category;
+                        <li class="sidebar-category-title">
+                            <span>@menu.Category</span>
+                        </li>
+                    }
+
+                    if (visibleChildren == null)
                     {
                         <li class="@(selected == menu.Key ? "active" : "")">
                             <a class="sidenav-item-link" href="@menu.Url">
@@ -105,23 +128,9 @@
                     }
                     else
                     {
-                        var visibleChildren = new List<SidebarMenuItem>();
-
-                        foreach (var child in menu.Children)
-                        {
-                            if (await IsMenuVisibleAsync(child, User, AuthorizationService))
-                            {
-                                visibleChildren.Add(child);
-                            }
-                        }
-
-                        if (visibleChildren.Count == 0)
-                            continue;
-
-                        var isExpanded = selected.StartsWith(menu.Key);
+                        var isExpanded = selected.StartsWith(menu.Key) || visibleChildren.Any(c => c.Key == selected);
 
                         <li class="has-sub @(isExpanded ? "active expand" : "")">
-
                             <a class="sidenav-item-link" href="javascript:void(0)">
                                 <i class="@menu.Icon"></i>
                                 <span class="nav-text">@menu.Title</span>
@@ -130,9 +139,7 @@
 
                             <div class="collapse @(isExpanded ? "show" : "")"
                                  style="display:@(isExpanded ? "block" : "none")">
-
                                 <ul class="sub-menu">
-
                                     @foreach (var child in visibleChildren)
                                     {
                                         <li class="@(selected == child.Key ? "active" : "")">
@@ -141,16 +148,67 @@
                                             </a>
                                         </li>
                                     }
-
                                 </ul>
-
                             </div>
-
                         </li>
                     }
                 }
-
             </ul>
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        const sbApiBase = '@sbApiAddr'.replace(/\/+$/, '');
+        const sbToken = '@sbToken';
+        const sbTenantId = '@sbTenantId';
+        const fallbackLogo = '@defaultLogo';
+        const cacheKey = 'hscrm_tenant_branding_' + sbTenantId;
+
+        function resolveLogoSrc(logoUrl) {
+            if (!logoUrl) return fallbackLogo;
+            if (logoUrl.startsWith('http://') || logoUrl.startsWith('https://') || logoUrl.startsWith('data:')) return logoUrl;
+            const origin = sbApiBase.replace(/\/api\/?$/i, '');
+            return origin + (logoUrl.startsWith('/') ? logoUrl : '/' + logoUrl);
+        }
+
+        window.applySidebarBranding = function (b) {
+            if (!b) return;
+            const nameEl = document.getElementById('sidebarBrandName');
+            const logoEl = document.getElementById('sidebarBrandLogo');
+            const linkEl = document.getElementById('sidebarBrandLink');
+            if (nameEl && b.tenantTitle) {
+                nameEl.textContent = b.tenantTitle;
+            }
+            if (linkEl && b.tenantTitle) {
+                linkEl.title = b.tenantTitle;
+            }
+            if (logoEl) {
+                logoEl.src = resolveLogoSrc(b.logoUrl);
+            }
+            window.__hscrmBranding = b;
+        };
+
+        try {
+            const cachedRaw = sessionStorage.getItem(cacheKey);
+            if (cachedRaw) {
+                window.applySidebarBranding(JSON.parse(cachedRaw));
+            }
+        } catch (e) { }
+
+        if (!sbApiBase || !sbToken) return;
+        fetch(sbApiBase + '/Tenant/GetBranding', {
+            headers: { 'Authorization': 'Bearer ' + sbToken },
+            suppressGlobalAlert: true
+        })
+        .then(r => r.ok ? r.json() : null)
+        .then(res => {
+            const d = res && res.data;
+            if (!d) return;
+            try { sessionStorage.setItem(cacheKey, JSON.stringify(d)); } catch (e) { }
+            window.applySidebarBranding(d);
+        })
+        .catch(() => {});
+    })();
+</script>

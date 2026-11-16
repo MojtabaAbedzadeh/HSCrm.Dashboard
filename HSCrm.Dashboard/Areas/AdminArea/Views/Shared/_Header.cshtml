@@ -71,8 +71,8 @@
             </div>
 
             <!-- مرکز اعلان‌های درون‌برنامه‌ای (فاز ۵) -->
-            <div class="dropdown notifications-menu d-inline-block me-2">
-                <button class="dropdown-toggle nav-link ec-drop position-relative btn btn-link text-dark p-1" data-bs-toggle="dropdown" aria-expanded="false" title="مرکز اعلان‌ها">
+            <div class="dropdown notifications-menu d-inline-block me-2" id="hdrNotifDropdown">
+                <button id="hdrNotifToggle" class="dropdown-toggle nav-link ec-drop position-relative btn btn-link text-dark p-1" data-bs-toggle="dropdown" aria-expanded="false" title="مرکز اعلان‌ها">
                     <i class="mdi mdi-bell-ring-outline fs-4"></i>
                     <span id="hdrAlertBadge" class="badge bg-danger rounded-pill position-absolute top-0 start-0 d-none" style="font-size: 10px;">0</span>
                 </button>
@@ -279,9 +279,76 @@
             </text>
             }
 
-            // ۲. بارگذاری مرکز اعلان‌ها (ساعات کاری، تغییرات وضعیت پروژه و هشدار سررسید چک‌ها برای کاربران مجاز)
+            // ۲. بارگذاری مرکز اعلان‌ها (با صفر شدن خودکار شمارنده پس از باز شدن منو)
+            const hdrUserId = '@(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "")';
+            const seenDynKey = `hscrm_seen_dyn_${hdrTenantId}_${hdrUserId}`;
+            let lastHdrItems = [];
+
+            function getSeenDynSet() {
+                try {
+                    const raw = localStorage.getItem(seenDynKey);
+                    const arr = raw ? JSON.parse(raw) : [];
+                    return new Set(Array.isArray(arr) ? arr : []);
+                } catch { return new Set(); }
+            }
+
+            function saveSeenDynSet(set) {
+                try {
+                    localStorage.setItem(seenDynKey, JSON.stringify(Array.from(set).slice(-100)));
+                } catch { }
+            }
+
+            function dynKey(n) {
+                return `${n.category || 'Sys'}_${n.referenceId ?? ''}_${n.createdAtShamsi || ''}`;
+            }
+
+            function setHdrBadgeCount(count) {
+                const badge = document.getElementById('hdrAlertBadge');
+                if (!badge) return;
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.classList.remove('d-none');
+                } else {
+                    badge.textContent = '0';
+                    badge.classList.add('d-none');
+                }
+            }
+
             function escNotif(v) {
                 return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            function renderHdrNotifications(items) {
+                const container = document.getElementById('hdrAlertContainer');
+                if (!container) return;
+
+                if (!items || items.length === 0) {
+                    container.innerHTML = `<div class="p-3 text-center text-success">
+                        <i class="mdi mdi-check-circle-outline fs-4 d-block mb-1"></i>
+                        اعلان جدیدی برای نمایش وجود ندارد.
+                    </div>`;
+                    return;
+                }
+
+                const seenSet = getSeenDynSet();
+                container.innerHTML = items.map(n => {
+                    const isDyn = n.isDynamicAlert || !n.id;
+                    const effectiveRead = isDyn ? seenSet.has(dynKey(n)) : !!n.isRead;
+                    const sevClass = n.severity === 'danger' ? 'text-danger' : n.severity === 'warning' ? 'text-warning' : n.severity === 'success' ? 'text-success' : 'text-primary';
+                    const catLabel = n.category === 'WorkLog' ? 'ساعت کار' : n.category === 'Cheque' ? 'چک' : n.category === 'Project' ? 'پروژه' : 'سیستم';
+                    return `<a href="javascript:void(0)" onclick="clickHeaderNotification(${n.id ?? 'null'}, '${escNotif(n.actionUrl || '')}', '${escNotif(dynKey(n))}')"
+                               class="list-group-item list-group-item-action py-2 ${effectiveRead ? 'opacity-75' : 'bg-light'}">
+                        <div class="d-flex justify-content-between align-items-start gap-1">
+                            <strong class="${sevClass}">${escNotif(n.title)}</strong>
+                            <span class="badge bg-secondary">${catLabel}</span>
+                        </div>
+                        <div class="text-muted mt-1">${escNotif(n.message)}</div>
+                        <div class="d-flex justify-content-between align-items-center mt-1" style="font-size: 10px;">
+                            <span class="text-muted font-monospace" dir="ltr">${escNotif(n.createdAtShamsi || '')}</span>
+                            ${!effectiveRead ? '<span class="text-primary fw-bold">جدید</span>' : ''}
+                        </div>
+                    </a>`;
+                }).join('');
             }
 
             window.loadHeaderNotifications = function () {
@@ -289,51 +356,72 @@
                     .then(r => r.ok ? r.json() : null)
                     .then(res => {
                         const feed = res?.data;
-                        const badge = document.getElementById('hdrAlertBadge');
-                        const container = document.getElementById('hdrAlertContainer');
-                        if (!container) return;
+                        lastHdrItems = feed?.items || [];
+                        const seenSet = getSeenDynSet();
 
-                        const items = feed?.items || [];
-                        const unread = feed?.unreadCount || 0;
-
-                        if (badge) {
-                            if (unread > 0) {
-                                badge.textContent = unread;
-                                badge.classList.remove('d-none');
-                            } else {
-                                badge.classList.add('d-none');
+                        let persistentUnread = 0;
+                        let unseenDyn = 0;
+                        lastHdrItems.forEach(n => {
+                            const isDyn = n.isDynamicAlert || !n.id;
+                            if (isDyn) {
+                                if (!seenSet.has(dynKey(n))) unseenDyn++;
+                            } else if (!n.isRead) {
+                                persistentUnread++;
                             }
-                        }
+                        });
 
-                        if (items.length === 0) {
-                            container.innerHTML = `<div class="p-3 text-center text-success">
-                                <i class="mdi mdi-check-circle-outline fs-4 d-block mb-1"></i>
-                                اعلان جدیدی برای نمایش وجود ندارد.
-                            </div>`;
-                            return;
-                        }
+                        const serverUnread = Number(feed?.unreadCount || 0);
+                        const dynTotal = lastHdrItems.filter(n => n.isDynamicAlert || !n.id).length;
+                        const persistentServerUnread = Math.max(0, serverUnread - dynTotal);
+                        const effectiveUnread = Math.max(persistentUnread, persistentServerUnread) + unseenDyn;
 
-                        container.innerHTML = items.map(n => {
-                            const sevClass = n.severity === 'danger' ? 'text-danger' : n.severity === 'warning' ? 'text-warning' : n.severity === 'success' ? 'text-success' : 'text-primary';
-                            const catLabel = n.category === 'WorkLog' ? 'ساعت کار' : n.category === 'Cheque' ? 'چک' : n.category === 'Project' ? 'پروژه' : 'سیستم';
-                            return `<a href="javascript:void(0)" onclick="clickHeaderNotification(${n.id ?? 'null'}, '${escNotif(n.actionUrl || '')}')"
-                                       class="list-group-item list-group-item-action py-2 ${n.isRead ? 'opacity-75' : 'bg-light'}">
-                                <div class="d-flex justify-content-between align-items-start gap-1">
-                                    <strong class="${sevClass}">${escNotif(n.title)}</strong>
-                                    <span class="badge bg-secondary">${catLabel}</span>
-                                </div>
-                                <div class="text-muted mt-1">${escNotif(n.message)}</div>
-                                <div class="d-flex justify-content-between align-items-center mt-1" style="font-size: 10px;">
-                                    <span class="text-muted font-monospace" dir="ltr">${escNotif(n.createdAtShamsi || '')}</span>
-                                    ${!n.isRead ? '<span class="text-primary fw-bold">جدید</span>' : ''}
-                                </div>
-                            </a>`;
-                        }).join('');
+                        setHdrBadgeCount(effectiveUnread);
+                        renderHdrNotifications(lastHdrItems);
                     })
                     .catch(() => {});
             };
 
-            window.clickHeaderNotification = function (id, url) {
+            function acknowledgeVisibleNotifications(refreshAfter) {
+                setHdrBadgeCount(0);
+                const seenSet = getSeenDynSet();
+                let hasPersistentUnread = false;
+                lastHdrItems.forEach(n => {
+                    const isDyn = n.isDynamicAlert || !n.id;
+                    if (isDyn) {
+                        seenSet.add(dynKey(n));
+                    } else if (!n.isRead) {
+                        hasPersistentUnread = true;
+                    }
+                });
+                saveSeenDynSet(seenSet);
+
+                if (hasPersistentUnread) {
+                    fetch(`${hdrApiBase}/Notification/MarkAllAsRead`, {
+                        method: 'POST',
+                        headers,
+                        suppressGlobalAlert: true
+                    }).then(() => {
+                        lastHdrItems.forEach(n => { if (n.id) n.isRead = true; });
+                        if (refreshAfter) renderHdrNotifications(lastHdrItems);
+                    }).catch(() => {});
+                } else if (refreshAfter) {
+                    renderHdrNotifications(lastHdrItems);
+                }
+            }
+
+            const notifDropdown = document.getElementById('hdrNotifDropdown');
+            if (notifDropdown) {
+                notifDropdown.addEventListener('shown.bs.dropdown', function () {
+                    acknowledgeVisibleNotifications(false);
+                });
+            }
+
+            window.clickHeaderNotification = function (id, url, dKey) {
+                if (dKey) {
+                    const seenSet = getSeenDynSet();
+                    seenSet.add(dKey);
+                    saveSeenDynSet(seenSet);
+                }
                 if (id) {
                     fetch(`${hdrApiBase}/Notification/MarkAsRead/${id}`, {
                         method: 'POST',
@@ -345,15 +433,18 @@
                     });
                 } else if (url) {
                     window.location.href = url;
+                } else {
+                    acknowledgeVisibleNotifications(true);
                 }
             };
 
             window.markAllHeaderNotificationsRead = function () {
+                acknowledgeVisibleNotifications(true);
                 fetch(`${hdrApiBase}/Notification/MarkAllAsRead`, {
                     method: 'POST',
                     headers,
                     suppressGlobalAlert: true
-                }).then(() => window.loadHeaderNotifications());
+                }).then(() => window.loadHeaderNotifications()).catch(() => {});
             };
 
             window.loadHeaderNotifications();

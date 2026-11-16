@@ -23,10 +23,41 @@ namespace HSCrm.Dashboard.Areas.AdminArea.Controllers
             _getListApi = getListApi;
         }
 
+        [HttpGet]
         [Authorize(Policy = "Permission:" + Permissions.SalesInvoices.View)]
-        public async Task<IActionResult> SalesInvoice()
+        public async Task<IActionResult> SalesInvoice(string customerOrProject = null, DateTime? fromDate = null, DateTime? toDate = null, decimal? minTotal = null, decimal? maxTotal = null, int? status = null)
         {
+            var queryParameters = new List<string>();
+            if (!string.IsNullOrWhiteSpace(customerOrProject))
+            {
+                queryParameters.Add($"customerOrProject={Uri.EscapeDataString(customerOrProject.Trim())}");
+            }
+            if (fromDate.HasValue)
+            {
+                queryParameters.Add($"fromDate={Uri.EscapeDataString(fromDate.Value.ToString("yyyy-MM-dd"))}");
+            }
+            if (toDate.HasValue)
+            {
+                queryParameters.Add($"toDate={Uri.EscapeDataString(toDate.Value.ToString("yyyy-MM-dd"))}");
+            }
+            if (minTotal.HasValue)
+            {
+                queryParameters.Add($"minTotal={Uri.EscapeDataString(minTotal.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))}");
+            }
+            if (maxTotal.HasValue)
+            {
+                queryParameters.Add($"maxTotal={Uri.EscapeDataString(maxTotal.Value.ToString(System.Globalization.CultureInfo.InvariantCulture))}");
+            }
+            if (status.HasValue)
+            {
+                queryParameters.Add($"status={status.Value}");
+            }
+
             string apiUrl = "SalesInvoice/GetSalesInvoices";
+            if (queryParameters.Count > 0)
+            {
+                apiUrl += "?" + string.Join("&", queryParameters);
+            }
             try
             {
                 var json = await _getListApi.GetApiList(apiUrl);

@@ -49,8 +49,8 @@
             </span>
 
             <!-- زنگوله اعلان‌های مشتری -->
-            <div class="dropdown">
-                <button class="btn btn-light position-relative rounded-circle p-2" data-bs-toggle="dropdown" aria-expanded="false" title="اعلان‌ها">
+            <div class="dropdown" id="cpNotifDropdown">
+                <button id="cpNotifToggle" class="btn btn-light position-relative rounded-circle p-2" data-bs-toggle="dropdown" aria-expanded="false" title="اعلان‌ها">
                     <i class="mdi mdi-bell-outline fs-5 text-dark"></i>
                     <span id="cpNotifBadge" class="badge bg-danger rounded-pill position-absolute top-0 start-0 d-none" style="font-size:10px;">0</span>
                 </button>
@@ -135,14 +135,16 @@
                     const list = document.getElementById('cpNotifList');
                     if (!feed || !list) return;
 
+                    const items = feed.items || [];
+                    window.__cpLastNotifItems = items;
                     if (feed.unreadCount > 0 && badge) {
                         badge.textContent = feed.unreadCount;
                         badge.classList.remove('d-none');
                     } else if (badge) {
+                        badge.textContent = '0';
                         badge.classList.add('d-none');
                     }
 
-                    const items = feed.items || [];
                     if (items.length === 0) {
                         list.innerHTML = '<div class="p-3 text-center text-muted">اعلان جدیدی وجود ندارد.</div>';
                         return;
@@ -183,6 +185,27 @@
                     suppressGlobalAlert: true
                 }).then(() => window.cpLoadNotifications());
             };
+
+            const cpNotifDrop = document.getElementById('cpNotifDropdown');
+            if (cpNotifDrop) {
+                cpNotifDrop.addEventListener('shown.bs.dropdown', function () {
+                    const badge = document.getElementById('cpNotifBadge');
+                    if (badge) {
+                        badge.textContent = '0';
+                        badge.classList.add('d-none');
+                    }
+                    const items = window.__cpLastNotifItems || [];
+                    if (items.some(n => n.id && !n.isRead)) {
+                        fetch(window.cpApiBase + 'Notification/MarkAllAsRead', {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + window.cpToken },
+                            suppressGlobalAlert: true
+                        }).then(() => {
+                            items.forEach(n => { n.isRead = true; });
+                        }).catch(() => {});
+                    }
+                });
+            }
 
             document.addEventListener('DOMContentLoaded', window.cpLoadNotifications);
         })();

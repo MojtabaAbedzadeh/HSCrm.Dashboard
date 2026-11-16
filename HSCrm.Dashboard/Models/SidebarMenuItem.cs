@@ -2,6 +2,7 @@ namespace HSCrm.Dashboard.Models
 {
     public class SidebarMenuItem
     {
+        public string Category { get; set; } = string.Empty;
         public string Key { get; set; }
         public string Title { get; set; }
         public string Icon { get; set; }

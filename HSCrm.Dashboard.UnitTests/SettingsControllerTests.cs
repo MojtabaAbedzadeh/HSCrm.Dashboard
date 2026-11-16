@@ -171,5 +171,13 @@ namespace HSCrm.Dashboard.UnitTests
             var unauthProjects = Assert.Single(unauthorizedMenus, m => m.Key == "projects");
             Assert.DoesNotContain(unauthProjects.Children, c => c.Key == "project_progress");
         }
+
+        [Fact(DisplayName = "8. دسته‌بندی منوی کناری: تمام آیتم‌های سطح اول دارای دسته‌بندی مشخص هستند")]
+        public void SidebarMenu_BuildMenus_AssignsCategoryToAllTopLevelItems()
+        {
+            var menus = SidebarMenuProvider.BuildMenus();
+            Assert.NotEmpty(menus);
+            Assert.All(menus, m => Assert.False(string.IsNullOrWhiteSpace(m.Category)));
+        }
     }
 }
