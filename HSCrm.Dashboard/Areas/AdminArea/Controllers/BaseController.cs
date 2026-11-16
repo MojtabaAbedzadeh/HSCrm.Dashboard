@@ -25,7 +25,7 @@ namespace HSCrm.Dashboard.Controllers
 
             if (User != null)
             {
-                ViewBag.ApiAddress = _config["ApiAddress"];
+                ViewBag.ApiAddress = (_config["ApiAddress"] ?? string.Empty).Trim().TrimEnd('/') + "/";
                 ViewBag.UserId = User.FindFirstValue("UserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
                 ViewBag.Token = User.FindFirstValue("Token");
                 ViewBag.FirstName = User.FindFirstValue("UserFirstName") ?? User.FindFirstValue("FirstName");

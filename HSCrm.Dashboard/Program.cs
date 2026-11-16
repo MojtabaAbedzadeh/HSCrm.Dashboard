@@ -5,6 +5,8 @@ using HSCrm.Dashboard.Services;
 using HSCrm.Dashboard.Services.Interface;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,9 +23,18 @@ builder.Services.AddTransient<AuthHeaderHandler>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 
-builder.Services.AddHttpClient("ApiClient", client =>
+// ذخیره کلیدهای DataProtection روی دیسک برای جلوگیری از لاگ‌اوت کاربران هنگام Recycle شدن App Pool در IIS
+var dataProtectionKeysDir = Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtectionKeys");
+Directory.CreateDirectory(dataProtectionKeysDir);
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysDir))
+    .SetApplicationName("HSCrm.Dashboard");
+
+builder.Services.AddHttpClient("ApiClient", (sp, client) =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["ApiAddress"]);
+    var cfg = sp.GetRequiredService<IConfiguration>();
+    var apiAddr = (cfg["ApiAddress"] ?? string.Empty).Trim().TrimEnd('/') + "/";
+    client.BaseAddress = new Uri(apiAddr);
 }).AddHttpMessageHandler<AuthHeaderHandler>();
 
 builder.Services.AddHttpContextAccessor();
@@ -60,6 +71,11 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();

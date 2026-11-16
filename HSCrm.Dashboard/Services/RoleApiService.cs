@@ -81,7 +81,7 @@ namespace HSCrm.Dashboard.Services
         private HttpClient CreateClient()
         {
             var http = _httpClientFactory.CreateClient();
-            http.BaseAddress = new Uri(_config["ApiAddress"]!);
+            http.BaseAddress = new Uri((_config["ApiAddress"] ?? string.Empty).Trim().TrimEnd('/') + "/");
 
             var token = _httpContextAccessor.HttpContext?.User.FindFirstValue("Token");
 

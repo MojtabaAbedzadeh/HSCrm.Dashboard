@@ -18,7 +18,7 @@ namespace HSCrm.Dashboard.Services
 
         public async Task<RegisterResult> Register(RegisterTenantModel model)
         {
-            string apiUrl = _config["ApiAddress"] + "Account/RegisterTenant";
+            string apiUrl = (_config["ApiAddress"] ?? string.Empty).Trim().TrimEnd('/') + "/Account/RegisterTenant";
             try
             {
                 var jsonResponse = await _getListApi.PostApi(apiUrl, model);
