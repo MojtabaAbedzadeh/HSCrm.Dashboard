@@ -175,7 +175,8 @@ namespace HSCrm.Dashboard.UnitTests
         [Fact(DisplayName = "8. دسته‌بندی منوی کناری: تمام آیتم‌های سطح اول دارای دسته‌بندی مشخص هستند")]
         public void SidebarMenu_BuildMenus_AssignsCategoryToAllTopLevelItems()
         {
-            var menus = SidebarMenuProvider.BuildMenus();
+            var provider = new SidebarMenuProvider();
+            var menus = provider.BuildMenus();
             Assert.NotEmpty(menus);
             Assert.All(menus, m => Assert.False(string.IsNullOrWhiteSpace(m.Category)));
         }
